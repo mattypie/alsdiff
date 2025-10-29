@@ -1,4 +1,4 @@
-open Alsdiff_diff
+open Alsdiff_live
 
 
 (** The interface for modules that can render automation patches into a specific format. *)
@@ -9,13 +9,13 @@ module type Output = sig
 
   (** [render_automation_patch patch] is the main entry point. It renders the
       entire automation patch, including its list of envelope operations. *)
-  val render_automation_patch : Automation_patch.t -> t
+  val render_automation_patch : Automation.Patch.t -> t
 
   (** [render_audio_clip patch] renders the details of a patched audio clip,
       including name, timing, loop, signature, and sample reference changes. *)
-  val render_audio_clip : Clip_patch.AudioClipPatch.t -> t
+  val render_audio_clip : Clip.AudioClip.Patch.t -> t
 
   (** [render_midi_clip patch] renders the details of a patched midi clip,
       including name, timing, loop, signature, and notes changes. *)
-  val render_midi_clip : Clip_patch.MidiClipPatch.t -> t
+  val render_midi_clip : Clip.MidiClip.Patch.t -> t
 end

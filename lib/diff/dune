@@ -1,8 +1,0 @@
-(library
- (name alsdiff_diff)
- (modules
-   diff
-   automation_patch
-   clip_patch
-   track_patch)
- (libraries alsdiff_base alsdiff_live))

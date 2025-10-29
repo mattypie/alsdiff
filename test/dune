@@ -74,3 +74,9 @@
  (modules test_diff_midi_clip)
  (libraries alsdiff_lib alcotest test_utils)
  (deps midi_clip.xml midi_clip_old.xml))
+
+(test
+ (name test_device)
+ (modules test_device)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps compressor_device.xml))

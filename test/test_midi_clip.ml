@@ -14,9 +14,9 @@ let test_midi_clip_parsing () =
   let expected_end_time = 100.0 in
   let expected_signature = { TimeSignature.numer = 4; TimeSignature.denom = 4 } in
   let expected_loop = Some {
-    LoopSection.start_time = 92.0;
-    LoopSection.end_time = 112.0;
-    LoopSection.on = false;
+    Loop.start_time = 92.0;
+    Loop.end_time = 112.0;
+    Loop.on = false;
   } in
 
   (* Test basic fields *)
@@ -26,13 +26,12 @@ let test_midi_clip_parsing () =
   Alcotest.(check (pair int int)) "signature" (expected_signature.numer, expected_signature.denom) (midi_clip.signature.numer, midi_clip.signature.denom);
 
   (* Test loop section *)
-  match midi_clip.loop, expected_loop with
-  | Some actual_loop, Some expected_loop ->
-      Alcotest.(check (float 0.001)) "loop.start_time" expected_loop.start_time actual_loop.start_time;
-      Alcotest.(check (float 0.001)) "loop.end_time" expected_loop.end_time actual_loop.end_time;
-      Alcotest.(check bool) "loop.on" expected_loop.on actual_loop.on
-  | None, _ -> Alcotest.fail "Expected midi clip loop to be Some"
-  | _, None -> Alcotest.fail "Expected expected_loop to be Some"
+  match expected_loop with
+  | Some expected_loop ->
+      Alcotest.(check (float 0.001)) "loop.start_time" expected_loop.Loop.start_time midi_clip.loop.start_time;
+      Alcotest.(check (float 0.001)) "loop.end_time" expected_loop.Loop.end_time midi_clip.loop.end_time;
+      Alcotest.(check bool) "loop.on" expected_loop.Loop.on midi_clip.loop.on
+  | None -> Alcotest.fail "Expected expected_loop to be Some"
 
   (* TODO: Fix notes field access issue *)
   (* let notes_list = midi_clip.notes in *)

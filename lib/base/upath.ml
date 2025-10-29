@@ -182,6 +182,7 @@ type search_node = {
   node: Xml.t;
 }
 
+
 let get_parent_node (search_node : search_node) : search_node option =
   match search_node.node with
   | Xml.Element { parent = None; _ } -> None  (* Root node has no parent *)
@@ -195,12 +196,15 @@ let get_parent_node (search_node : search_node) : search_node option =
       Some { path_to_parent = parent_path; node = parent_xml }
   | Xml.Data _ -> None  (* Data nodes don't have parents in this model *)
 
+
 module Seq = Stdlib.Seq
+
 
 let parse_path path =
   match Parser.parse_path path with
   | Ok p -> p
   | Error msg -> failwith ("Failed to parse path: " ^ path ^ " with error: " ^ msg)
+
 
 (** Find all XML elements in [tree] that match the [path] as a lazy sequence. *)
 let find_all_seq_0 (path : path_component list) (tree : Xml.t) : (string * Xml.t) Seq.t =

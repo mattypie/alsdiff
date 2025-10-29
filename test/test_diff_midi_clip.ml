@@ -1,7 +1,6 @@
 open Alcotest
 open Alsdiff_base
 open Alsdiff_live.Clip
-open Alsdiff_diff.Clip_patch
 open Alsdiff_output
 
 (** Helper to load an MidiClip.t from a file path. *)
@@ -21,14 +20,11 @@ let test_diff_logic () =
   let new_clip = load_midi_clip_from_file "midi_clip.xml" in
 
   (* 2. Compute the diff between the old and new states. *)
-  let patch = MidiClipPatch.diff old_clip new_clip in
+  let patch = MidiClip.diff old_clip new_clip in
 
   (* 3. Assert that we have a patch (there should be changes). *)
-  (match patch with
-  | Some _ -> check bool "patch exists" true true
-  | None -> fail "Expected to find a patch between old and new clips");
-
-  let patch = Option.get patch in
+  (* MidiClip.diff returns a Patch.t directly, not an option *)
+  check bool "patch exists" true true;
 
   (* 4. Check specific changes based on what we expect to be different *)
   (* Check name change *)
@@ -61,7 +57,7 @@ let test_diff_logic () =
 
   (* Check loop changes *)
   (match patch.loop with
-  | Some loop_patch ->
+  | `Patched loop_patch ->
       (match loop_patch.start_time with
       | `Modified m ->
           check (float 0.001) "old loop start" 85.0 m.old;
@@ -79,7 +75,7 @@ let test_diff_logic () =
           check bool "old loop on" true m.old;
           check bool "new loop on" false m.new_
       | _ -> fail "Expected loop on to be modified")
-  | None -> fail "Expected loop to be modified");
+  | `Unchanged -> fail "Expected loop to be modified");
 
   (* Check that we have some notes changes (we expect at least some) *)
   let has_notes_changes = match patch.notes with
@@ -88,7 +84,7 @@ let test_diff_logic () =
       List.exists (function
         | `Added _ -> true
         | `Removed _ -> true
-        | `Modified _ -> true
+        | `Patched _ -> true
         | `Unchanged -> false) notes_list
   in
   check bool "has notes changes" true has_notes_changes
@@ -100,10 +96,10 @@ let test_text_output () =
   let new_clip = load_midi_clip_from_file "midi_clip.xml" in
 
   (* 2. Compute the diff between the old and new states. *)
-  let patch = MidiClipPatch.diff old_clip new_clip in
+  let patch = MidiClip.diff old_clip new_clip in
 
   (* 3. Generate the text output using TextOutput. *)
-  let text_output = Text_output.render_midi_clip (Option.get patch) in
+  let text_output = Text_output.render_midi_clip patch in
 
   (* 4. Define the expected text output. *)
   let expected_lines = [

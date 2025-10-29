@@ -28,11 +28,10 @@ This is an OCaml project using Dune build system:
     - `clip.ml` - Clip and mixer functionality
     - `track.ml` - Track handling and management
     - `device.ml` - Device and plugin functionality
-  - `lib/diff/` - Diffing algorithms:
-    - `diff.ml` - Core diffing algorithms including Myers O(ND) implementation
-    - `clip_patch.ml` - Clip patching and modification handling
-    - `track_patch.ml` - Track and mixer patching functionality
-    - `automation_patch.ml` - Automation envelope patching functionality
+    - `diff.ml` - Live module diffing utilities
+    - `liveset.ml` - Live set management
+    - `main_track.ml` - Main track handling
+    - `mixer.ml` - Mixer functionality
   - `lib/output/` - Output formatting:
     - `output.ml` - Output interface definitions
     - `text_output.ml` - Plain text output rendering
@@ -44,6 +43,7 @@ This is an OCaml project using Dune build system:
   - `test_complex.ml` - Complex integration tests
   - `test_audio_clip.ml` - Tests for audio clip functionality
   - `test_midi_clip.ml` - Tests for MIDI clip functionality
+  - `test_device.ml` - Tests for device functionality
   - `test_diff_automation.ml` - Tests for diffing automation envelopes
   - `test_diff_list.ml` - Tests for list diffing functionality
   - `test_diff_list_ord.ml` - Tests for ordered list diffing
@@ -106,7 +106,6 @@ The project is organized into four main libraries:
 
 1. **alsdiff_base** (`lib/base/`) - Core functionality
 2. **alsdiff_live** (`lib/live/`) - Ableton Live specific types and logic
-3. **alsdiff_diff** (`lib/diff/`) - Diffing algorithms
 4. **alsdiff_output** (`lib/output/`) - Output formatting
 
 ### Module Access Patterns
@@ -123,12 +122,7 @@ open Alsdiff_live.Automation
 open Alsdiff_live.Clip
 open Alsdiff_live.Track
 open Alsdiff_live.Device
-
-(* Diff modules *)
-open Alsdiff_diff.Diff
-open Alsdiff_diff.Clip_patch
-open Alsdiff_diff.Track_patch
-open Alsdiff_diff.Automation_patch
+open Alsdiff_live.Mixer
 
 (* Output modules *)
 open Alsdiff_output.Text_output.TextOutput
@@ -142,6 +136,7 @@ The following modules have been refactored into the new library structure:
 - `config.ml`, `time.ml`, `eff.ml`, `gadt.ml`, `fraction.ml`, `oop.ml` - Moved to lib/base/ or removed
 - `live.ml` - Split into `automation.ml` and `clip.ml` in lib/live/
 - `output.ml` - Split into interface (`output.ml`) and implementation (`text_output.ml`) in lib/output/
+
 
 ## Development Commands
 

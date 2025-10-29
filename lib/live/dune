@@ -1,10 +1,13 @@
 (library
  (name alsdiff_live)
  (modules
-   context
+   diff
    automation
    clip
    device
-   track)
+   mixer
+   track
+   main_track
+   liveset)
  (libraries alsdiff_base ppx_deriving)
  (preprocess (pps ppx_deriving.eq)))

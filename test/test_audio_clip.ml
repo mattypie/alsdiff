@@ -20,9 +20,9 @@ let test_create_audio_clip () =
     SampleRef.last_modified_date = 1742403845L;
   } in
   let expected_loop = Some {
-    LoopSection.start_time = 26.13179997086247;
-    LoopSection.end_time = 46.631799970862474;
-    LoopSection.on = false;
+    Loop.start_time = 26.13179997086247;
+    Loop.end_time = 46.631799970862474;
+    Loop.on = false;
   } in
 
   (* Test basic fields *)
@@ -38,13 +38,12 @@ let test_create_audio_clip () =
   Alcotest.(check int64) "sample_ref.last_modified_date" expected_sample_ref.last_modified_date audio_clip.sample_ref.last_modified_date;
 
   (* Test loop section *)
-  match audio_clip.loop, expected_loop with
-  | Some actual_loop, Some expected_loop ->
-    Alcotest.(check (float 0.001)) "loop.start_time" expected_loop.start_time actual_loop.start_time;
-    Alcotest.(check (float 0.001)) "loop.end_time" expected_loop.end_time actual_loop.end_time;
-    Alcotest.(check bool) "loop.on" expected_loop.on actual_loop.on
-  | None, _ -> Alcotest.fail "Expected audio clip loop to be Some"
-  | _, None -> Alcotest.fail "Expected expected_loop to be Some"
+  match expected_loop with
+  | Some expected_loop ->
+    Alcotest.(check (float 0.001)) "loop.start_time" expected_loop.Loop.start_time audio_clip.loop.start_time;
+    Alcotest.(check (float 0.001)) "loop.end_time" expected_loop.Loop.end_time audio_clip.loop.end_time;
+    Alcotest.(check bool) "loop.on" expected_loop.Loop.on audio_clip.loop.on
+  | None -> Alcotest.fail "Expected expected_loop to be Some"
 
 let () =
   Alcotest.run "AudioClip" [
