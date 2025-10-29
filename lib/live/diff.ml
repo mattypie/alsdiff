@@ -114,18 +114,21 @@ type ('a, 'p) collection_change = [
     - When order doesn't matter (e.g., set of tags, categories)
 *)
 let diff_list (type a) (module Eq : EQUALABLE with type t = a) (old_list : a list) (new_list : a list) =
-  let old_seq = List.to_seq old_list in
-  let new_seq = List.to_seq new_list in
+  let old_set = Hashtbl.create (List.length old_list) in
+  let new_set = Hashtbl.create (List.length new_list) in
 
-  let removed = Seq.filter (fun old_item ->
-    not (Seq.exists (Eq.equal old_item) new_seq)
-  ) old_seq |> Seq.map (fun item -> `Removed item) in
+  List.iter (fun item -> Hashtbl.add new_set item ()) new_list;
+  let removed = List.filter (fun old_item ->
+    not (Hashtbl.mem new_set old_item)
+  ) old_list in
 
-  let added = Seq.filter (fun new_item ->
-    not (Seq.exists (Eq.equal new_item) old_seq)
-  ) new_seq |> Seq.map (fun item -> `Added item) in
+  List.iter (fun item -> Hashtbl.add old_set item ()) old_list;
+  let added = List.filter (fun new_item ->
+    not (Hashtbl.mem old_set new_item)
+  ) new_list in
+  List.append (List.map (fun item -> `Removed item) removed)
+             (List.map (fun item -> `Added item) added)
 
-  List.of_seq (Seq.append removed added)
 
 (** A sequence-based diff algorithm that preserves order and can detect moves.
 
