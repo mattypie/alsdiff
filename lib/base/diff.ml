@@ -1,4 +1,4 @@
-open Alsdiff_base.Equality
+open Equality
 
 (** The payload for a `Modified` change, containing the old and new values. *)
 type 'a modified = { old : 'a; new_ : 'a }

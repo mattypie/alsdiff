@@ -1,5 +1,5 @@
 open Alsdiff_base
-open Diff
+open Alsdiff_base.Diff
 
 
 module Send = struct

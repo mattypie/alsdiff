@@ -1,7 +1,6 @@
 (library
  (name alsdiff_live)
  (modules
-   diff
    automation
    clip
    device

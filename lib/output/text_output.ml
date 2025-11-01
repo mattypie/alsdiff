@@ -1,3 +1,4 @@
+open Alsdiff_base
 open Alsdiff_live
 
 type t = string

@@ -1,6 +1,6 @@
 open Alcotest
 open Alsdiff_base.Equality
-open Alsdiff_live.Diff
+open Alsdiff_base.Diff
 
 (** Test basic Myers algorithm functionality *)
 let test_diff_list_myers_basic () =

@@ -4,7 +4,8 @@
    file
    xml
    upath
-   equality)
+   equality
+   diff)
  (libraries
    angstrom
    camlzip

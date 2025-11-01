@@ -1,6 +1,6 @@
 open Alsdiff_base
 open Alsdiff_base.Equality
-open Diff
+open Alsdiff_base.Diff
 
 
 module TimeSignature = struct
