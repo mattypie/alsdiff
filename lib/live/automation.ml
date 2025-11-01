@@ -17,6 +17,8 @@ module EnvelopeEvent = struct
 
   let has_same_id a b = a.id = b.id
 
+  let id_hash t = Hashtbl.hash t.id
+
   module Patch = struct
     type t = {
       time : float simple_flat_change;

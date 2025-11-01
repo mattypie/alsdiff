@@ -285,6 +285,7 @@ module MidiClip = struct
         type t = MidiNote.t
         let equal = MidiNote.equal
         let has_same_id a b = a.MidiNote.id = b.MidiNote.id
+        let id_hash t = Hashtbl.hash t.MidiNote.id
       end in
       let (module Id) = (module MidiNoteId : IDENTIFIABLE with type t = MidiNote.t) in
       let flat_changes = diff_list_ord_id (module Id) old_notes new_notes in

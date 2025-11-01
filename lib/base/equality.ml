@@ -22,4 +22,5 @@ module type IDENTIFIABLE = sig
 
   (** return true if two values has the same identifier *)
   val has_same_id : t -> t -> bool
+  val id_hash : t -> int
 end

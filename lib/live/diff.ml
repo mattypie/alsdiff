@@ -106,6 +106,38 @@ type ('a, 'p) collection_change = [
 *)
 
 
+(* Module type for a hashable type, used by diff_set_generic *)
+module type HASHER = sig
+  type t
+  val equal : t -> t -> bool
+  val hash : t -> int
+end
+
+(* Internal generic helper for set-based diffing *)
+let diff_set_generic (type a)
+    (module Cmp : HASHER with type t = a)
+    ~(on_match: a -> a -> a flat_change option)
+    (old_list : a list) (new_list : a list) : a flat_change list =
+
+  let module Tbl = Hashtbl.Make(Cmp) in
+  let old_tbl = Tbl.create (List.length old_list) in
+  List.iter (fun item -> Tbl.add old_tbl item item) old_list;
+
+  let changes = List.fold_left (fun acc new_item ->
+    match Tbl.find_opt old_tbl new_item with
+    | Some old_item ->
+        Tbl.remove old_tbl new_item; (* Mark as seen *)
+        (match on_match old_item new_item with
+         | Some change -> change :: acc
+         | None -> acc)
+    | None ->
+        `Added new_item :: acc
+  ) [] new_list in
+
+  let removals = Tbl.to_seq_keys old_tbl |> Seq.map (fun item -> `Removed item) in
+  List.rev (List.of_seq removals @ changes)
+
+
 (** A generic helper to find added and removed items between two lists.
     This is a simple set-based diff, not a sequence-based one.
 
@@ -113,21 +145,61 @@ type ('a, 'p) collection_change = [
     - Simple set operations where you only care about existence, not position
     - When order doesn't matter (e.g., set of tags, categories)
 *)
-let diff_list (type a) (module Eq : EQUALABLE with type t = a) (old_list : a list) (new_list : a list) =
-  let old_set = Hashtbl.create (List.length old_list) in
-  let new_set = Hashtbl.create (List.length new_list) in
+let diff_list (type a) (module Eq : EQUALABLE with type t = a) (old_list : a list) (new_list : a list) : a flat_change list =
+  let module Cmp = struct
+    type t = a
+    let equal = Eq.equal
+    let hash = Hashtbl.hash
+  end in
+  diff_set_generic (module Cmp)
+    ~on_match:(fun _ _ -> None) (* Value-based diff doesn't have modified, and we filter unchanged *)
+    old_list new_list
 
-  List.iter (fun item -> Hashtbl.add new_set item ()) new_list;
-  let removed = List.filter (fun old_item ->
-    not (Hashtbl.mem new_set old_item)
-  ) old_list in
 
-  List.iter (fun item -> Hashtbl.add old_set item ()) old_list;
-  let added = List.filter (fun new_item ->
-    not (Hashtbl.mem old_set new_item)
-  ) new_list in
-  List.append (List.map (fun item -> `Removed item) removed)
-             (List.map (fun item -> `Added item) added)
+(* Internal generic helper for ordered list diffing using an LCS algorithm. *)
+let diff_ord_generic (type a)
+    ~(compare: a -> a -> bool)
+    ~(on_match: a -> a -> a flat_change)
+    (old_list : a list) (new_list : a list) : a flat_change list =
+  let old_len = List.length old_list in
+  let new_len = List.length new_list in
+
+  (* Handle edge cases *)
+  if old_len = 0 then
+    List.map (fun item -> `Added item) new_list
+  else if new_len = 0 then
+    List.map (fun item -> `Removed item) old_list
+  else
+    let old_arr = Array.of_list old_list in
+    let new_arr = Array.of_list new_list in
+    let dp = Array.make_matrix (old_len + 1) (new_len + 1) 0 in
+
+    (* Fill the DP matrix *)
+    for i = 1 to old_len do
+      for j = 1 to new_len do
+        if compare old_arr.(i - 1) new_arr.(j - 1) then
+          dp.(i).(j) <- dp.(i - 1).(j - 1) + 1
+        else
+          dp.(i).(j) <- max dp.(i - 1).(j) dp.(i).(j - 1)
+      done
+    done;
+
+    (* Backtrack to find the diff operations *)
+    let rec backtrack i j acc =
+      if i = 0 && j = 0 then
+        acc
+      else if i = 0 then
+        backtrack i (j - 1) (`Added new_arr.(j - 1) :: acc)
+      else if j = 0 then
+        backtrack (i - 1) j (`Removed old_arr.(i - 1) :: acc)
+      else if compare old_arr.(i - 1) new_arr.(j - 1) then
+        backtrack (i - 1) (j - 1) (on_match old_arr.(i - 1) new_arr.(j - 1) :: acc)
+      else if dp.(i).(j - 1) >= dp.(i - 1).(j) then
+        backtrack i (j - 1) (`Added new_arr.(j - 1) :: acc)
+      else
+        backtrack (i - 1) j (`Removed old_arr.(i - 1) :: acc)
+    in
+    backtrack old_len new_len []
 
 
 (** A sequence-based diff algorithm that preserves order and can detect moves.
@@ -145,50 +217,27 @@ let diff_list (type a) (module Eq : EQUALABLE with type t = a) (old_list : a lis
     Use diff_list_ord when: sequence is important
 *)
 let diff_list_ord (type a) (module Eq : EQUALABLE with type t = a) (old_list : a list) (new_list : a list) : a flat_change list =
-  let old_len = List.length old_list in
-  let new_len = List.length new_list in
+  diff_ord_generic
+    ~compare:Eq.equal
+    ~on_match:(fun _ _ -> `Unchanged)
+    old_list new_list
 
-  (* Handle edge cases *)
-  if old_len = 0 then
-    List.map (fun item -> `Added item) new_list
-  else if new_len = 0 then
-    List.map (fun item -> `Removed item) old_list
-  else
-    (* Convert lists to arrays for efficient indexing *)
-    let old_arr = Array.of_list old_list in
-    let new_arr = Array.of_list new_list in
 
-    (* Create a matrix to store the longest common subsequence lengths *)
-    let dp = Array.make_matrix (old_len + 1) (new_len + 1) 0 in
-
-    (* Fill the DP matrix *)
-    for i = 1 to old_len do
-      for j = 1 to new_len do
-        if Eq.equal old_arr.(i - 1) new_arr.(j - 1) then
-          dp.(i).(j) <- dp.(i - 1).(j - 1) + 1
-        else
-          dp.(i).(j) <- max dp.(i - 1).(j) dp.(i).(j - 1)
-      done
-    done;
-    (* Note the semicolon above - we're sequencing the for loops with the backtrack *)
-
-    (* Backtrack to find the diff operations *)
-    let rec backtrack i j acc =
-      if i = 0 && j = 0 then
-        acc
-      else if i = 0 then
-        backtrack i (j - 1) (`Added new_arr.(j - 1) :: acc)
-      else if j = 0 then
-        backtrack (i - 1) j (`Removed old_arr.(i - 1) :: acc)
-      else if Eq.equal old_arr.(i - 1) new_arr.(j - 1) then
-        backtrack (i - 1) (j - 1) (`Unchanged :: acc)
-      else if dp.(i).(j - 1) >= dp.(i - 1).(j) then
-        backtrack i (j - 1) (`Added new_arr.(j - 1) :: acc)
+(** A sequence-based diff algorithm that preserves order and can detect moves.
+    Like diff_list_ord, but also tracks identifiers to produce Modified changes.
+    Items with the same ID are considered the same element, even if their values differ.
+*)
+let[@warning "-32"] diff_list_ord_id (type a) (module ID : IDENTIFIABLE with type t = a) (old_list : a list) (new_list : a list) : a flat_change list =
+  diff_ord_generic
+    ~compare:ID.has_same_id
+    ~on_match:(fun old_item new_item ->
+      if old_item = new_item then
+        `Unchanged
       else
-        backtrack (i - 1) j (`Removed old_arr.(i - 1) :: acc)
-    in
+        `Modified { old = old_item; new_ = new_item }
+    )
+    old_list new_list
 
-    backtrack old_len new_len []
 
 (** Myers' O(ND) diff algorithm - based on Eugene W. Myers' 1986 paper.
     Returns a list of changes representing the shortest edit script.
@@ -318,87 +367,31 @@ let diff_list_myers (type a) (module Eq : EQUALABLE with type t = a) (old_list :
 
 let diff_list_id (type a) (module ID : IDENTIFIABLE with type t = a)
     (old_list : a list) (new_list : a list) : a flat_change list =
-    let old_seq = List.to_seq old_list in
-    let new_seq = List.to_seq new_list in
-
-    (* Find items that were removed (no matching ID in new list) *)
-    let removed = Seq.filter (fun old_item ->
-      not (Seq.exists (ID.has_same_id old_item) new_seq)
-    ) old_seq |> Seq.map (fun item -> `Removed item) in
-
-    (* Find items that were added (no matching ID in old list) *)
-    let added = Seq.filter (fun new_item ->
-      not (Seq.exists (ID.has_same_id new_item) old_seq)
-    ) new_seq |> Seq.map (fun item -> `Added item) in
-
-    (* Find items with same ID that may have been modified or unchanged *)
-    let modified_or_unchanged = Seq.filter_map (fun new_item ->
-      match Seq.find (ID.has_same_id new_item) old_seq with
-      | Some old_item ->
-          if old_item = new_item then
-            Some `Unchanged
-          else
-            Some (`Modified { old = old_item; new_ = new_item })
-      | None -> None  (* already handled as added *)
-    ) new_seq in
-
-    List.of_seq (Seq.append removed (Seq.append added modified_or_unchanged))
+    let module Cmp = struct
+      type t = a
+      let equal = ID.has_same_id
+      let hash = ID.id_hash
+    end in
+    diff_set_generic (module Cmp)
+      ~on_match:(fun old_item new_item ->
+        if old_item = new_item then Some `Unchanged
+        else Some (`Modified { old = old_item; new_ = new_item }))
+      old_list new_list
 
 (** A sequence-based diff algorithm that preserves order and can detect moves.
     Like diff_list_ord, but also tracks identifiers to produce Modified changes.
     Items with the same ID are considered the same element, even if their values differ.
 *)
 let diff_list_ord_id (type a) (module ID : IDENTIFIABLE with type t = a) (old_list : a list) (new_list : a list) : a flat_change list =
-  let old_len = List.length old_list in
-  let new_len = List.length new_list in
-
-  (* Handle edge cases *)
-  if old_len = 0 then
-    List.map (fun item -> `Added item) new_list
-  else if new_len = 0 then
-    List.map (fun item -> `Removed item) old_list
-  else
-    (* Convert lists to arrays for efficient indexing *)
-    let old_arr = Array.of_list old_list in
-    let new_arr = Array.of_list new_list in
-
-    (* Create a matrix to store the longest common subsequence lengths *)
-    let dp = Array.make_matrix (old_len + 1) (new_len + 1) 0 in
-
-    (* Fill the DP matrix using identifier matching *)
-    for i = 1 to old_len do
-      for j = 1 to new_len do
-        if ID.has_same_id old_arr.(i - 1) new_arr.(j - 1) then
-          dp.(i).(j) <- dp.(i - 1).(j - 1) + 1
-        else
-          dp.(i).(j) <- max dp.(i - 1).(j) dp.(i).(j - 1)
-      done
-    done;
-
-    (* Backtrack to find the diff operations *)
-    let rec backtrack i j acc =
-      if i = 0 && j = 0 then
-        acc
-      else if i = 0 then
-        backtrack i (j - 1) (`Added new_arr.(j - 1) :: acc)
-      else if j = 0 then
-        backtrack (i - 1) j (`Removed old_arr.(i - 1) :: acc)
-      else if ID.has_same_id old_arr.(i - 1) new_arr.(j - 1) then
-        (* Same identifier - check if values are equal or modified *)
-        let change =
-          if old_arr.(i - 1) = new_arr.(j - 1) then
-            `Unchanged
-          else
-            `Modified { old = old_arr.(i - 1); new_ = new_arr.(j - 1) }
-        in
-        backtrack (i - 1) (j - 1) (change :: acc)
-      else if dp.(i).(j - 1) >= dp.(i - 1).(j) then
-        backtrack i (j - 1) (`Added new_arr.(j - 1) :: acc)
+  diff_ord_generic
+    ~compare:ID.has_same_id
+    ~on_match:(fun old_item new_item ->
+      if old_item = new_item then
+        `Unchanged
       else
-        backtrack (i - 1) j (`Removed old_arr.(i - 1) :: acc)
-    in
-
-    backtrack old_len new_len []
+        `Modified { old = old_item; new_ = new_item }
+    )
+    old_list new_list
 
 
 let identify x = x [@@inline]
