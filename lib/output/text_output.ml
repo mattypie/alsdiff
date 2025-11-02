@@ -292,17 +292,17 @@ let render_mixer (patch : Mixer.Patch.t) =
     let render_note_change (change : Clip.MidiClip.Patch.note_change) =
       match change with
       | `Unchanged -> ""
-      | `Added note -> Printf.sprintf "    + Note: time=%d, duration=%d, velocity=%d, note=%d"
+      | `Added note -> Printf.sprintf "    + Note: time=%f, duration=%f, velocity=%d, note=%d"
           note.time note.duration note.velocity note.note
-      | `Removed note -> Printf.sprintf "    - Note: time=%d, duration=%d, velocity=%d, note=%d"
+      | `Removed note -> Printf.sprintf "    - Note: time=%f, duration=%f, velocity=%d, note=%d"
           note.time note.duration note.velocity note.note
       | `Patched patch ->
           let changes = [
             if patch.time <> `Unchanged then Some (match patch.time with
-              | `Modified m -> Printf.sprintf "time: %d->%d" m.old m.new_
+              | `Modified m -> Printf.sprintf "time: %f->%f" m.old m.new_
               | _ -> "") else None;
             if patch.duration <> `Unchanged then Some (match patch.duration with
-              | `Modified m -> Printf.sprintf "duration: %d->%d" m.old m.new_
+              | `Modified m -> Printf.sprintf "duration: %f->%f" m.old m.new_
               | _ -> "") else None;
             if patch.velocity <> `Unchanged then Some (match patch.velocity with
               | `Modified m -> Printf.sprintf "velocity: %d->%d" m.old m.new_

@@ -44,8 +44,8 @@ module MidiNote = struct
   type t = {
     id : int;
     note : int;
-    time : int;
-    duration : int;
+    time : float;
+    duration : float;
     velocity : int;
     off_velocity : int;
   } [@@deriving eq]
@@ -55,8 +55,8 @@ module MidiNote = struct
     match xml with
     | Xml.Element { name = "MidiNoteEvent"; _ } ->
       let id = Xml.get_int_attr "NoteId" xml in
-      let time = Xml.get_float_attr "Time" xml |> int_of_float in
-      let duration = Xml.get_float_attr "Duration" xml |> int_of_float in
+      let time = Xml.get_float_attr "Time" xml in
+      let duration = Xml.get_float_attr "Duration" xml in
       let velocity = Xml.get_int_attr "Velocity" xml in
       let off_velocity = Xml.get_int_attr "OffVelocity" xml in
       { id; note; time; duration; velocity; off_velocity }
@@ -65,8 +65,8 @@ module MidiNote = struct
 
   module Patch = struct
     type t = {
-      time : int flat_change;
-      duration : int flat_change;
+      time : float flat_change;
+      duration : float flat_change;
       velocity : int flat_change;
       off_velocity : int flat_change;
       note : int flat_change;
@@ -194,35 +194,14 @@ module MidiClip = struct
       let signature = Upath.find "/TimeSignature/TimeSignatures/RemoteableTimeSignature" xml |> snd |> TimeSignature.create in
 
       (* Extract MIDI notes from KeyTracks *)
-      let notes =
-        match Upath.find_opt "/Notes/KeyTracks" xml with
-        | Some (_, key_tracks_elem) ->
-          (match key_tracks_elem with
-           | Xml.Element { childs = key_track_elements; parent = _; _ } ->
-             List.fold_left (fun acc key_track ->
-               match key_track with
-               | Xml.Element { name = "KeyTrack"; parent = _; _ } ->
-                 (* Get notes from this KeyTrack *)
-                 let note_key = Upath.get_int_attr "MidiKey" "Value" key_track in
-                 let track_notes =
-                   match Upath.find_opt "/Notes" key_track with
-                   | Some (_, notes_elem) ->
-                     (match notes_elem with
-                      | Xml.Element { childs = notes_childs; parent = _; _ } ->
-                        List.fold_left (fun note_acc note ->
-                          match note with
-                          | Xml.Element { name = "MidiNoteEvent"; _ } ->
-                            (MidiNote.create note_key note : MidiNote.t) :: note_acc
-                          | _ -> note_acc
-                        ) acc notes_childs
-                      | _ -> acc)
-                   | _ -> acc
-                 in
-                 track_notes
-               | _ -> acc
-             ) [] key_track_elements
-           | _ -> [])
-        | _ -> []
+      let notes = Upath.find_all_seq "/Notes/KeyTracks/KeyTrack" xml
+        |> Seq.map snd
+        |> Seq.flat_map (fun keytrack ->
+            let key = Upath.get_int_attr "MidiKey" "Value" keytrack in
+            Upath.find_all_seq "/Notes/MidiNoteEvent" keytrack
+              |> Seq.map snd
+              |> Seq.map @@ MidiNote.create key)
+        |> List.of_seq
       in
 
       { id; name; start_time; end_time; loop; signature; notes }

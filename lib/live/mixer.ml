@@ -63,10 +63,10 @@ let create (xml : Xml.t) : t =
     xml
     |> Upath.find_all "/Sends/TrackSendHolder"
     |> List.map (fun (_, track_send_holder) ->
-        let holder_id = 
+        let holder_id =
           match track_send_holder with
-          | Xml.Element { attrs; _ } -> 
-              List.assoc_opt "Id" attrs 
+          | Xml.Element { attrs; _ } ->
+              List.assoc_opt "Id" attrs
               |> Option.map int_of_string
               |> Option.value ~default:0
           | _ -> 0

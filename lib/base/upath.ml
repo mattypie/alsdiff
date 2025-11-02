@@ -309,18 +309,18 @@ let find_all_seq_0 (path : path_component list) (tree : Xml.t) : (string * Xml.t
   |> Seq.memoize
 
 
-let find_all_seq_1 (path : string) (tree : Xml.t) : (string * Xml.t) Seq.t =
+let find_all_seq (path : string) (tree : Xml.t) : (string * Xml.t) Seq.t =
   find_all_seq_0 (parse_path path) tree
 
 
 (** Find all XML elements in [tree] that match the [path]. *)
 let find_all (path : string) (tree : Xml.t) : (string * Xml.t) list =
-  find_all_seq_1 path tree |> List.of_seq
+  find_all_seq path tree |> List.of_seq
 
 
 (** Find the first XML element in [tree] that matches the [path]. *)
 let find_opt (path : string) (tree : Xml.t) : (string * Xml.t) option =
-  find_all_seq_1 path tree |> Seq.uncons |> Option.map fst
+  find_all_seq path tree |> Seq.uncons |> Option.map fst
 
 
 (** Find the first XML element in [tree] that matches the [path].

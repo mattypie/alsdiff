@@ -10,6 +10,22 @@ type t =
       mutable parent : t option;
     }
 
+
+let get_childs = function
+  | Element { childs; _ } -> childs
+  | Data _ -> invalid_arg "Cannot get childs from Data"
+
+
+let get_value = function
+  | Data { value; _ } -> value
+  | Element _ -> invalid_arg "Cannot get value from Element"
+
+
+let get_parent = function
+  | Element { parent; _ } -> parent
+  | Data { parent; _ } -> parent
+
+
 let get_attr name xml =
   match xml with
   | Element { attrs; _ } -> List.assoc name attrs
