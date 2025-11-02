@@ -80,3 +80,9 @@
  (modules test_device)
  (libraries alsdiff_lib alcotest test_utils)
  (deps compressor_device.xml))
+
+(test
+ (name test_midi_track)
+ (modules test_midi_track)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps midi_track.xml))
