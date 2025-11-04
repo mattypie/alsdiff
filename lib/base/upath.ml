@@ -2,6 +2,7 @@
 
     Supports:
     - Tag names with optional attributes (e.g., `tag`, `tag@attr="value"`, `tag@attr=*`)
+    - Regex tag name matching with single quotes (e.g., `'MacroControls\.[0-9]+'`, `'prefix.*suffix$'`)
     - Indexing with optional Tag name (e.g., `[0]`, `[1]`, `tag[3]`)
     - Single wildcard (`*`) for single level matching
     - Multi wildcard (`**`) for multiple levels matching, like XPath's '//'
@@ -17,13 +18,23 @@
     - Namespaces
     - Other XPath features
 
+    Regex Syntax:
+    - Regex patterns are enclosed in single quotes to distinguish from raw string matching
+    - Supports full PCRE regex syntax including quantifiers ( *, +, ? ), character classes ([0-9]), etc.
+    - Examples:
+      - `'MacroControls\.[0-3]+'` - matches MacroControls.0, MacroControls.1, MacroControls.2, MacroControls.3
+      - `'prefix.*suffix$'` - matches tags starting with "prefix" and ending with "suffix"
+      - `'element-[0-9]{2}'` - matches element-01, element-02, etc.
+    - Use `$` anchor to match complete tag names and avoid partial matches
+
     Example usage:
     let result = parse_path "/bookstore/book@category=\"cooking\"/title"
     let wildcard_with_attr = parse_path "/*[@type=\"magic\"]"
+    let regex_match = parse_path "/**/'MacroControls\.[0-9]'"  (* matches all MacroControls with single digits *)
+    let regex_range = parse_path "/**/'MacroControls\.[1-5]'"  (* matches MacroControls.1 through MacroControls.5 *)
     let current_node = parse_path "/a/b/c/."  (* returns 'c' node *)
     let parent_node = parse_path "/a/b/c/.."  (* returns 'b' node *)
 *)
-
 
 type attribute_value =
   | Exact of string
@@ -34,9 +45,13 @@ type attribute = {
   value : attribute_value;
 } [@@deriving eq]
 
+type name_component =
+  | Raw of string               (* for raw string matching *)
+  | Regex of string * Re.Pcre.regexp (* for regex matching, the first element in the tuple is the raw regex string, the second element is the compiled PCRE regex *)
+
 type path_component =
-  | Tag of string * attribute list
-  | Index of int * string option
+  | Tag of name_component * attribute list
+  | Index of int * name_component option
   | SingleWildcard of attribute list
   | MultiWildcard of attribute list
   | CurrentNode
@@ -51,10 +66,34 @@ struct
   open Angstrom
 
   let is_identifier_char = function
-    | '/' | '[' | ']' | '@' | '=' | '*' -> false
+    | '/' | '[' | ']' | '@' | '=' | '*' | '\'' -> false
     | _ -> true
 
   let identifier = take_while1 is_identifier_char <?> "identifier"
+
+  (* Compile regex pattern, raising error if invalid *)
+  let compile_regex pattern =
+    try
+      Re.Pcre.regexp pattern
+    with
+    | Re.Pcre.Parse_error | Re.Pcre.Not_supported -> failwith ("Invalid PCRE regex pattern '" ^ pattern ^ "'")
+
+  (* Parse a single-quoted regex pattern *)
+  let p_quoted_regex =
+    let p_regex_content =
+      let p_escaped = char '\\' *> any_char >>| String.make 1 in
+      let p_unescaped = take_while1 (fun c -> c <> '\'' && c <> '\\') in
+      many (p_escaped <|> p_unescaped) >>| String.concat ""
+    in
+    char '\'' *> p_regex_content <* char '\'' >>| fun pattern ->
+      Regex (pattern, compile_regex pattern)
+
+  (* Parse either a raw identifier or a quoted regex *)
+  let p_name_component =
+    choice [
+      p_quoted_regex;
+      identifier >>| fun name -> Raw name;
+    ]
 
   let integer =
     take_while1 (function '0'..'9' -> true | _ -> false)
@@ -103,7 +142,7 @@ struct
     let p_parent_node = string ".." *> return ParentNode in
     let p_index =
       lift2 (fun tag index -> Index (index, tag))
-        (option None (identifier >>| Option.some))
+        (option None (p_name_component >>| Option.some))
         (char '[' *> integer <* char ']')
     in
     let p_single_wildcard =
@@ -118,7 +157,7 @@ struct
     in
     let p_tag =
       lift2 (fun name attrs -> Tag (name, attrs))
-        identifier
+        p_name_component
         (many p_attribute)
     in
     choice [ p_parent_node;
@@ -155,10 +194,15 @@ let match_attributes (tree : Xml.t) (pattrs : attribute list) : bool =
   | _ -> assert false
 
 
+let match_name_component tag_name = function
+  | Raw name -> tag_name = name
+  | Regex (_, compiled_regex) -> Re.execp compiled_regex tag_name
+
+
 let match_component tree = function
-  | Tag (name, attrs) ->
+  | Tag (name_comp, attrs) ->
     (match tree with
-     | Xml.Element { name=tag; parent = _; _ } when tag = name -> match_attributes tree attrs
+     | Xml.Element { name=tag; parent = _; _ } when match_name_component tag name_comp -> match_attributes tree attrs
      | _ -> false)
   | SingleWildcard attrs ->
     (match tree with
@@ -228,15 +272,15 @@ let find_all_seq_0 (path : path_component list) (tree : Xml.t) : (string * Xml.t
           let children = Seq.flat_map children_of nodes in
           let matched_children = Seq.filter (fun sn -> match_component sn.node c) children in
           find_path_in_children rest matched_children
-      | Index (i, tag_opt) ->
+      | Index (i, name_comp_opt) ->
           let children = Seq.flat_map children_of nodes in
           let filtered_children =
-            match tag_opt with
+            match name_comp_opt with
             | None -> children
-            | Some tag ->
+            | Some name_comp ->
               Seq.filter (fun sn ->
                   match sn.node with
-                  | Xml.Element { name = t; parent = _; _ } -> t = tag
+                  | Xml.Element { name = t; parent = _; _ } -> match_name_component t name_comp
                   | _ -> false
                 ) children
           in
@@ -279,8 +323,9 @@ let find_all_seq_0 (path : path_component list) (tree : Xml.t) : (string * Xml.t
   let initial_node = { path_to_parent = ""; node = tree } in
   let result_seq =
     match path with
-    | (Tag(name, _) as first) :: rest ->
-        if name = (match tree with Xml.Element {name=n; parent = _; _} -> n | _ -> "") && match_component tree first then
+    | (Tag(name_comp, _) as first) :: rest ->
+        let root_name = match tree with Xml.Element {name=n; parent = _; _} -> n | _ -> "" in
+        if match_name_component root_name name_comp && match_component tree first then
           (* The first path component matches the root `tree` itself.
              So, we start searching for the rest of the path within the children of `tree`. *)
           find_path_in_children rest (Seq.return initial_node)
@@ -338,7 +383,7 @@ let find_attr_opt (path : string) (attr : string) (tree : Xml.t) : (string * str
   let parsed_path = parse_path path in
   let last_component = List.hd @@ List.rev parsed_path in
   match last_component with
-  | Tag (tag_name, existing_attrs) ->
+  | Tag (name_comp, existing_attrs) ->
     (* Check if the required attribute is already in the path constraints *)
     let attr_already_exists = List.exists (fun a -> a.name = attr) existing_attrs in
 
@@ -351,7 +396,7 @@ let find_attr_opt (path : string) (attr : string) (tree : Xml.t) : (string * str
     in
 
     (* Create the final path with the attribute constraint added *)
-    let final_last_component = Tag (tag_name, final_attrs) in
+    let final_last_component = Tag (name_comp, final_attrs) in
     let final_path =
       if List.length parsed_path = 1 then
         [final_last_component]
@@ -394,17 +439,21 @@ let equal_path path1 path2 =
 
 
 let pp_path fmt path =
+  let pp_name_component fmt = function
+    | Raw name -> Format.fprintf fmt "%s" name
+    | Regex (pattern, _) -> Format.fprintf fmt "'%s'" pattern
+  in
   let pp_component fmt = function
-    | Tag (name, attrs) ->
-      Format.fprintf fmt "%s" name;
+    | Tag (name_comp, attrs) ->
+      Format.fprintf fmt "%a" pp_name_component name_comp;
       List.iter (fun {name; value} ->
         match value with
         | Any -> Format.fprintf fmt "@%s" name
         | Exact v -> Format.fprintf fmt "@%s=\"%s\"" name v
       ) attrs
-    | Index (i, tag_opt) ->
-      (match tag_opt with
-       | Some tag -> Format.fprintf fmt "%s" tag
+    | Index (i, name_comp_opt) ->
+      (match name_comp_opt with
+       | Some name_comp -> Format.fprintf fmt "%a" pp_name_component name_comp
        | None -> ());
       Format.fprintf fmt "[%d]" i
     | SingleWildcard attrs ->

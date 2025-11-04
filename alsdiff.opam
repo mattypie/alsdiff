@@ -11,10 +11,12 @@ doc: "https://github.com/krfantasy/alsdiff"
 bug-reports: "https://github.com/krfantasy/alsdiff/issues"
 depends: [
   "dune" {>= "3.19"}
-  "ocaml"
+  "ocaml" {>= "5.0.0"}
+  "re"
   "camlzip"
   "xmlm"
   "angstrom"
+  "cmdliner" {>= "2.0.0"}
   "eio"
   "eio_main"
   "alcotest"

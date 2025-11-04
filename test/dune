@@ -86,3 +86,9 @@
  (modules test_midi_track)
  (libraries alsdiff_lib alcotest test_utils)
  (deps midi_track.xml))
+
+(test
+ (name test_regex_match)
+ (modules test_regex_match)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps regex_match.xml))
