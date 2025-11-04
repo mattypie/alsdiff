@@ -1,5 +1,4 @@
 open Alsdiff_base.Xml
-open Alsdiff_live.Device
 
 let test_compressor_device_xml_path =
   (* Try different paths to work with both dune exec and dune runtest *)
@@ -13,29 +12,41 @@ let test_create_device_from_compressor_xml () =
   let xml = read_file test_compressor_device_xml_path in
 
   (* Create a device from the XML *)
-  let device = create xml in
+  let device = Alsdiff_live.Device.create xml in
+
+  (* Extract the RegularDevice from the variant *)
+  let regular_device = match device with
+    | Alsdiff_live.Device.Regular reg -> reg
+    | Alsdiff_live.Device.Group _ -> failwith "Expected Regular device, got Group device"
+  in
 
   (* Verify the device properties *)
-  Alcotest.(check int) "device id" 2 device.id;
-  Alcotest.(check string) "device name" "Compressor2" device.device_name;
-  Alcotest.(check string) "preset name" "" device.preset_name;
-  Alcotest.(check int) "pointee id" 153207 device.pointee;
+  Alcotest.(check int) "device id" 2 regular_device.id;
+  Alcotest.(check string) "device name" "Compressor2" regular_device.device_name;
+  Alcotest.(check string) "preset name" "" regular_device.preset_name;
+  Alcotest.(check int) "pointee id" 153207 regular_device.pointee;
 
   (* Verify we have parameters *)
-  Alcotest.(check (int)) "parameter count" 25 (List.length device.params);
+  Alcotest.(check (int)) "parameter count" 25 (List.length regular_device.params);
 
   (* Check a few specific parameters *)
-  let open Param in
-  let threshold_param = List.find (fun p -> p.name = "Threshold") device.params in
-  Alcotest.(check (float 0.01)) "threshold value" 1.0 threshold_param.value;
+  let open Alsdiff_live.Device.DeviceParam in
+  let threshold_param = List.find (fun p -> p.name = "Threshold") regular_device.params in
+  (match threshold_param.value with
+   | Float v -> Alcotest.(check (float 0.01)) "threshold value" 1.0 v
+   | _ -> Alcotest.fail "threshold parameter should be float");
   Alcotest.(check int) "threshold automation id" 153208 threshold_param.automation;
 
-  let ratio_param = List.find (fun p -> p.name = "Ratio") device.params in
-  Alcotest.(check (float 0.01)) "ratio value" 2.50000024 ratio_param.value;
+  let ratio_param = List.find (fun p -> p.name = "Ratio") regular_device.params in
+  (match ratio_param.value with
+   | Float v -> Alcotest.(check (float 0.01)) "ratio value" 2.50000024 v
+   | _ -> Alcotest.fail "ratio parameter should be float");
   Alcotest.(check int) "ratio automation id" 153210 ratio_param.automation;
 
-  let attack_param = List.find (fun p -> p.name = "Attack") device.params in
-  Alcotest.(check (float 0.01)) "attack value" 0.9641109109 attack_param.value;
+  let attack_param = List.find (fun p -> p.name = "Attack") regular_device.params in
+  (match attack_param.value with
+   | Float v -> Alcotest.(check (float 0.01)) "attack value" 0.9641109109 v
+   | _ -> Alcotest.fail "attack parameter should be float");
   Alcotest.(check int) "attack automation id" 153214 attack_param.automation
 
 let test_device_param_creation () =
@@ -74,12 +85,14 @@ let test_device_param_creation () =
   } in
 
   (* Create a parameter from the XML *)
-  let param = Param.create param_xml in
+  let open Alsdiff_live.Device.DeviceParam in
+  let param = create param_xml in
 
   (* Verify parameter properties *)
-  let open Param in
   Alcotest.(check string) "param name" "Threshold" param.name;
-  Alcotest.(check (float 0.01)) "param value" 0.5 param.value;
+  (match param.value with
+   | Float v -> Alcotest.(check (float 0.01)) "param value" 0.5 v
+   | _ -> Alcotest.fail "parameter should be float");
   Alcotest.(check int) "param automation id" 200 param.automation
 
 let test_device_param_with_missing_values () =
@@ -101,12 +114,14 @@ let test_device_param_with_missing_values () =
   } in
 
   (* Create a parameter from the XML *)
-  let param = Param.create param_xml in
+  let open Alsdiff_live.Device.DeviceParam in
+  let param = create param_xml in
 
   (* Verify parameter properties with defaults *)
-  let open Param in
   Alcotest.(check string) "param name" "TestParam" param.name;
-  Alcotest.(check (float 0.01)) "param value (default)" 0.0 param.value;
+  (match param.value with
+   | Float v -> Alcotest.(check (float 0.01)) "param value (default)" 0.0 v
+   | _ -> Alcotest.fail "parameter should be float");
   Alcotest.(check int) "param automation id (default)" 0 param.automation
 
 let test_device_creation_with_invalid_xml () =
@@ -115,15 +130,15 @@ let test_device_creation_with_invalid_xml () =
 
   (* This should raise an exception *)
   Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating Device")
-    (fun () -> ignore (create invalid_xml))
+    (fun () -> ignore (Alsdiff_live.Device.RegularDevice.create invalid_xml))
 
 let test_param_creation_with_invalid_xml () =
   (* Create invalid XML (Data instead of Element) *)
   let invalid_xml = Data { value = "invalid"; parent = None } in
 
   (* This should raise an exception *)
-  Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating Param")
-    (fun () -> ignore (Param.create invalid_xml))
+  Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating DeviceParam")
+    (fun () -> ignore (Alsdiff_live.Device.DeviceParam.create invalid_xml))
 
 let () =
   Alcotest.run "Device" [
