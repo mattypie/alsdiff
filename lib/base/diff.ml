@@ -106,6 +106,37 @@ type ('a, 'p) collection_change = [
 *)
 
 
+module type DIFFABLE_ID = sig
+  type t
+  include IDENTIFIABLE with type t := t
+
+  module Patch : sig
+    type t
+    val is_empty : t -> bool
+  end
+
+  val diff : t -> t -> Patch.t
+end
+
+let diff_value old_value new_value =
+    if old_value = new_value then `Unchanged else `Modified { old = old_value; new_ = new_value }
+
+let diff_flat_value (type a) (module Eq : EQUALABLE with type t = a) old_value new_value =
+  if Eq.equal old_value new_value then
+    `Unchanged
+  else
+    `Modified { old = old_value; new_ = new_value }
+
+let diff_structured_value (type a p)
+    (module ID : DIFFABLE_ID with type t = a and type Patch.t = p)
+    (old_value : a)
+    (new_value : a) : p simple_structured_change =
+  if ID.has_same_id old_value new_value then
+    `Unchanged
+  else
+    `Patched (ID.diff old_value new_value)
+
+
 (* Module type for a hashable type, used by diff_set_generic *)
 module type HASHER = sig
   type t

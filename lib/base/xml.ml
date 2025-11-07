@@ -11,15 +11,17 @@ type t =
     }
 
 
+let get_name = function
+  | Element { name; _ } -> name
+  | Data _ -> invalid_arg "Cannot get childs from Data"
+
 let get_childs = function
   | Element { childs; _ } -> childs
   | Data _ -> invalid_arg "Cannot get childs from Data"
 
-
 let get_value = function
   | Data { value; _ } -> value
   | Element _ -> invalid_arg "Cannot get value from Element"
-
 
 let get_parent = function
   | Element { parent; _ } -> parent
