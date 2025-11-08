@@ -25,7 +25,7 @@ let test_create_device_from_compressor_xml () =
   (* Verify the device properties *)
   Alcotest.(check int) "device id" 2 regular_device.id;
   Alcotest.(check string) "device name" "Compressor2" regular_device.device_name;
-  Alcotest.(check string) "preset name" "" regular_device.preset_name;
+  Alcotest.(check string) "display name" "Compressor" regular_device.display_name;
   Alcotest.(check int) "pointee id" 153207 regular_device.pointee;
 
   (* Verify we have parameters *)
@@ -528,6 +528,40 @@ let test_device_param_with_invalid_controller_map_mode () =
 
 
 
+let test_preset_ref_creation () =
+  (* XML string from TODO.org example *)
+  let preset_xml_str = {|
+<FilePresetRef Id="0">
+  <FileRef>
+    <RelativePathType Value="6" />
+    <RelativePath Value="Presets/Instruments/Instrument Rack/Industrial FM Kick.adg" />
+    <Path Value="/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Instrument Rack/Industrial FM Kick.adg" />
+    <Type Value="2" />
+    <LivePackName Value="" />
+    <LivePackId Value="" />
+    <OriginalFileSize Value="0" />
+    <OriginalCrc Value="0" />
+  </FileRef>
+</FilePresetRef>
+|} in
+
+  (* Parse the XML string *)
+  let xml = read_string preset_xml_str in
+
+  (* Create a PresetRef from the XML *)
+  let open Device.PresetRef in
+  let preset_ref = create xml in
+
+  (* Verify the PresetRef properties *)
+  Alcotest.(check int) "preset id" 0 preset_ref.id;
+  Alcotest.(check string) "relative path" "Presets/Instruments/Instrument Rack/Industrial FM Kick.adg" preset_ref.relative_path;
+  Alcotest.(check string) "path" "/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Instrument Rack/Industrial FM Kick.adg" preset_ref.path;
+  Alcotest.(check string) "pack name" "" preset_ref.pack_name;
+  Alcotest.(check int) "pack id" 0 preset_ref.pack_id;
+  Alcotest.(check int) "file size" 0 preset_ref.file_size;
+  Alcotest.(check int) "crc" 0 preset_ref.crc
+
+
 let () =
   Alcotest.run "Device" [
     "device_creation", [
@@ -536,6 +570,7 @@ let () =
       Alcotest.test_case "create parameter with missing values" `Quick test_device_param_with_missing_values;
       Alcotest.test_case "device creation with invalid XML" `Quick test_device_creation_with_invalid_xml;
       Alcotest.test_case "param creation with invalid XML" `Quick test_param_creation_with_invalid_xml;
+      Alcotest.test_case "create PresetRef from XML" `Quick test_preset_ref_creation;
     ];
     "macro_mapping", [
       Alcotest.test_case "parameter with continuous macro mapping" `Quick test_device_param_with_continuous_macro_mapping;

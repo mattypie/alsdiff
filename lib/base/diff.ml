@@ -118,6 +118,18 @@ module type DIFFABLE_ID = sig
   val diff : t -> t -> Patch.t
 end
 
+module type DIFFABLE_EQ = sig
+  type t
+  include EQUALABLE with type t := t
+
+  module Patch : sig
+    type t
+    val is_empty : t -> bool
+  end
+
+  val diff : t -> t -> Patch.t
+end
+
 let diff_value old_value new_value =
     if old_value = new_value then `Unchanged else `Modified { old = old_value; new_ = new_value }
 
@@ -131,10 +143,22 @@ let diff_structured_value (type a p)
     (module ID : DIFFABLE_ID with type t = a and type Patch.t = p)
     (old_value : a)
     (new_value : a) : p simple_structured_change =
-  if ID.has_same_id old_value new_value then
-    `Unchanged
+  if not (ID.has_same_id old_value new_value) then
+    failwith "diff_structured_value called on items with different IDs"
   else
+    let patch = ID.diff old_value new_value in
+    if ID.Patch.is_empty patch then `Unchanged
+    else `Patched patch
+
+
+let diff_structured_value_eq (type a p)
+    (module ID : DIFFABLE_EQ with type t = a and type Patch.t = p)
+    (old_value : a)
+    (new_value : a) : p simple_structured_change =
+  if old_value <> new_value then
     `Patched (ID.diff old_value new_value)
+  else
+    `Unchanged
 
 
 (* Module type for a hashable type, used by diff_set_generic *)

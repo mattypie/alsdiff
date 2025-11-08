@@ -4,6 +4,108 @@ open Alsdiff_base.Equality
 
 exception Not_implemented of string
 
+module PresetRef = struct
+  type preset_type =
+    | UserPreset
+    | DefaultPreset
+  [@@deriving eq]
+
+  type t = {
+    id : int;
+    name : string;
+    preset_type : preset_type;
+    relative_path : string;
+    path : string;
+    pack_name : string;
+    pack_id : int;
+    file_size : int;
+    crc : int;
+  } [@@deriving eq]
+
+  let has_same_id a b = a.id = b.id
+
+  let id_hash t = Hashtbl.hash t.id
+
+  let create (xml : Xml.t) : t =
+    match xml with
+    | Xml.Element { name=tag; childs; _ } ->
+      let id = Xml.get_int_attr "Id" xml in
+      let preset_type =
+        match tag with
+        | "FilePresetRef" -> UserPreset
+        | "AbletonDefaultPresetRef" -> DefaultPreset
+        | _ -> failwith ("Unknown PresetRef type" ^ tag)
+      in
+
+      (* Extract FileRef element *)
+      let file_ref_xml =
+        try List.find (function
+          | Xml.Element { name = "FileRef"; _ } -> true
+          | _ -> false) childs
+        with Not_found -> failwith "FileRef element not found in PresetRef"
+      in
+
+      (* Extract all the required fields from FileRef *)
+      let relative_path = Upath.get_attr "/RelativePath" "Value" file_ref_xml in
+      let path = Upath.get_attr "/Path" "Value" file_ref_xml in
+
+      let preset_file_name = Upath.get_attr "/FileRef/Path" "Value" xml |> Filename.basename |> Filename.remove_extension in
+      let name = match preset_type with
+        | UserPreset -> preset_file_name
+        | DefaultPreset ->
+          let device_name = Upath.get_attr "/DeviceId" "Name" xml in
+          if device_name <> "" then device_name else preset_file_name
+      in
+
+      let pack_name = Upath.get_attr "/LivePackName" "Value" file_ref_xml in
+      let pack_id = Upath.get_int_attr_opt "/LivePackId" "Value" file_ref_xml |> Option.value ~default:0 in
+      let file_size = Upath.get_int_attr "/OriginalFileSize" "Value" file_ref_xml in
+      let crc = Upath.get_int_attr_opt "/OriginalCrc" "Value" file_ref_xml |> Option.value ~default:0 in
+
+      { id; name; preset_type; relative_path; path; pack_name; pack_id; file_size; crc }
+    | _ -> failwith "Invalid XML element for creating PresetRef"
+
+  module Patch = struct
+    type t = {
+      (* TODO: add the [name] field *)
+      relative_path : string simple_flat_change;
+      path : string simple_flat_change;
+      pack_name : string simple_flat_change;
+      pack_id : int simple_flat_change;
+      file_size : int simple_flat_change;
+      crc : int simple_flat_change;
+    }
+
+    let is_empty patch =
+      patch.relative_path = `Unchanged &&
+      patch.path = `Unchanged &&
+      patch.pack_name = `Unchanged &&
+      patch.pack_id = `Unchanged &&
+      patch.file_size = `Unchanged &&
+      patch.crc = `Unchanged
+  end
+
+  let diff (old_preset : t) (new_preset : t) : Patch.t =
+    if old_preset.id <> new_preset.id then
+      failwith "cannot diff two PresetRefs with different Ids"
+    else
+      let relative_path_change = diff_value old_preset.relative_path new_preset.relative_path in
+      let path_change = diff_value old_preset.path new_preset.path in
+      let pack_name_change = diff_value old_preset.pack_name new_preset.pack_name in
+      let pack_id_change = diff_value old_preset.pack_id new_preset.pack_id in
+      let file_size_change = diff_value old_preset.file_size new_preset.file_size in
+      let crc_change = diff_value old_preset.crc new_preset.crc in
+      {
+        relative_path = relative_path_change;
+        path = path_change;
+        pack_name = pack_name_change;
+        pack_id = pack_id_change;
+        file_size = file_size_change;
+        crc = crc_change;
+      }
+end
+
+
 module DeviceParam = struct
   (** Represents the value of a device parameter, which can be one of several types. *)
   type value =
@@ -46,7 +148,6 @@ module DeviceParam = struct
          (match int_of_string_opt s with
           | Some i -> Some (Int i)
           | None -> None))
-    ;;
 
   (** Extract range from MidiControllerRange (continuous parameters) *)
   let extract_continuous_range (xml : Xml.t) : (int * int) option =
@@ -123,68 +224,6 @@ module DeviceParam = struct
       let value_change = diff_value old_param.value new_param.value in
       let automation_change = diff_value old_param.automation new_param.automation in
       { value = value_change; automation = automation_change }
-end
-
-
-(** All the built-in devices *)
-module RegularDevice = struct
-  type t = {
-    id : int;
-    device_name : string;
-    preset_name : string;
-    pointee : int;
-    params : DeviceParam.t list;
-  } [@@deriving eq]
-
-  let create (xml : Xml.t) : t =
-    match xml with
-    | Xml.Element { name; _ } ->
-      let id = Alsdiff_base.Xml.get_int_attr "Id" xml in
-      let preset_name = Alsdiff_base.Upath.get_attr "/UserName" "Value" xml in
-      let pointee = Alsdiff_base.Upath.get_int_attr "/Pointee" "Id" xml in
-      let params = Alsdiff_base.Upath.find_all "/**/LomId/../Manual/.." xml |> List.map snd |> List.map DeviceParam.create in
-      { id; device_name=name; preset_name; pointee; params }
-    | _ -> failwith "Invalid XML element for creating Device"
-
-  module Patch = struct
-    type t = {
-      device_name : string simple_flat_change;
-      preset_name : string simple_flat_change;
-      pointee : int simple_flat_change;
-
-      (* since whatever a parameter is being used or not, its always be saved in the XML,
-         so there are no `Added or `Removed changes. *)
-      params : DeviceParam.Patch.t simple_structured_change list;
-    }
-
-    let is_empty patch =
-      patch.device_name = `Unchanged &&
-      patch.preset_name = `Unchanged &&
-      patch.pointee = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.params
-  end
-
-  let diff (old_device : t) (new_device : t) : Patch.t =
-    if old_device.id <> new_device.id then
-      failwith "cannot diff two RegularDevices with different Ids"
-    else
-      let device_name_change = diff_value old_device.device_name new_device.device_name in
-      let preset_name_change = diff_value old_device.preset_name new_device.preset_name in
-      let pointee_change = diff_value old_device.pointee new_device.pointee in
-      let params_changes =
-        diff_list_id (module DeviceParam) old_device.params new_device.params
-        |> List.map (function
-            | `Modified { old = old_param; new_ = new_param } ->
-              `Patched (DeviceParam.diff old_param new_param)
-            | `Unchanged -> `Unchanged
-            | _ -> failwith "Not possible")
-      in
-      {
-        device_name = device_name_change;
-        preset_name = preset_name_change;
-        pointee = pointee_change;
-        params = params_changes;
-      }
 end
 
 
@@ -386,15 +425,246 @@ end
 
 type device =
   | Group of group_device
-  | Regular of RegularDevice.t [@@deriving eq]
+  | Regular of regular_device [@@deriving eq]
+and regular_device = {
+  id : int;
+  device_name : string;
+  display_name : string;        (* either UserName or PresetName *)
+  pointee : int;
+  preset : PresetRef.t;
+  enabled : DeviceParam.t;
+  params : DeviceParam.t list;
+}
+and branch = {
+  id : int;
+  devices : device list;
+  mixer : MixerDevice.t;
+} [@@deriving eq]
 and group_device = {
   id : int;
-  name : string;
+  device_name : string;
+  display_name : string;
+  pointee : int;
+  preset : PresetRef.t;
   enabled : DeviceParam.t;
-  branches : (device list * MixerDevice.t) list;
+  branches : branch list;
   macros : Macro.t list;
   snapshots : Snapshot.t list;
 } [@@deriving eq]
+
+
+type device_patch =
+  | RegularPatch of regular_device_patch
+  | GroupPatch of group_device_patch
+and regular_device_patch = {
+  display_name : string simple_flat_change;
+  pointee : int simple_flat_change;
+
+  (* devices always have preset, its either user-defined one or the defualt one,
+     so only Unchanged/Patched cases *)
+  preset : PresetRef.Patch.t simple_structured_change;
+
+  (* since whatever a parameter is being used or not, its always be saved in the XML,
+     so there are no `Added or `Removed changes. *)
+  params : DeviceParam.Patch.t simple_structured_change list;
+}
+and branch_patch = {
+  id : int simple_flat_change;
+  devices : (device, device_patch) structured_change list;
+  mixer : MixerDevice.Patch.t simple_structured_change;
+}
+and group_device_patch = {
+  display_name : string simple_flat_change;
+  enabled : DeviceParam.Patch.t simple_structured_change;
+
+  (* devices always have preset, its either user-defined one or the defualt one,
+     so only Unchanged/Patched cases *)
+  preset : PresetRef.Patch.t simple_structured_change;
+  branches : (branch, branch_patch) structured_change list;
+  macros : Macro.t flat_change list;
+  snapshots : Snapshot.t flat_change list;
+}
+
+
+(* Forward declarations for diff functions to resolve circular dependencies *)
+let rec regular_device_diff (old_device : regular_device) (new_device : regular_device) =
+  if old_device.id <> new_device.id && old_device.device_name <> new_device.device_name  then
+    failwith "cannot diff two RegularDevices with different Ids & Device names"
+  else
+    let display_name_change = diff_value old_device.display_name new_device.display_name in
+    let pointee_change = diff_value old_device.pointee new_device.pointee in
+    let preset_change = diff_structured_value (module PresetRef) old_device.preset new_device.preset in
+    let params_changes =
+      diff_list_id (module DeviceParam) old_device.params new_device.params
+      |> List.map (function
+          | `Modified { old = old_param; new_ = new_param } ->
+            `Patched (DeviceParam.diff old_param new_param)
+          | `Unchanged -> `Unchanged
+          | _ -> failwith "Not possible")
+    in
+    {
+      display_name = display_name_change;
+      pointee = pointee_change;
+      preset = preset_change;
+      params = params_changes;
+    }
+and branch_diff (old_branch : branch) (new_branch : branch) =
+  if old_branch.id <> new_branch.id then
+    failwith "cannot diff two Branches with different Ids"
+  else
+    let id_change = `Unchanged in (* IDs must be the same *)
+    let module DeviceId = struct
+      type t = device
+      let equal = (=)
+      let has_same_id old_device new_device =
+        match old_device, new_device with
+        | Regular old_reg, Regular new_reg -> old_reg.id = new_reg.id
+        | Group old_group, Group new_group -> old_group.id = new_group.id
+        | (Regular _), (Group _) | (Group _), (Regular _) -> false
+      let id_hash = function
+        | Regular reg -> Hashtbl.hash reg.id
+        | Group grp -> Hashtbl.hash grp.id
+    end in
+    let devices_changes =
+      diff_list_id (module DeviceId) old_branch.devices new_branch.devices
+      |> List.map (function
+          | `Unchanged -> `Unchanged
+          | `Added device -> `Added device
+          | `Removed device -> `Removed device
+          | `Modified { old = old_device; new_ = new_device } ->
+              match old_device, new_device with
+              | Regular old_reg, Regular new_reg ->
+                  let patch = regular_device_diff old_reg new_reg in
+                  `Patched (RegularPatch patch)
+              | Group old_group, Group new_group ->
+                  let patch = group_device_diff old_group new_group in
+                  `Patched (GroupPatch patch)
+              | _ -> failwith "Cannot diff devices of different types")
+    in
+    let mixer_change =
+      diff_structured_value_eq (module MixerDevice) old_branch.mixer new_branch.mixer
+    in
+    {
+      id = id_change;
+      devices = devices_changes;
+      mixer = mixer_change;
+    }
+and group_device_diff (old_group : group_device) (new_group : group_device) =
+  if old_group.id <> new_group.id then
+    failwith "cannot diff two GroupDevices with different Ids"
+  else
+    let display_name_change = diff_value old_group.display_name new_group.display_name in
+    let enabled_change = diff_structured_value (module DeviceParam) old_group.enabled new_group.enabled in
+    let preset_change = diff_structured_value (module PresetRef) old_group.preset new_group.preset in
+    let branches_changes =
+      let module BranchId = struct
+        type t = branch
+        let equal = (=)
+        let has_same_id (old_branch : t) (new_branch : t) = old_branch.id = new_branch.id
+        let id_hash (branch : t) = Hashtbl.hash branch.id
+      end in
+      diff_list_id (module BranchId) old_group.branches new_group.branches
+      |> List.map (function
+          | `Unchanged -> `Unchanged
+          | `Added branch -> `Added branch
+          | `Removed branch -> `Removed branch
+          | `Modified { old = old_branch; new_ = new_branch } ->
+              `Patched (branch_diff old_branch new_branch))
+    in
+    let macros_changes = diff_list_id (module Macro) old_group.macros new_group.macros in
+    let snapshots_changes = diff_list_id (module Snapshot) old_group.snapshots new_group.snapshots in
+    {
+      display_name = display_name_change;
+      enabled = enabled_change;
+      preset = preset_change;
+      branches = branches_changes;
+      macros = macros_changes;
+      snapshots = snapshots_changes;
+    }
+
+
+module Branch = struct
+  type t = branch [@@deriving eq]
+
+  let has_same_id a b = a.id = b.id
+
+  let id_hash t = Hashtbl.hash t.id
+
+  let create (device_creator : Xml.t -> device) (xml : Xml.t) : t =
+    let id = Xml.get_int_attr "Id" xml in
+    let mixer = Upath.find "MixerDevice" xml |> snd |> MixerDevice.create in
+    let devices = Upath.find "/DeviceChain/*/Devices" xml
+      |> snd
+      |> Xml.get_childs
+      |> List.map device_creator
+    in
+    { id; devices; mixer }
+
+  module Patch = struct
+
+    type t = branch_patch
+
+    let is_empty patch =
+      patch.id = `Unchanged &&
+      patch.mixer = `Unchanged &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+  end
+
+  let diff (old_branch : t) (new_branch : t) : Patch.t =
+    branch_diff old_branch new_branch
+end
+
+
+(** Get display name based on [ShouldShowPresetName].
+    if [ShouldShowPresetName] set to be [true], return the preset name.
+    else return [UserName] if exists, if [UserName] is empty,
+    return device type name.
+    For a device with default preset, return the [DeviceId] as display name
+    instead device type name.
+
+    @param preset The preset reference of the device
+    @param xml The XML element of the device
+*)
+let get_display_name (preset : PresetRef.t) (xml : Xml.t) =
+  if Upath.get_bool_attr "ShouldShowPresetName" "Value" xml then
+    preset.PresetRef.name
+  else
+    let user_name = Upath.get_attr "UserName" "Value" xml in
+    if user_name <> "" then
+      user_name
+    else
+      Xml.get_name xml
+
+
+(** All the built-in devices *)
+module RegularDevice = struct
+  type t = regular_device [@@deriving eq]
+
+  let create (xml : Xml.t) : t =
+    match xml with
+    | Xml.Element { name; _ } ->
+      let id = Alsdiff_base.Xml.get_int_attr "Id" xml in
+      let pointee = Alsdiff_base.Upath.get_int_attr "/Pointee" "Id" xml in
+      let preset = Upath.find "/LastPresetRef/Value/*" xml |> snd |> PresetRef.create in
+      let display_name = get_display_name preset xml in
+      let enabled = Upath.find "/On" xml |> snd |> DeviceParam.create in
+      let params = Alsdiff_base.Upath.find_all "/**/LomId/../Manual/.." xml |> List.map snd |> List.map DeviceParam.create in
+      { id; device_name=name; display_name; pointee; preset; enabled; params }
+    | _ -> failwith "Invalid XML element for creating Device"
+
+  module Patch = struct
+    type t = regular_device_patch
+
+    let is_empty patch =
+      patch.display_name = `Unchanged &&
+      patch.pointee = `Unchanged &&
+      patch.preset = `Unchanged &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.params
+  end
+
+  let diff (old_device : t) (new_device : t) : Patch.t =
+    regular_device_diff old_device new_device
+end
 
 
 module GroupDevice = struct
@@ -404,22 +674,17 @@ module GroupDevice = struct
 
   let id_hash t = Hashtbl.hash t.id
 
-  let create_branch (device_creator : Xml.t -> device) (xml : Xml.t) : device list * MixerDevice.t =
-    let mixer_device = Upath.find "MixerDevice" xml |> snd |> MixerDevice.create in
-    let devices = Upath.find "/**/Devices" xml
-      |> snd
-      |> Xml.get_childs
-      |> List.map device_creator
-    in
-    (devices, mixer_device)
+  let create_branch (device_creator : Xml.t -> device) (xml : Xml.t) : Branch.t =
+    Branch.create device_creator xml
 
   let create (device_creator : Xml.t -> device) (xml : Xml.t) : t =
     match xml with
-    | Xml.Element { name = _; attrs = _; childs = _; _ } ->
+    | Xml.Element { name; _ } ->
       let id = Xml.get_int_attr "Id" xml in
-      let name = Upath.get_attr "/UserName" "Value" xml in
-      let enabled_xml = Upath.find "/On/Manual" xml |> snd in
-      let enabled = DeviceParam.create enabled_xml in
+      let pointee = Upath.get_int_attr "/Pointee" "Id" xml in
+      let preset = Upath.find "/LastPresetRef/Value/*" xml |> snd |> PresetRef.create in
+      let display_name = get_display_name preset xml in
+      let enabled = Upath.find "/On" xml |> snd |> DeviceParam.create in
 
       let branches = Upath.find "/Branches" xml
         |> snd
@@ -450,48 +715,23 @@ module GroupDevice = struct
         |> List.map Snapshot.create
       in
 
-      { id; name; enabled; branches; macros; snapshots }
+      { id; device_name=name; display_name; pointee; preset; enabled; branches; macros; snapshots }
     | _ -> invalid_arg "Cannot create a GroupDevice on Data"
 
   module Patch = struct
-    type t = {
-      name : string simple_flat_change;
-      enabled : DeviceParam.Patch.t simple_structured_change;
-      branches : (device list * MixerDevice.t) flat_change list;
-      macros : Macro.t flat_change list;
-      snapshots : Snapshot.t flat_change list;
-    }
+    type t = group_device_patch
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
+    let is_empty (patch : t) =
+      patch.display_name = `Unchanged &&
       patch.enabled = `Unchanged &&
+      patch.preset = `Unchanged &&
       List.for_all (function `Unchanged -> true | _ -> false) patch.branches &&
       List.for_all (function `Unchanged -> true | _ -> false) patch.macros &&
       List.for_all (function `Unchanged -> true | _ -> false) patch.snapshots
   end
 
   let diff (old_group : t) (new_group : t) : Patch.t =
-    if old_group.id <> new_group.id then
-      failwith "cannot diff two GroupDevices with different Ids"
-    else
-      let name_change = diff_value old_group.name new_group.name in
-      let enabled_change = diff_structured_value (module DeviceParam) old_group.enabled new_group.enabled in
-      (* Create equality module for branch type *)
-      let module BranchEq = struct
-        type t = device list * MixerDevice.t
-        let equal = (=)
-      end in
-      let branches_changes = diff_list (module BranchEq) old_group.branches new_group.branches in
-      let macros_changes = diff_list_id (module Macro) old_group.macros new_group.macros in
-      let snapshots_changes = diff_list_id (module Snapshot) old_group.snapshots new_group.snapshots in
-
-      {
-        name = name_change;
-        enabled = enabled_change;
-        branches = branches_changes;
-        macros = macros_changes;
-        snapshots = snapshots_changes;
-      }
+    group_device_diff old_group new_group
 
 end
 

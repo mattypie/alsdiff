@@ -65,7 +65,7 @@ let test_group_device_structure_from_xml () =
   in
 
   (* Verify basic group device properties *)
-  Alcotest.(check string) "group device name" "Industrial FM Kick" group.name;
+  Alcotest.(check string) "group device display name" "Industrial FM Kick" group.display_name;
   (match group.enabled.Device.DeviceParam.value with
    | Device.DeviceParam.Bool b -> Alcotest.(check bool) "group device enabled" true b
    | _ -> Alcotest.fail "enabled should be bool");
@@ -78,11 +78,10 @@ let test_group_device_structure_from_xml () =
 
   (* Verify branches contain devices and mixer device *)
   let first_branch = List.hd group.branches in
-  let (devices, _mixer_device) = first_branch in
-  Alcotest.(check int) "first branch device count" 2 (List.length devices);
+  Alcotest.(check int) "first branch device count" 2 (List.length first_branch.devices);
 
   (* Check that first device in branch is an Operator device *)
-  let first_device = List.hd devices in
+  let first_device = List.hd first_branch.devices in
   (match first_device with
    | Device.Regular reg ->
        Alcotest.(check string) "first device name" "Operator" reg.device_name

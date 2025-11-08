@@ -76,7 +76,7 @@ let test_midi_track_devices_order () =
 
   (* Check that we have multiple devices *)
   let actual_device_count = List.length midi_track.devices in
-  Alcotest.(check (int)) "device count" 19 actual_device_count;
+  Alcotest.(check (int)) "device count" 2 actual_device_count;
 
   (* Expected device names will be set after seeing actual output *)
 
@@ -84,37 +84,33 @@ let test_midi_track_devices_order () =
   let actual_device_names = List.map (fun device ->
     match device with
     | Alsdiff_live.Device.Regular reg -> reg.device_name
-    | Alsdiff_live.Device.Group group -> group.name
+    | Alsdiff_live.Device.Group group -> group.device_name
   ) midi_track.devices in
-
-  
-  (* Update expected device names based on actual output *)
   let expected_device_names = [
+    "InstrumentGroupDevice";
+    "MxDeviceAudioEffect"
+  ] in
+
+  let actual_display_names = List.map (fun device ->
+    match device with
+    | Alsdiff_live.Device.Regular reg -> reg.display_name
+    | Alsdiff_live.Device.Group group -> group.display_name
+  ) midi_track.devices in
+  let expected_display_names = [
     "Galaxy Voices Philipp & Fiona";
-    "MxDeviceAudioEffect";
-    "MidiVelocity";
-    "MultiSampler";
-    "FX";
-    "InstrumentVector";
-    "Chorus";
-    "Limiter";
-    "Delay";
-    "Reverb";
-    "Limiter";
-    "StereoGain";
-    "Compressor2";
-    "Compressor2";
-    "Eq8";
-    "MultibandDynamics";
-    "FilterEQ3";
-    "Hybrid";
-    "Limiter"
+    "Envelope Follower"
   ] in
 
   List.iteri (fun i expected_name ->
     let actual_name = List.nth actual_device_names i in
     Alcotest.(check string) ("device name " ^ string_of_int i) expected_name actual_name
-  ) expected_device_names
+  ) expected_device_names;
+
+  List.iteri (fun i expected_name ->
+    let actual_name = List.nth actual_display_names i in
+    Alcotest.(check string) ("display name " ^ string_of_int i) expected_name actual_name
+  ) expected_display_names
+
 
 
 let  test_midi_track_mixer_properties () =
