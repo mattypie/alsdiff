@@ -1,176 +1,177 @@
+<?xml version="1.0"?>
 <AudioClip Id="17" Time="80.0">
-    <LomId Value="0" />
-    <LomIdView Value="0" />
-    <CurrentStart Value="80.0" />
-    <CurrentEnd Value="101.0" />
-    <Loop>
-        <LoopStart Value="30.0" />
-        <LoopEnd Value="50.0" />
-        <StartRelative Value="0" />
-        <LoopOn Value="true" />
-        <OutMarker Value="49.351806526806527" />
-        <HiddenLoopStart Value="0" />
-        <HiddenLoopEnd Value="49.351806526806527" />
-    </Loop>
-    <Name Value="Metal Sheet" />
-    <Annotation Value="" />
-    <Color Value="6" />
-    <LaunchMode Value="0" />
-    <LaunchQuantisation Value="0" />
-    <TimeSignature>
-        <TimeSignatures>
-            <RemoteableTimeSignature Id="0">
-                <Numerator Value="3" />
-                <Denominator Value="8" />
-                <Time Value="0" />
-            </RemoteableTimeSignature>
-        </TimeSignatures>
-    </TimeSignature>
-    <Envelopes>
-        <Envelopes />
-    </Envelopes>
-    <ScrollerTimePreserver>
-        <LeftTime Value="-0.0000313338289784509337" />
-        <RightTime Value="20.499968666171025" />
-    </ScrollerTimePreserver>
-    <TimeSelection>
-        <AnchorTime Value="0" />
-        <OtherTime Value="0" />
-    </TimeSelection>
-    <Legato Value="false" />
-    <Ram Value="false" />
-    <GrooveSettings>
-        <GrooveId Value="-1" />
-    </GrooveSettings>
-    <Disabled Value="false" />
-    <VelocityAmount Value="0" />
-    <FollowAction>
-        <FollowTime Value="4" />
-        <IsLinked Value="true" />
-        <LoopIterations Value="1" />
-        <FollowActionA Value="4" />
-        <FollowActionB Value="0" />
-        <FollowChanceA Value="100" />
-        <FollowChanceB Value="0" />
-        <JumpIndexA Value="1" />
-        <JumpIndexB Value="1" />
-        <FollowActionEnabled Value="false" />
-    </FollowAction>
-    <Grid>
-        <FixedNumerator Value="1" />
-        <FixedDenominator Value="16" />
-        <GridIntervalPixel Value="30" />
-        <Ntoles Value="2" />
-        <SnapToGrid Value="true" />
-        <Fixed Value="false" />
-    </Grid>
-    <FreezeStart Value="0" />
-    <FreezeEnd Value="0" />
-    <IsWarped Value="true" />
-    <TakeId Value="1" />
-    <IsInKey Value="false" />
-    <ScaleInformation>
-        <Root Value="0" />
-        <Name Value="0" />
-    </ScaleInformation>
-    <SampleRef>
-        <FileRef>
-            <RelativePathType Value="3" />
-            <RelativePath Value="Samples/Processed/Crop/Metal Sheet_old.wav" />
-            <Path Value="/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet_old.wav" />
-            <Type Value="2" />
-            <LivePackName Value="" />
-            <LivePackId Value="" />
-            <OriginalFileSize Value="2572202" />
-            <OriginalCrc Value="12345" />
-        </FileRef>
-        <LastModDate Value="1742403846" />
-        <SourceContext />
-        <SampleUsageHint Value="0" />
-        <DefaultDuration Value="1286079" />
-        <DefaultSampleRate Value="48000" />
-        <SamplesToAutoWarp Value="0" />
-    </SampleRef>
-    <Onsets>
-        <UserOnsets>
-            <OnsetEvent Time="0" Energy="Invalid" IsVolatile="false" />
-            <OnsetEvent Time="0.2274166666666666" Energy="0.68758857250213623" IsVolatile="false" />
-            <OnsetEvent Time="2.1775208333333325" Energy="0.820124328136444092" IsVolatile="false" />
-            <OnsetEvent Time="7.2898333333333323" Energy="0.0245841238647699356" IsVolatile="false" />
-            <OnsetEvent Time="7.740708333333334" Energy="0.00982185918837785721" IsVolatile="false" />
-            <OnsetEvent Time="8.063187499999998" Energy="0.0106606138870120049" IsVolatile="false" />
-            <OnsetEvent Time="8.3061875000000001" Energy="0.00885385181754827499" IsVolatile="false" />
-            <OnsetEvent Time="8.4466458333333314" Energy="0.0211861096322536469" IsVolatile="false" />
-            <OnsetEvent Time="9.1162916666666653" Energy="0.00795276463031768799" IsVolatile="false" />
-            <OnsetEvent Time="9.4990416666666668" Energy="0.0323112346231937408" IsVolatile="false" />
-            <OnsetEvent Time="9.6784999999999997" Energy="0.00942746363580226898" IsVolatile="false" />
-            <OnsetEvent Time="11.824666666666666" Energy="0.0117189083248376846" IsVolatile="false" />
-            <OnsetEvent Time="12.9193125" Energy="0.999999940395355225" IsVolatile="false" />
-            <OnsetEvent Time="13.739458333333332" Energy="0.0323187112808227539" IsVolatile="false" />
-            <OnsetEvent Time="14.1871875" Energy="0.0207256283611059189" IsVolatile="false" />
-            <OnsetEvent Time="15.2920625" Energy="0.0347506068646907806" IsVolatile="false" />
-            <OnsetEvent Time="17.409979166666666" Energy="0.944366574287414551" IsVolatile="false" />
-            <OnsetEvent Time="18.291187499999999" Energy="0.0442673750221729279" IsVolatile="false" />
-            <OnsetEvent Time="18.563124999999999" Energy="0.0301436595618724823" IsVolatile="false" />
-            <OnsetEvent Time="18.844270833333333" Energy="0.027881549671292305" IsVolatile="false" />
-            <OnsetEvent Time="18.9325625" Energy="0.0184379070997238159" IsVolatile="false" />
-            <OnsetEvent Time="19.078916666666665" Energy="0.0238113328814506531" IsVolatile="false" />
-            <OnsetEvent Time="19.766937499999997" Energy="0.0106765264645218849" IsVolatile="false" />
-            <OnsetEvent Time="19.952791666666666" Energy="0.0111806252971291542" IsVolatile="false" />
-            <OnsetEvent Time="20.0791875" Energy="0.01051335409283638" IsVolatile="false" />
-            <OnsetEvent Time="20.203666666666667" Energy="0.0108575876802206039" IsVolatile="false" />
-            <OnsetEvent Time="20.5270625" Energy="0.016664654016494751" IsVolatile="false" />
-            <OnsetEvent Time="20.820354166666664" Energy="0.0128218354657292366" IsVolatile="false" />
-            <OnsetEvent Time="22.034624999999998" Energy="0.0181262977421283722" IsVolatile="false" />
-            <OnsetEvent Time="22.217104166666665" Energy="0.878860771656036377" IsVolatile="false" />
-            <OnsetEvent Time="23.2168125" Energy="0.0149961812421679497" IsVolatile="false" />
-            <OnsetEvent Time="23.595937499999998" Energy="0.0146576389670372009" IsVolatile="false" />
-            <OnsetEvent Time="25.212666666666664" Energy="0.0129922162741422653" IsVolatile="false" />
-            <OnsetEvent Time="25.701666666666668" Energy="0.00935063790529966354" IsVolatile="false" />
-        </UserOnsets>
-        <HasUserOnsets Value="true" />
-    </Onsets>
-    <WarpMode Value="0" />
-    <GranularityTones Value="30" />
-    <GranularityTexture Value="65" />
-    <FluctuationTexture Value="25" />
-    <TransientResolution Value="6" />
-    <TransientLoopMode Value="0" />
-    <TransientEnvelope Value="100" />
-    <ComplexProFormants Value="100" />
-    <ComplexProEnvelope Value="128" />
-    <Sync Value="true" />
-    <HiQ Value="true" />
-    <Fade Value="true" />
-    <Fades>
-        <FadeInLength Value="0" />
-        <FadeOutLength Value="8.4680920641858144" />
-        <ClipFadesAreInitialized Value="true" />
-        <CrossfadeInState Value="1" />
-        <FadeInCurveSkew Value="0" />
-        <FadeInCurveSlope Value="0" />
-        <FadeOutCurveSkew Value="0" />
-        <FadeOutCurveSlope Value="0" />
-        <IsDefaultFadeIn Value="false" />
-        <IsDefaultFadeOut Value="false" />
-    </Fades>
-    <PitchCoarse Value="0" />
-    <PitchFine Value="0" />
-    <SampleVolume Value="2.30436754" />
-    <WarpMarkers>
-        <WarpMarker Id="15" SecTime="0.0000167038185736601008" BeatTime="0" />
-        <WarpMarker Id="11" SecTime="2.1775208797732173" BeatTime="4.0846674159174157" />
-        <WarpMarker Id="13" SecTime="12.919312527253044" BeatTime="24.063815871628371" />
-        <WarpMarker Id="12" SecTime="17.409979123059237" BeatTime="28.0744518502331" />
-        <WarpMarker Id="14" SecTime="22.217104167662946" BeatTime="38.101041926823179" />
-        <WarpMarker Id="16" SecTime="22.233863925180625" BeatTime="38.132291926823179" />
-    </WarpMarkers>
-    <SavedWarpMarkersForStretched>
-        <WarpMarker Id="4" SecTime="0" BeatTime="0" />
-        <WarpMarker Id="5" SecTime="0.0172018348623853221" BeatTime="0.03125" />
-    </SavedWarpMarkersForStretched>
-    <MarkersGenerated Value="false" />
-    <IsSongTempoLeader Value="false" />
-    <AutoWarpPending Value="false" />
-    <WasMuted Value="false" />
+  <LomId Value="0"/>
+  <LomIdView Value="0"/>
+  <CurrentStart Value="80.0"/>
+  <CurrentEnd Value="101.0"/>
+  <Loop>
+    <LoopStart Value="30.0"/>
+    <LoopEnd Value="50.0"/>
+    <StartRelative Value="0"/>
+    <LoopOn Value="true"/>
+    <OutMarker Value="49.351806526806527"/>
+    <HiddenLoopStart Value="0"/>
+    <HiddenLoopEnd Value="49.351806526806527"/>
+  </Loop>
+  <Name Value="Metal Sheet"/>
+  <Annotation Value=""/>
+  <Color Value="6"/>
+  <LaunchMode Value="0"/>
+  <LaunchQuantisation Value="0"/>
+  <TimeSignature>
+    <TimeSignatures>
+      <RemoteableTimeSignature Id="0">
+        <Numerator Value="3"/>
+        <Denominator Value="8"/>
+        <Time Value="0"/>
+      </RemoteableTimeSignature>
+    </TimeSignatures>
+  </TimeSignature>
+  <Envelopes>
+    <Envelopes/>
+  </Envelopes>
+  <ScrollerTimePreserver>
+    <LeftTime Value="-0.0000313338289784509337"/>
+    <RightTime Value="20.499968666171025"/>
+  </ScrollerTimePreserver>
+  <TimeSelection>
+    <AnchorTime Value="0"/>
+    <OtherTime Value="0"/>
+  </TimeSelection>
+  <Legato Value="false"/>
+  <Ram Value="false"/>
+  <GrooveSettings>
+    <GrooveId Value="-1"/>
+  </GrooveSettings>
+  <Disabled Value="false"/>
+  <VelocityAmount Value="0"/>
+  <FollowAction>
+    <FollowTime Value="4"/>
+    <IsLinked Value="true"/>
+    <LoopIterations Value="1"/>
+    <FollowActionA Value="4"/>
+    <FollowActionB Value="0"/>
+    <FollowChanceA Value="100"/>
+    <FollowChanceB Value="0"/>
+    <JumpIndexA Value="1"/>
+    <JumpIndexB Value="1"/>
+    <FollowActionEnabled Value="false"/>
+  </FollowAction>
+  <Grid>
+    <FixedNumerator Value="1"/>
+    <FixedDenominator Value="16"/>
+    <GridIntervalPixel Value="30"/>
+    <Ntoles Value="2"/>
+    <SnapToGrid Value="true"/>
+    <Fixed Value="false"/>
+  </Grid>
+  <FreezeStart Value="0"/>
+  <FreezeEnd Value="0"/>
+  <IsWarped Value="true"/>
+  <TakeId Value="1"/>
+  <IsInKey Value="false"/>
+  <ScaleInformation>
+    <Root Value="0"/>
+    <Name Value="0"/>
+  </ScaleInformation>
+  <SampleRef>
+    <FileRef>
+      <RelativePathType Value="3"/>
+      <RelativePath Value="Samples/Processed/Crop/Metal Sheet_old.wav"/>
+      <Path Value="/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet_old.wav"/>
+      <Type Value="2"/>
+      <LivePackName Value=""/>
+      <LivePackId Value=""/>
+      <OriginalFileSize Value="2572202"/>
+      <OriginalCrc Value="12345"/>
+    </FileRef>
+    <LastModDate Value="1742403846"/>
+    <SourceContext/>
+    <SampleUsageHint Value="0"/>
+    <DefaultDuration Value="1286079"/>
+    <DefaultSampleRate Value="48000"/>
+    <SamplesToAutoWarp Value="0"/>
+  </SampleRef>
+  <Onsets>
+    <UserOnsets>
+      <OnsetEvent Time="0" Energy="Invalid" IsVolatile="false"/>
+      <OnsetEvent Time="0.2274166666666666" Energy="0.68758857250213623" IsVolatile="false"/>
+      <OnsetEvent Time="2.1775208333333325" Energy="0.820124328136444092" IsVolatile="false"/>
+      <OnsetEvent Time="7.2898333333333323" Energy="0.0245841238647699356" IsVolatile="false"/>
+      <OnsetEvent Time="7.740708333333334" Energy="0.00982185918837785721" IsVolatile="false"/>
+      <OnsetEvent Time="8.063187499999998" Energy="0.0106606138870120049" IsVolatile="false"/>
+      <OnsetEvent Time="8.3061875000000001" Energy="0.00885385181754827499" IsVolatile="false"/>
+      <OnsetEvent Time="8.4466458333333314" Energy="0.0211861096322536469" IsVolatile="false"/>
+      <OnsetEvent Time="9.1162916666666653" Energy="0.00795276463031768799" IsVolatile="false"/>
+      <OnsetEvent Time="9.4990416666666668" Energy="0.0323112346231937408" IsVolatile="false"/>
+      <OnsetEvent Time="9.6784999999999997" Energy="0.00942746363580226898" IsVolatile="false"/>
+      <OnsetEvent Time="11.824666666666666" Energy="0.0117189083248376846" IsVolatile="false"/>
+      <OnsetEvent Time="12.9193125" Energy="0.999999940395355225" IsVolatile="false"/>
+      <OnsetEvent Time="13.739458333333332" Energy="0.0323187112808227539" IsVolatile="false"/>
+      <OnsetEvent Time="14.1871875" Energy="0.0207256283611059189" IsVolatile="false"/>
+      <OnsetEvent Time="15.2920625" Energy="0.0347506068646907806" IsVolatile="false"/>
+      <OnsetEvent Time="17.409979166666666" Energy="0.944366574287414551" IsVolatile="false"/>
+      <OnsetEvent Time="18.291187499999999" Energy="0.0442673750221729279" IsVolatile="false"/>
+      <OnsetEvent Time="18.563124999999999" Energy="0.0301436595618724823" IsVolatile="false"/>
+      <OnsetEvent Time="18.844270833333333" Energy="0.027881549671292305" IsVolatile="false"/>
+      <OnsetEvent Time="18.9325625" Energy="0.0184379070997238159" IsVolatile="false"/>
+      <OnsetEvent Time="19.078916666666665" Energy="0.0238113328814506531" IsVolatile="false"/>
+      <OnsetEvent Time="19.766937499999997" Energy="0.0106765264645218849" IsVolatile="false"/>
+      <OnsetEvent Time="19.952791666666666" Energy="0.0111806252971291542" IsVolatile="false"/>
+      <OnsetEvent Time="20.0791875" Energy="0.01051335409283638" IsVolatile="false"/>
+      <OnsetEvent Time="20.203666666666667" Energy="0.0108575876802206039" IsVolatile="false"/>
+      <OnsetEvent Time="20.5270625" Energy="0.016664654016494751" IsVolatile="false"/>
+      <OnsetEvent Time="20.820354166666664" Energy="0.0128218354657292366" IsVolatile="false"/>
+      <OnsetEvent Time="22.034624999999998" Energy="0.0181262977421283722" IsVolatile="false"/>
+      <OnsetEvent Time="22.217104166666665" Energy="0.878860771656036377" IsVolatile="false"/>
+      <OnsetEvent Time="23.2168125" Energy="0.0149961812421679497" IsVolatile="false"/>
+      <OnsetEvent Time="23.595937499999998" Energy="0.0146576389670372009" IsVolatile="false"/>
+      <OnsetEvent Time="25.212666666666664" Energy="0.0129922162741422653" IsVolatile="false"/>
+      <OnsetEvent Time="25.701666666666668" Energy="0.00935063790529966354" IsVolatile="false"/>
+    </UserOnsets>
+    <HasUserOnsets Value="true"/>
+  </Onsets>
+  <WarpMode Value="0"/>
+  <GranularityTones Value="30"/>
+  <GranularityTexture Value="65"/>
+  <FluctuationTexture Value="25"/>
+  <TransientResolution Value="6"/>
+  <TransientLoopMode Value="0"/>
+  <TransientEnvelope Value="100"/>
+  <ComplexProFormants Value="100"/>
+  <ComplexProEnvelope Value="128"/>
+  <Sync Value="true"/>
+  <HiQ Value="true"/>
+  <Fade Value="true"/>
+  <Fades>
+    <FadeInLength Value="0"/>
+    <FadeOutLength Value="8.4680920641858144"/>
+    <ClipFadesAreInitialized Value="true"/>
+    <CrossfadeInState Value="1"/>
+    <FadeInCurveSkew Value="0"/>
+    <FadeInCurveSlope Value="0"/>
+    <FadeOutCurveSkew Value="0"/>
+    <FadeOutCurveSlope Value="0"/>
+    <IsDefaultFadeIn Value="false"/>
+    <IsDefaultFadeOut Value="false"/>
+  </Fades>
+  <PitchCoarse Value="0"/>
+  <PitchFine Value="0"/>
+  <SampleVolume Value="2.30436754"/>
+  <WarpMarkers>
+    <WarpMarker Id="15" SecTime="0.0000167038185736601008" BeatTime="0"/>
+    <WarpMarker Id="11" SecTime="2.1775208797732173" BeatTime="4.0846674159174157"/>
+    <WarpMarker Id="13" SecTime="12.919312527253044" BeatTime="24.063815871628371"/>
+    <WarpMarker Id="12" SecTime="17.409979123059237" BeatTime="28.0744518502331"/>
+    <WarpMarker Id="14" SecTime="22.217104167662946" BeatTime="38.101041926823179"/>
+    <WarpMarker Id="16" SecTime="22.233863925180625" BeatTime="38.132291926823179"/>
+  </WarpMarkers>
+  <SavedWarpMarkersForStretched>
+    <WarpMarker Id="4" SecTime="0" BeatTime="0"/>
+    <WarpMarker Id="5" SecTime="0.0172018348623853221" BeatTime="0.03125"/>
+  </SavedWarpMarkersForStretched>
+  <MarkersGenerated Value="false"/>
+  <IsSongTempoLeader Value="false"/>
+  <AutoWarpPending Value="false"/>
+  <WasMuted Value="false"/>
 </AudioClip>

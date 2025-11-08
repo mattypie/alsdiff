@@ -1,154 +1,155 @@
+<?xml version="1.0"?>
 <MidiClip Id="2" Time="80">
-  <LomId Value="0" />
-  <LomIdView Value="0" />
-  <CurrentStart Value="80" />
-  <CurrentEnd Value="100" />
+  <LomId Value="0"/>
+  <LomIdView Value="0"/>
+  <CurrentStart Value="80"/>
+  <CurrentEnd Value="100"/>
   <Loop>
-    <LoopStart Value="92" />
-    <LoopEnd Value="112" />
-    <StartRelative Value="0" />
-    <LoopOn Value="false" />
-    <OutMarker Value="112" />
-    <HiddenLoopStart Value="92" />
-    <HiddenLoopEnd Value="112" />
+    <LoopStart Value="92"/>
+    <LoopEnd Value="112"/>
+    <StartRelative Value="0"/>
+    <LoopOn Value="false"/>
+    <OutMarker Value="112"/>
+    <HiddenLoopStart Value="92"/>
+    <HiddenLoopEnd Value="112"/>
   </Loop>
-  <Name Value="" />
-  <Annotation Value="" />
-  <Color Value="26" />
-  <LaunchMode Value="0" />
-  <LaunchQuantisation Value="0" />
+  <Name Value=""/>
+  <Annotation Value=""/>
+  <Color Value="26"/>
+  <LaunchMode Value="0"/>
+  <LaunchQuantisation Value="0"/>
   <TimeSignature>
     <TimeSignatures>
       <RemoteableTimeSignature Id="0">
-	<Numerator Value="4" />
-	<Denominator Value="4" />
-	<Time Value="0" />
+        <Numerator Value="4"/>
+        <Denominator Value="4"/>
+        <Time Value="0"/>
       </RemoteableTimeSignature>
     </TimeSignatures>
   </TimeSignature>
   <Envelopes>
-    <Envelopes />
+    <Envelopes/>
   </Envelopes>
   <ScrollerTimePreserver>
-    <LeftTime Value="92" />
-    <RightTime Value="112" />
+    <LeftTime Value="92"/>
+    <RightTime Value="112"/>
   </ScrollerTimePreserver>
   <TimeSelection>
-    <AnchorTime Value="97.75" />
-    <OtherTime Value="97.75" />
+    <AnchorTime Value="97.75"/>
+    <OtherTime Value="97.75"/>
   </TimeSelection>
-  <Legato Value="false" />
-  <Ram Value="false" />
+  <Legato Value="false"/>
+  <Ram Value="false"/>
   <GrooveSettings>
-    <GrooveId Value="-1" />
+    <GrooveId Value="-1"/>
   </GrooveSettings>
-  <Disabled Value="true" />
-  <VelocityAmount Value="0" />
+  <Disabled Value="true"/>
+  <VelocityAmount Value="0"/>
   <FollowAction>
-    <FollowTime Value="4" />
-    <IsLinked Value="true" />
-    <LoopIterations Value="1" />
-    <FollowActionA Value="4" />
-    <FollowActionB Value="0" />
-    <FollowChanceA Value="100" />
-    <FollowChanceB Value="0" />
-    <JumpIndexA Value="1" />
-    <JumpIndexB Value="1" />
-    <FollowActionEnabled Value="false" />
+    <FollowTime Value="4"/>
+    <IsLinked Value="true"/>
+    <LoopIterations Value="1"/>
+    <FollowActionA Value="4"/>
+    <FollowActionB Value="0"/>
+    <FollowChanceA Value="100"/>
+    <FollowChanceB Value="0"/>
+    <JumpIndexA Value="1"/>
+    <JumpIndexB Value="1"/>
+    <FollowActionEnabled Value="false"/>
   </FollowAction>
   <Grid>
-    <FixedNumerator Value="1" />
-    <FixedDenominator Value="16" />
-    <GridIntervalPixel Value="20" />
-    <Ntoles Value="2" />
-    <SnapToGrid Value="true" />
-    <Fixed Value="false" />
+    <FixedNumerator Value="1"/>
+    <FixedDenominator Value="16"/>
+    <GridIntervalPixel Value="20"/>
+    <Ntoles Value="2"/>
+    <SnapToGrid Value="true"/>
+    <Fixed Value="false"/>
   </Grid>
-  <FreezeStart Value="0" />
-  <FreezeEnd Value="0" />
-  <IsWarped Value="true" />
-  <TakeId Value="1" />
-  <IsInKey Value="false" />
+  <FreezeStart Value="0"/>
+  <FreezeEnd Value="0"/>
+  <IsWarped Value="true"/>
+  <TakeId Value="1"/>
+  <IsInKey Value="false"/>
   <ScaleInformation>
-    <Root Value="0" />
-    <Name Value="0" />
+    <Root Value="0"/>
+    <Name Value="0"/>
   </ScaleInformation>
   <Notes>
     <KeyTracks>
       <KeyTrack Id="0">
-	<Notes>
-	  <MidiNoteEvent Time="3" Duration="0.457430850399600408" Velocity="100" OffVelocity="64" NoteId="1" />
-	  <MidiNoteEvent Time="33" Duration="3.3811295475357976" Velocity="100" OffVelocity="64" NoteId="5" />
-	  <MidiNoteEvent Time="40" Duration="2.7381056443556444" Velocity="100" OffVelocity="64" NoteId="6" />
-	  <MidiNoteEvent Time="99" Duration="3.061115186896437" Velocity="100" OffVelocity="64" NoteId="15" />
-	  <MidiNoteEvent Time="108" Duration="1.2325970904095904" Velocity="100" OffVelocity="64" NoteId="19" />
-	</Notes>
-	<MidiKey Value="60" />
+        <Notes>
+          <MidiNoteEvent Time="3" Duration="0.457430850399600408" Velocity="100" OffVelocity="64" NoteId="1"/>
+          <MidiNoteEvent Time="33" Duration="3.3811295475357976" Velocity="100" OffVelocity="64" NoteId="5"/>
+          <MidiNoteEvent Time="40" Duration="2.7381056443556444" Velocity="100" OffVelocity="64" NoteId="6"/>
+          <MidiNoteEvent Time="99" Duration="3.061115186896437" Velocity="100" OffVelocity="64" NoteId="15"/>
+          <MidiNoteEvent Time="108" Duration="1.2325970904095904" Velocity="100" OffVelocity="64" NoteId="19"/>
+        </Notes>
+        <MidiKey Value="60"/>
       </KeyTrack>
       <KeyTrack Id="2">
-	<Notes>
-	  <MidiNoteEvent Time="5.25" Duration="0.368338952713952728" Velocity="100" OffVelocity="64" NoteId="3" />
-	  <MidiNoteEvent Time="8" Duration="0.300528638028638051" Velocity="100" OffVelocity="64" NoteId="4" />
-	  <MidiNoteEvent Time="48" Duration="9.8322029532967026" Velocity="100" OffVelocity="64" NoteId="7" />
-	  <MidiNoteEvent Time="97.75" Duration="0.961046245421245393" Velocity="100" OffVelocity="64" NoteId="14" />
-	</Notes>
-	<MidiKey Value="62" />
+        <Notes>
+          <MidiNoteEvent Time="5.25" Duration="0.368338952713952728" Velocity="100" OffVelocity="64" NoteId="3"/>
+          <MidiNoteEvent Time="8" Duration="0.300528638028638051" Velocity="100" OffVelocity="64" NoteId="4"/>
+          <MidiNoteEvent Time="48" Duration="9.8322029532967026" Velocity="100" OffVelocity="64" NoteId="7"/>
+          <MidiNoteEvent Time="97.75" Duration="0.961046245421245393" Velocity="100" OffVelocity="64" NoteId="14"/>
+        </Notes>
+        <MidiKey Value="62"/>
       </KeyTrack>
       <KeyTrack Id="3">
-	<Notes>
-	  <MidiNoteEvent Time="62" Duration="7.53233042998668" Velocity="100" OffVelocity="64" NoteId="8" />
-	  <MidiNoteEvent Time="95.75" Duration="1.215819336913087" Velocity="100" OffVelocity="64" NoteId="13" />
-	  <MidiNoteEvent Time="102" Duration="1.9904629224941726" Velocity="100" OffVelocity="64" NoteId="16" />
-	  <MidiNoteEvent Time="106.75" Duration="1.2872244942557443" Velocity="100" OffVelocity="64" NoteId="18" />
-	</Notes>
-	<MidiKey Value="64" />
+        <Notes>
+          <MidiNoteEvent Time="62" Duration="7.53233042998668" Velocity="100" OffVelocity="64" NoteId="8"/>
+          <MidiNoteEvent Time="95.75" Duration="1.215819336913087" Velocity="100" OffVelocity="64" NoteId="13"/>
+          <MidiNoteEvent Time="102" Duration="1.9904629224941726" Velocity="100" OffVelocity="64" NoteId="16"/>
+          <MidiNoteEvent Time="106.75" Duration="1.2872244942557443" Velocity="100" OffVelocity="64" NoteId="18"/>
+        </Notes>
+        <MidiKey Value="64"/>
       </KeyTrack>
       <KeyTrack Id="4">
-	<Notes>
-	  <MidiNoteEvent Time="72" Duration="10.778729863886113" Velocity="100" OffVelocity="64" NoteId="9" />
-	  <MidiNoteEvent Time="94" Duration="1.1903734286546785" Velocity="100" OffVelocity="64" NoteId="12" />
-	  <MidiNoteEvent Time="104" Duration="2.8043053300865801" Velocity="100" OffVelocity="64" NoteId="17" />
-	</Notes>
-	<MidiKey Value="65" />
+        <Notes>
+          <MidiNoteEvent Time="72" Duration="10.778729863886113" Velocity="100" OffVelocity="64" NoteId="9"/>
+          <MidiNoteEvent Time="94" Duration="1.1903734286546785" Velocity="100" OffVelocity="64" NoteId="12"/>
+          <MidiNoteEvent Time="104" Duration="2.8043053300865801" Velocity="100" OffVelocity="64" NoteId="17"/>
+        </Notes>
+        <MidiKey Value="65"/>
       </KeyTrack>
       <KeyTrack Id="1">
-	<Notes>
-	  <MidiNoteEvent Time="4" Duration="0.391511093073593053" Velocity="100" OffVelocity="64" NoteId="2" />
-	  <MidiNoteEvent Time="85.5" Duration="2.8654332646520149" Velocity="100" OffVelocity="64" NoteId="10" />
-	  <MidiNoteEvent Time="92" Duration="1.3642740072427573" Velocity="100" OffVelocity="64" NoteId="11" />
-	</Notes>
-	<MidiKey Value="67" />
+        <Notes>
+          <MidiNoteEvent Time="4" Duration="0.391511093073593053" Velocity="100" OffVelocity="64" NoteId="2"/>
+          <MidiNoteEvent Time="85.5" Duration="2.8654332646520149" Velocity="100" OffVelocity="64" NoteId="10"/>
+          <MidiNoteEvent Time="92" Duration="1.3642740072427573" Velocity="100" OffVelocity="64" NoteId="11"/>
+        </Notes>
+        <MidiKey Value="67"/>
       </KeyTrack>
     </KeyTracks>
     <PerNoteEventStore>
-      <EventLists />
+      <EventLists/>
     </PerNoteEventStore>
-    <NoteProbabilityGroups />
+    <NoteProbabilityGroups/>
     <ProbabilityGroupIdGenerator>
-      <NextId Value="1" />
+      <NextId Value="1"/>
     </ProbabilityGroupIdGenerator>
     <NoteIdGenerator>
-      <NextId Value="20" />
+      <NextId Value="20"/>
     </NoteIdGenerator>
   </Notes>
-  <BankSelectCoarse Value="-1" />
-  <BankSelectFine Value="-1" />
-  <ProgramChange Value="-1" />
-  <NoteEditorFoldInZoom Value="-1" />
-  <NoteEditorFoldInScroll Value="0" />
-  <NoteEditorFoldOutZoom Value="3072" />
-  <NoteEditorFoldOutScroll Value="-1396" />
-  <NoteEditorFoldScaleZoom Value="-1" />
-  <NoteEditorFoldScaleScroll Value="0" />
-  <NoteSpellingPreference Value="0" />
-  <AccidentalSpellingPreference Value="3" />
-  <PreferFlatRootNote Value="false" />
+  <BankSelectCoarse Value="-1"/>
+  <BankSelectFine Value="-1"/>
+  <ProgramChange Value="-1"/>
+  <NoteEditorFoldInZoom Value="-1"/>
+  <NoteEditorFoldInScroll Value="0"/>
+  <NoteEditorFoldOutZoom Value="3072"/>
+  <NoteEditorFoldOutScroll Value="-1396"/>
+  <NoteEditorFoldScaleZoom Value="-1"/>
+  <NoteEditorFoldScaleScroll Value="0"/>
+  <NoteSpellingPreference Value="0"/>
+  <AccidentalSpellingPreference Value="3"/>
+  <PreferFlatRootNote Value="false"/>
   <ExpressionGrid>
-    <FixedNumerator Value="1" />
-    <FixedDenominator Value="16" />
-    <GridIntervalPixel Value="20" />
-    <Ntoles Value="2" />
-    <SnapToGrid Value="false" />
-    <Fixed Value="false" />
+    <FixedNumerator Value="1"/>
+    <FixedDenominator Value="16"/>
+    <GridIntervalPixel Value="20"/>
+    <Ntoles Value="2"/>
+    <SnapToGrid Value="false"/>
+    <Fixed Value="false"/>
   </ExpressionGrid>
 </MidiClip>

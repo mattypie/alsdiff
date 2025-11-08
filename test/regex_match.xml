@@ -1,226 +1,227 @@
+<?xml version="1.0"?>
 <Root>
   <MacroControls.0>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24233">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24234">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.0>
   <MacroControls.1>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24235">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24236">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.1>
   <MacroControls.2>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24237">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24238">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.2>
   <MacroControls.3>
-    <LomId Value="0" />
-    <Manual Value="82.0208282" />
+    <LomId Value="0"/>
+    <Manual Value="82.0208282"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24239">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24240">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.3>
   <MacroControls.4>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24241">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24242">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.4>
   <MacroControls.5>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24243">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24244">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.5>
   <MacroControls.6>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24245">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24246">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.6>
   <MacroControls.7>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24247">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24248">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.7>
   <MacroControls.8>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24249">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24250">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.8>
   <MacroControls.9>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24251">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24252">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.9>
   <MacroControls.10>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24253">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24254">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.10>
   <MacroControls.11>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24255">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24256">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.11>
   <MacroControls.12>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24257">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24258">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.12>
   <MacroControls.13>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24259">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24260">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.13>
   <MacroControls.14>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24261">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24262">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.14>
   <MacroControls.15>
-    <LomId Value="0" />
-    <Manual Value="0" />
+    <LomId Value="0"/>
+    <Manual Value="0"/>
     <MidiControllerRange>
-      <Min Value="0" />
-      <Max Value="127" />
+      <Min Value="0"/>
+      <Max Value="127"/>
     </MidiControllerRange>
     <AutomationTarget Id="24263">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </AutomationTarget>
     <ModulationTarget Id="24264">
-      <LockEnvelope Value="0" />
+      <LockEnvelope Value="0"/>
     </ModulationTarget>
   </MacroControls.15>
 </Root>

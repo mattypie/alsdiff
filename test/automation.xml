@@ -1,250 +1,251 @@
+<?xml version="1.0"?>
 <AutomationEnvelopes>
-    <Envelopes>
-        <AutomationEnvelope Id="0">
-            <EnvelopeTarget>
-                <PointeeId Value="27743" />
-            </EnvelopeTarget>
-            <Automation>
-                <Events>
-                    <FloatEvent Id="123" Time="-63072000" Value="0.1412537396" />
-                    <FloatEvent Id="188" Time="0" Value="0.1412537396" />
-                    <FloatEvent Id="189" Time="8" Value="0.3548133373" />
-                    <FloatEvent Id="190" Time="52" Value="0.3548133373" />
-                    <FloatEvent Id="196" Time="132" Value="0.3548133373" />
-                    <FloatEvent Id="197" Time="136" Value="0.2238721102" />
-                </Events>
-                <AutomationTransformViewState>
-                    <IsTransformPending Value="false" />
-                    <TimeAndValueTransforms />
-                </AutomationTransformViewState>
-            </Automation>
-        </AutomationEnvelope>
-        <AutomationEnvelope Id="3">
-            <EnvelopeTarget>
-                <PointeeId Value="27888" />
-            </EnvelopeTarget>
-            <Automation>
-                <Events>
-                    <FloatEvent Id="41" Time="-63072000" Value="77" />
-                    <FloatEvent Id="101" Time="0.652797723110223105" Value="77" />
-                    <FloatEvent Id="647" Time="0.652797723110223105" Value="75" CurveControl1X="0.873421796761574498" CurveControl1Y="0.249549293637680858" CurveControl2X="0.791465481368395674" CurveControl2Y="0.76167530124402627" />
-                    <FloatEvent Id="648" Time="1.5853659361471861" Value="110" />
-                    <FloatEvent Id="649" Time="2.797704378954379" Value="127" />
-                    <FloatEvent Id="650" Time="3.5437588453213453" Value="127" />
-                    <FloatEvent Id="651" Time="3.5437588453213453" Value="106" />
-                    <FloatEvent Id="652" Time="3.6370158487345989" Value="106" />
-                    <FloatEvent Id="653" Time="4.3830703151015653" Value="112" />
-                    <FloatEvent Id="654" Time="4.4763270583583088" Value="112" CurveControl1X="0" CurveControl1Y="0.882142833698662754" CurveControl2X="0.0154785143998120173" CurveControl2Y="0.453044534608556093" />
-                    <FloatEvent Id="655" Time="4.9426112949550447" Value="94" />
-                    <FloatEvent Id="656" Time="5.0358680382117882" Value="94" CurveControl1X="0.470958040629843866" CurveControl1Y="0.303506272413123501" CurveControl2X="0.661710194554666509" CurveControl2Y="0.273303497403797613" />
-                    <FloatEvent Id="657" Time="7.7403156739094241" Value="121" CurveControl1X="0.366060815388391747" CurveControl1Y="0" CurveControl2X="0.755715782604660546" CurveControl2Y="0.5114324738399878" />
-                    <FloatEvent Id="658" Time="8.2998566537629035" Value="127" />
-                    <FloatEvent Id="659" Time="8.6728838869463871" Value="127" CurveControl1X="0.677793698927539712" CurveControl1Y="0.419586560325123981" CurveControl2X="0.82748127691341633" CurveControl2Y="0.42493875642838258" />
-                    <FloatEvent Id="504" Time="9.6987088432400927" Value="94" />
-                    <FloatEvent Id="506" Time="9.6987088432400927" Value="77" />
-                    <FloatEvent Id="660" Time="52" Value="77" />
-                    <FloatEvent Id="4505" Time="73.960363594738595" Value="77" />
-                    <FloatEvent Id="5078" Time="73.960363594738595" Value="81" CurveControl1X="0.503167011641957096" CurveControl1Y="0.646930425164566003" CurveControl2X="0.187947811034781864" CurveControl2Y="0.303956404546501968" />
-                    <FloatEvent Id="5079" Time="74.101150932400927" Value="83.3333282" />
-                    <FloatEvent Id="5080" Time="74.101150932400927" Value="82" CurveControl1X="0.54679837580156998" CurveControl1Y="0.32164467695717508" CurveControl2X="0.447356101976214449" CurveControl2Y="0.674914993675428954" />
-                    <FloatEvent Id="5081" Time="74.570442578255083" Value="99" CurveControl1X="0.271492524136178304" CurveControl1Y="0" CurveControl2X="0.862896410969219652" CurveControl2Y="0.760069004213470345" />
-                    <FloatEvent Id="5082" Time="74.898946886446893" Value="103" CurveControl1X="0.805513180307694587" CurveControl1Y="0" CurveControl2X="0.334239356985945257" CurveControl2Y="0" />
-                    <FloatEvent Id="5083" Time="75.133592709373957" Value="106" CurveControl1X="0.299176941398125951" CurveControl1Y="0" CurveControl2X="0.556787780001150923" CurveControl2Y="1" />
-                    <FloatEvent Id="5084" Time="75.978317515817523" Value="115" />
-                    <FloatEvent Id="5085" Time="76.119105113636365" Value="118" CurveControl1X="0.160228915752149953" CurveControl1Y="0" CurveControl2X="0.91209364291788686" CurveControl2Y="0.73628133485101388" />
-                    <FloatEvent Id="5086" Time="76.963830180236428" Value="124" CurveControl1X="0.138395777747555765" CurveControl1Y="0" CurveControl2X="0.966651870155775139" CurveControl2Y="0.744330758035782858" />
-                    <FloatEvent Id="5087" Time="78.043200809607058" Value="127" />
-                    <FloatEvent Id="5088" Time="78.371705117798868" Value="127" CurveControl1X="0.33838677290818242" CurveControl1Y="1" CurveControl2X="0.0142935402230420228" CurveControl2Y="1" />
-                    <FloatEvent Id="4763" Time="78.559421568015324" Value="126" />
-                    <FloatEvent Id="4765" Time="78.559421568015324" Value="123.008156" CurveControl1X="0.879302731957372741" CurveControl1Y="0.259937192367949099" CurveControl2X="0.388863445558722098" CurveControl2Y="0.672129479557728171" />
-                    <FloatEvent Id="1323" Time="78.997754329004323" Value="98" />
-                    <FloatEvent Id="3502" Time="80.761972402597408" Value="77" CurveControl1X="0.152930481857874917" CurveControl1Y="0.394422932537906779" CurveControl2X="0.528157550370696338" CurveControl2Y="0.708894845977678267" />
-                    <FloatEvent Id="3506" Time="81.562888153513157" Value="92.84198" />
-                    <FloatEvent Id="4053" Time="81.562888153513157" Value="93" CurveControl1X="0.183480148655866787" CurveControl1Y="0" CurveControl2X="0.8882695711198203" CurveControl2Y="0.795160673923153816" />
-                    <FloatEvent Id="4054" Time="82.079108911921409" Value="99" />
-                    <FloatEvent Id="4055" Time="82.689188155594408" Value="101" />
-                    <FloatEvent Id="4056" Time="82.689188155594408" Value="105" CurveControl1X="0.42364094622867049" CurveControl1Y="0" CurveControl2X="0.236091094321315725" CurveControl2Y="1" />
-                    <FloatEvent Id="4057" Time="83.346196511821518" Value="106" CurveControl1X="0.298018510294184746" CurveControl1Y="0.670542336535772887" CurveControl2X="0.643028239787005185" CurveControl2Y="1" />
-                    <FloatEvent Id="4058" Time="84.6132838515651" Value="110" />
-                    <FloatEvent Id="4059" Time="84.660212964119211" Value="111" />
-                    <FloatEvent Id="4060" Time="85.411079805611053" Value="111" />
-                    <FloatEvent Id="4061" Time="85.458008918165163" Value="110" />
-                    <FloatEvent Id="4062" Time="85.504938030719288" Value="110" />
-                    <FloatEvent Id="4051" Time="85.551867143273398" Value="111" />
-                    <FloatEvent Id="4050" Time="85.551867143273398" Value="96.637291" CurveControl1X="0.365075097623605904" CurveControl1Y="0.628115358101453802" CurveControl2X="0.705894600479549217" CurveControl2Y="1" />
-                    <FloatEvent Id="3492" Time="85.645725628538131" Value="95" />
-                    <FloatEvent Id="3491" Time="85.645725628538131" Value="92.9155273" CurveControl1X="0.384635370540178878" CurveControl1Y="0.314870049309267375" CurveControl2X="0.729539800382131842" CurveControl2Y="0.648017352867758301" />
-                    <FloatEvent Id="3058" Time="86.06808790168165" Value="86" CurveControl1X="0.142272618779235832" CurveControl1Y="0" CurveControl2X="0.891723089837649252" CurveControl2Y="0.783445922427640662" />
-                    <FloatEvent Id="3059" Time="86.72509625790876" Value="79" />
-                    <FloatEvent Id="3060" Time="87.42903372668998" Value="75" />
-                    <FloatEvent Id="3052" Time="88.1329711954712" Value="75" />
-                    <FloatEvent Id="3054" Time="88.1329711954712" Value="77" />
-                    <FloatEvent Id="666" Time="92" Value="77" />
-                    <FloatEvent Id="667" Time="96" Value="51" />
-                </Events>
-                <AutomationTransformViewState>
-                    <IsTransformPending Value="false" />
-                    <TimeAndValueTransforms />
-                </AutomationTransformViewState>
-            </Automation>
-        </AutomationEnvelope>
-        <AutomationEnvelope Id="6">
-            <EnvelopeTarget>
-                <PointeeId Value="27894" />
-            </EnvelopeTarget>
-            <Automation>
-                <Events>
-                    <FloatEvent Id="35" Time="-63072000" Value="108" />
-                    <FloatEvent Id="91" Time="52" Value="108" />
-                    <FloatEvent Id="97" Time="84" Value="108" />
-                    <FloatEvent Id="98" Time="88" Value="80" />
-                    <FloatEvent Id="99" Time="102" Value="80" />
-                    <FloatEvent Id="100" Time="108" Value="80" />
-                    <FloatEvent Id="101" Time="144" Value="80" />
-                    <FloatEvent Id="102" Time="144" Value="108" />
-                    <FloatEvent Id="103" Time="148" Value="108" />
-                    <FloatEvent Id="104" Time="152" Value="80" />
-                </Events>
-                <AutomationTransformViewState>
-                    <IsTransformPending Value="false" />
-                    <TimeAndValueTransforms />
-                </AutomationTransformViewState>
-            </Automation>
-        </AutomationEnvelope>
-        <AutomationEnvelope Id="12">
-            <EnvelopeTarget>
-                <PointeeId Value="27896" />
-            </EnvelopeTarget>
-            <Automation>
-                <Events>
-                    <FloatEvent Id="0" Time="-63072000" Value="47" />
-                    <FloatEvent Id="1573" Time="27.397229853479853" Value="47" />
-                    <FloatEvent Id="2349" Time="27.397229853479853" Value="75" CurveControl1X="1" CurveControl1Y="0" CurveControl2X="0.475871007871072171" CurveControl2Y="0.650580671914012809" />
-                    <FloatEvent Id="2350" Time="27.454847756410256" Value="90" />
-                    <FloatEvent Id="2351" Time="27.454847756410256" Value="58" />
-                    <FloatEvent Id="2352" Time="27.483656447718946" Value="58" CurveControl1X="0.304012412762269257" CurveControl1Y="0.120337903548983327" CurveControl2X="0.53810303184982089" CurveControl2Y="0.695276257457294045" />
-                    <FloatEvent Id="2353" Time="28.031024964618716" Value="106" CurveControl1X="0.360624901606580894" CurveControl1Y="0.343451046639022317" CurveControl2X="0.288189102828183497" CurveControl2Y="0.830521061912185554" />
-                    <FloatEvent Id="2354" Time="28.1750692016317" Value="127" />
-                    <FloatEvent Id="2355" Time="28.34792239010989" Value="127" CurveControl1X="1" CurveControl1Y="0.252826758258186679" CurveControl2X="0" CurveControl2Y="0.757541813167593836" />
-                    <FloatEvent Id="2356" Time="28.491966887279386" Value="69" CurveControl1X="0.53436494668523471" CurveControl1Y="0.222653267512752051" CurveControl2X="1" CurveControl2Y="0.678377344162785167" />
-                    <FloatEvent Id="2357" Time="28.780055361305362" Value="117" />
-                    <FloatEvent Id="2358" Time="28.808864312770563" Value="117" CurveControl1X="0.734659614898753643" CurveControl1Y="0.309332110045290987" CurveControl2X="0.0923166747979595331" CurveControl2Y="0.617817978692135839" />
-                    <FloatEvent Id="2359" Time="29.039335144022644" Value="79" />
-                    <FloatEvent Id="2360" Time="29.125761738261737" Value="79" />
-                    <FloatEvent Id="2361" Time="29.154570689726938" Value="83" />
-                    <FloatEvent Id="2362" Time="29.212188332500833" Value="83" />
-                    <FloatEvent Id="2363" Time="29.327423878205128" Value="75" />
-                    <FloatEvent Id="2364" Time="29.385041520979019" Value="75" CurveControl1X="0.80887260294796437" CurveControl1Y="0.606655365271058677" CurveControl2X="0.493035633376955051" CurveControl2Y="0.239555739112356503" />
-                    <FloatEvent Id="2365" Time="29.471468115218116" Value="79" CurveControl1X="0.361108649711668395" CurveControl1Y="0.541663789810575058" CurveControl2X="0.693373004483382682" CurveControl2Y="0.540060891208113403" />
-                    <FloatEvent Id="2366" Time="29.644321303696305" Value="71" />
-                    <FloatEvent Id="2367" Time="29.673130255161507" Value="71" CurveControl1X="0.454712046337051534" CurveControl1Y="1" CurveControl2X="0.129911180873411414" CurveControl2Y="1" />
-                    <FloatEvent Id="2347" Time="29.7595568494006" Value="73" />
-                    <FloatEvent Id="2346" Time="29.7595568494006" Value="65.2423782" CurveControl1X="0.686735251982017569" CurveControl1Y="0.551459655112292779" CurveControl2X="0.446802274553962542" CurveControl2Y="0.285383397535736716" />
-                    <FloatEvent Id="1440" Time="30.588235202297703" Value="79" CurveControl1X="0.215773204537285768" CurveControl1Y="0.369896234136384006" CurveControl2X="0.660986232378624861" CurveControl2Y="0.709416500398814653" />
-                    <FloatEvent Id="1441" Time="31.427546672077924" Value="58" CurveControl1X="0.0550717077804661476" CurveControl1Y="0.0734289437072927209" CurveControl2X="0.236314130494927249" CurveControl2Y="1" />
-                    <FloatEvent Id="1426" Time="31.614060158591407" Value="40" />
-                    <FloatEvent Id="1428" Time="31.614060158591407" Value="47" />
-                    <FloatEvent Id="1075" Time="34" Value="47" />
-                    <FloatEvent Id="1074" Time="34.140041729104226" Value="86" />
-                    <FloatEvent Id="1073" Time="36" Value="97" />
-                    <FloatEvent Id="1072" Time="37" Value="57" />
-                    <FloatEvent Id="1071" Time="49" Value="57" />
-                    <FloatEvent Id="1070" Time="49.849895156926408" Value="105" />
-                    <FloatEvent Id="2368" Time="52" Value="59.8525314" />
-                    <FloatEvent Id="2541" Time="67.040277951215458" Value="59.8525314" />
-                    <FloatEvent Id="2927" Time="67.040277951215458" Value="62" CurveControl1X="0.370741478035205574" CurveControl1Y="0.3177782691630337" CurveControl2X="0.730215189059261194" CurveControl2Y="0.537511650373267424" />
-                    <FloatEvent Id="2928" Time="68.804495764652017" Value="83" CurveControl1X="0.0959864389754845615" CurveControl1Y="0" CurveControl2X="0.901499971692113045" CurveControl2Y="0.849352892755551814" />
-                    <FloatEvent Id="2929" Time="71.352810470779218" Value="100" CurveControl1X="0.858591658864161111" CurveControl1Y="0" CurveControl2X="0.558149804014758666" CurveControl2Y="0" />
-                    <FloatEvent Id="2930" Time="72.136907363469859" Value="101" />
-                    <FloatEvent Id="2896" Time="73.705100888694645" Value="65" />
-                    <FloatEvent Id="2898" Time="73.705100888694645" Value="59.8525314" />
-                    <FloatEvent Id="2390" Time="84" Value="59.8525314" />
-                    <FloatEvent Id="2374" Time="84.135849046786547" Value="57" />
-                    <FloatEvent Id="2375" Time="93" Value="57" />
-                    <FloatEvent Id="2376" Time="97" Value="57" />
-                    <FloatEvent Id="2377" Time="98" Value="107" />
-                    <FloatEvent Id="2378" Time="99" Value="105" />
-                    <FloatEvent Id="2379" Time="99.5" Value="71" />
-                    <FloatEvent Id="2380" Time="100.5" Value="107" />
-                    <FloatEvent Id="2381" Time="101.30482174075924" Value="57" />
-                    <FloatEvent Id="2382" Time="112" Value="56.7999992" CurveControl1X="0.16015625" CurveControl1Y="0.51953125" CurveControl2X="0.48046875" CurveControl2Y="0.83984375" />
-                    <FloatEvent Id="2383" Time="118" Value="116.800003" CurveControl1X="0.1171875" CurveControl1Y="0.6484375" CurveControl2X="0.3515625" CurveControl2Y="0.8828125" />
-                    <FloatEvent Id="2384" Time="120.66666666666667" Value="57" />
-                    <FloatEvent Id="2385" Time="145" Value="57" />
-                    <FloatEvent Id="2386" Time="145.84989515692641" Value="105" />
-                    <FloatEvent Id="2387" Time="148.13584904678655" Value="57" />
-                </Events>
-                <AutomationTransformViewState>
-                    <IsTransformPending Value="false" />
-                    <TimeAndValueTransforms />
-                </AutomationTransformViewState>
-            </Automation>
-        </AutomationEnvelope>
-        <AutomationEnvelope Id="13">
-            <EnvelopeTarget>
-                <PointeeId Value="27890" />
-            </EnvelopeTarget>
-            <Automation>
-                <Events>
-                    <FloatEvent Id="796" Time="-63072000" Value="73" />
-                    <FloatEvent Id="967" Time="18" Value="73" CurveControl1X="0.05078125" CurveControl1Y="0.84765625" CurveControl2X="0.15234375" CurveControl2Y="0.94921875" />
-                    <FloatEvent Id="824" Time="20" Value="119" />
-                    <FloatEvent Id="1012" Time="22.27977048992674" Value="116" CurveControl1X="0.68359375" CurveControl1Y="0.10546875" CurveControl2X="0.89453125" CurveControl2Y="0.31640625" />
-                    <FloatEvent Id="894" Time="24" Value="75.3000031" />
-                    <FloatEvent Id="1017" Time="32" Value="75.3137512" />
-                    <FloatEvent Id="400" Time="40" Value="75.327507" />
-                    <FloatEvent Id="399" Time="41.194549200799202" Value="117" />
-                    <FloatEvent Id="398" Time="43.137945387945386" Value="109" />
-                    <FloatEvent Id="397" Time="44" Value="75" />
-                    <FloatEvent Id="396" Time="51" Value="75" />
-                    <FloatEvent Id="1013" Time="52" Value="116" />
-                    <FloatEvent Id="1019" Time="84" Value="116" />
-                    <FloatEvent Id="1020" Time="85.497693972693966" Value="108" />
-                    <FloatEvent Id="1021" Time="87.345911900599404" Value="76" />
-                    <FloatEvent Id="1022" Time="144" Value="76" />
-                    <FloatEvent Id="1023" Time="144" Value="75" />
-                    <FloatEvent Id="1024" Time="147" Value="75" />
-                    <FloatEvent Id="1025" Time="148" Value="116" />
-                    <FloatEvent Id="1026" Time="149.49769397269398" Value="108" />
-                    <FloatEvent Id="1027" Time="151.34591190059939" Value="76" />
-                </Events>
-                <AutomationTransformViewState>
-                    <IsTransformPending Value="false" />
-                    <TimeAndValueTransforms />
-                </AutomationTransformViewState>
-            </Automation>
-        </AutomationEnvelope>
-        <AutomationEnvelope Id="15">
-            <EnvelopeTarget>
-                <PointeeId Value="27902" />
-            </EnvelopeTarget>
-            <Automation>
-                <Events>
-                    <FloatEvent Id="0" Time="-63072000" Value="75" />
-                    <FloatEvent Id="885" Time="16" Value="75" CurveControl1X="0.1015625" CurveControl1Y="0.6953125" CurveControl2X="0.3046875" CurveControl2Y="0.8984375" />
-                    <FloatEvent Id="904" Time="22" Value="121" CurveControl1X="0.14453125" CurveControl1Y="0.56640625" CurveControl2X="0.43359375" CurveControl2Y="0.85546875" />
-                    <FloatEvent Id="771" Time="24" Value="74" />
-                    <FloatEvent Id="179" Time="39.5" Value="75" />
-                    <FloatEvent Id="178" Time="40" Value="112" />
-                    <FloatEvent Id="177" Time="43.5" Value="112" />
-                    <FloatEvent Id="176" Time="44" Value="76" />
-                    <FloatEvent Id="175" Time="48.72958629911755" Value="76" />
-                    <FloatEvent Id="174" Time="51.5" Value="76" />
-                    <FloatEvent Id="905" Time="52" Value="103" />
-                    <FloatEvent Id="911" Time="84" Value="103" />
-                    <FloatEvent Id="912" Time="87.5" Value="103" />
-                    <FloatEvent Id="913" Time="88" Value="76" />
-                    <FloatEvent Id="914" Time="144.72958629911756" Value="76" />
-                    <FloatEvent Id="915" Time="147.5" Value="76" />
-                    <FloatEvent Id="916" Time="148" Value="103" />
-                    <FloatEvent Id="917" Time="151.5" Value="103" />
-                    <FloatEvent Id="918" Time="152" Value="76" />
-                </Events>
-                <AutomationTransformViewState>
-                    <IsTransformPending Value="false" />
-                    <TimeAndValueTransforms />
-                </AutomationTransformViewState>
-            </Automation>
-        </AutomationEnvelope>
-    </Envelopes>
+  <Envelopes>
+    <AutomationEnvelope Id="0">
+      <EnvelopeTarget>
+        <PointeeId Value="27743"/>
+      </EnvelopeTarget>
+      <Automation>
+        <Events>
+          <FloatEvent Id="123" Time="-63072000" Value="0.1412537396"/>
+          <FloatEvent Id="188" Time="0" Value="0.1412537396"/>
+          <FloatEvent Id="189" Time="8" Value="0.3548133373"/>
+          <FloatEvent Id="190" Time="52" Value="0.3548133373"/>
+          <FloatEvent Id="196" Time="132" Value="0.3548133373"/>
+          <FloatEvent Id="197" Time="136" Value="0.2238721102"/>
+        </Events>
+        <AutomationTransformViewState>
+          <IsTransformPending Value="false"/>
+          <TimeAndValueTransforms/>
+        </AutomationTransformViewState>
+      </Automation>
+    </AutomationEnvelope>
+    <AutomationEnvelope Id="3">
+      <EnvelopeTarget>
+        <PointeeId Value="27888"/>
+      </EnvelopeTarget>
+      <Automation>
+        <Events>
+          <FloatEvent Id="41" Time="-63072000" Value="77"/>
+          <FloatEvent Id="101" Time="0.652797723110223105" Value="77"/>
+          <FloatEvent Id="647" Time="0.652797723110223105" Value="75" CurveControl1X="0.873421796761574498" CurveControl1Y="0.249549293637680858" CurveControl2X="0.791465481368395674" CurveControl2Y="0.76167530124402627"/>
+          <FloatEvent Id="648" Time="1.5853659361471861" Value="110"/>
+          <FloatEvent Id="649" Time="2.797704378954379" Value="127"/>
+          <FloatEvent Id="650" Time="3.5437588453213453" Value="127"/>
+          <FloatEvent Id="651" Time="3.5437588453213453" Value="106"/>
+          <FloatEvent Id="652" Time="3.6370158487345989" Value="106"/>
+          <FloatEvent Id="653" Time="4.3830703151015653" Value="112"/>
+          <FloatEvent Id="654" Time="4.4763270583583088" Value="112" CurveControl1X="0" CurveControl1Y="0.882142833698662754" CurveControl2X="0.0154785143998120173" CurveControl2Y="0.453044534608556093"/>
+          <FloatEvent Id="655" Time="4.9426112949550447" Value="94"/>
+          <FloatEvent Id="656" Time="5.0358680382117882" Value="94" CurveControl1X="0.470958040629843866" CurveControl1Y="0.303506272413123501" CurveControl2X="0.661710194554666509" CurveControl2Y="0.273303497403797613"/>
+          <FloatEvent Id="657" Time="7.7403156739094241" Value="121" CurveControl1X="0.366060815388391747" CurveControl1Y="0" CurveControl2X="0.755715782604660546" CurveControl2Y="0.5114324738399878"/>
+          <FloatEvent Id="658" Time="8.2998566537629035" Value="127"/>
+          <FloatEvent Id="659" Time="8.6728838869463871" Value="127" CurveControl1X="0.677793698927539712" CurveControl1Y="0.419586560325123981" CurveControl2X="0.82748127691341633" CurveControl2Y="0.42493875642838258"/>
+          <FloatEvent Id="504" Time="9.6987088432400927" Value="94"/>
+          <FloatEvent Id="506" Time="9.6987088432400927" Value="77"/>
+          <FloatEvent Id="660" Time="52" Value="77"/>
+          <FloatEvent Id="4505" Time="73.960363594738595" Value="77"/>
+          <FloatEvent Id="5078" Time="73.960363594738595" Value="81" CurveControl1X="0.503167011641957096" CurveControl1Y="0.646930425164566003" CurveControl2X="0.187947811034781864" CurveControl2Y="0.303956404546501968"/>
+          <FloatEvent Id="5079" Time="74.101150932400927" Value="83.3333282"/>
+          <FloatEvent Id="5080" Time="74.101150932400927" Value="82" CurveControl1X="0.54679837580156998" CurveControl1Y="0.32164467695717508" CurveControl2X="0.447356101976214449" CurveControl2Y="0.674914993675428954"/>
+          <FloatEvent Id="5081" Time="74.570442578255083" Value="99" CurveControl1X="0.271492524136178304" CurveControl1Y="0" CurveControl2X="0.862896410969219652" CurveControl2Y="0.760069004213470345"/>
+          <FloatEvent Id="5082" Time="74.898946886446893" Value="103" CurveControl1X="0.805513180307694587" CurveControl1Y="0" CurveControl2X="0.334239356985945257" CurveControl2Y="0"/>
+          <FloatEvent Id="5083" Time="75.133592709373957" Value="106" CurveControl1X="0.299176941398125951" CurveControl1Y="0" CurveControl2X="0.556787780001150923" CurveControl2Y="1"/>
+          <FloatEvent Id="5084" Time="75.978317515817523" Value="115"/>
+          <FloatEvent Id="5085" Time="76.119105113636365" Value="118" CurveControl1X="0.160228915752149953" CurveControl1Y="0" CurveControl2X="0.91209364291788686" CurveControl2Y="0.73628133485101388"/>
+          <FloatEvent Id="5086" Time="76.963830180236428" Value="124" CurveControl1X="0.138395777747555765" CurveControl1Y="0" CurveControl2X="0.966651870155775139" CurveControl2Y="0.744330758035782858"/>
+          <FloatEvent Id="5087" Time="78.043200809607058" Value="127"/>
+          <FloatEvent Id="5088" Time="78.371705117798868" Value="127" CurveControl1X="0.33838677290818242" CurveControl1Y="1" CurveControl2X="0.0142935402230420228" CurveControl2Y="1"/>
+          <FloatEvent Id="4763" Time="78.559421568015324" Value="126"/>
+          <FloatEvent Id="4765" Time="78.559421568015324" Value="123.008156" CurveControl1X="0.879302731957372741" CurveControl1Y="0.259937192367949099" CurveControl2X="0.388863445558722098" CurveControl2Y="0.672129479557728171"/>
+          <FloatEvent Id="1323" Time="78.997754329004323" Value="98"/>
+          <FloatEvent Id="3502" Time="80.761972402597408" Value="77" CurveControl1X="0.152930481857874917" CurveControl1Y="0.394422932537906779" CurveControl2X="0.528157550370696338" CurveControl2Y="0.708894845977678267"/>
+          <FloatEvent Id="3506" Time="81.562888153513157" Value="92.84198"/>
+          <FloatEvent Id="4053" Time="81.562888153513157" Value="93" CurveControl1X="0.183480148655866787" CurveControl1Y="0" CurveControl2X="0.8882695711198203" CurveControl2Y="0.795160673923153816"/>
+          <FloatEvent Id="4054" Time="82.079108911921409" Value="99"/>
+          <FloatEvent Id="4055" Time="82.689188155594408" Value="101"/>
+          <FloatEvent Id="4056" Time="82.689188155594408" Value="105" CurveControl1X="0.42364094622867049" CurveControl1Y="0" CurveControl2X="0.236091094321315725" CurveControl2Y="1"/>
+          <FloatEvent Id="4057" Time="83.346196511821518" Value="106" CurveControl1X="0.298018510294184746" CurveControl1Y="0.670542336535772887" CurveControl2X="0.643028239787005185" CurveControl2Y="1"/>
+          <FloatEvent Id="4058" Time="84.6132838515651" Value="110"/>
+          <FloatEvent Id="4059" Time="84.660212964119211" Value="111"/>
+          <FloatEvent Id="4060" Time="85.411079805611053" Value="111"/>
+          <FloatEvent Id="4061" Time="85.458008918165163" Value="110"/>
+          <FloatEvent Id="4062" Time="85.504938030719288" Value="110"/>
+          <FloatEvent Id="4051" Time="85.551867143273398" Value="111"/>
+          <FloatEvent Id="4050" Time="85.551867143273398" Value="96.637291" CurveControl1X="0.365075097623605904" CurveControl1Y="0.628115358101453802" CurveControl2X="0.705894600479549217" CurveControl2Y="1"/>
+          <FloatEvent Id="3492" Time="85.645725628538131" Value="95"/>
+          <FloatEvent Id="3491" Time="85.645725628538131" Value="92.9155273" CurveControl1X="0.384635370540178878" CurveControl1Y="0.314870049309267375" CurveControl2X="0.729539800382131842" CurveControl2Y="0.648017352867758301"/>
+          <FloatEvent Id="3058" Time="86.06808790168165" Value="86" CurveControl1X="0.142272618779235832" CurveControl1Y="0" CurveControl2X="0.891723089837649252" CurveControl2Y="0.783445922427640662"/>
+          <FloatEvent Id="3059" Time="86.72509625790876" Value="79"/>
+          <FloatEvent Id="3060" Time="87.42903372668998" Value="75"/>
+          <FloatEvent Id="3052" Time="88.1329711954712" Value="75"/>
+          <FloatEvent Id="3054" Time="88.1329711954712" Value="77"/>
+          <FloatEvent Id="666" Time="92" Value="77"/>
+          <FloatEvent Id="667" Time="96" Value="51"/>
+        </Events>
+        <AutomationTransformViewState>
+          <IsTransformPending Value="false"/>
+          <TimeAndValueTransforms/>
+        </AutomationTransformViewState>
+      </Automation>
+    </AutomationEnvelope>
+    <AutomationEnvelope Id="6">
+      <EnvelopeTarget>
+        <PointeeId Value="27894"/>
+      </EnvelopeTarget>
+      <Automation>
+        <Events>
+          <FloatEvent Id="35" Time="-63072000" Value="108"/>
+          <FloatEvent Id="91" Time="52" Value="108"/>
+          <FloatEvent Id="97" Time="84" Value="108"/>
+          <FloatEvent Id="98" Time="88" Value="80"/>
+          <FloatEvent Id="99" Time="102" Value="80"/>
+          <FloatEvent Id="100" Time="108" Value="80"/>
+          <FloatEvent Id="101" Time="144" Value="80"/>
+          <FloatEvent Id="102" Time="144" Value="108"/>
+          <FloatEvent Id="103" Time="148" Value="108"/>
+          <FloatEvent Id="104" Time="152" Value="80"/>
+        </Events>
+        <AutomationTransformViewState>
+          <IsTransformPending Value="false"/>
+          <TimeAndValueTransforms/>
+        </AutomationTransformViewState>
+      </Automation>
+    </AutomationEnvelope>
+    <AutomationEnvelope Id="12">
+      <EnvelopeTarget>
+        <PointeeId Value="27896"/>
+      </EnvelopeTarget>
+      <Automation>
+        <Events>
+          <FloatEvent Id="0" Time="-63072000" Value="47"/>
+          <FloatEvent Id="1573" Time="27.397229853479853" Value="47"/>
+          <FloatEvent Id="2349" Time="27.397229853479853" Value="75" CurveControl1X="1" CurveControl1Y="0" CurveControl2X="0.475871007871072171" CurveControl2Y="0.650580671914012809"/>
+          <FloatEvent Id="2350" Time="27.454847756410256" Value="90"/>
+          <FloatEvent Id="2351" Time="27.454847756410256" Value="58"/>
+          <FloatEvent Id="2352" Time="27.483656447718946" Value="58" CurveControl1X="0.304012412762269257" CurveControl1Y="0.120337903548983327" CurveControl2X="0.53810303184982089" CurveControl2Y="0.695276257457294045"/>
+          <FloatEvent Id="2353" Time="28.031024964618716" Value="106" CurveControl1X="0.360624901606580894" CurveControl1Y="0.343451046639022317" CurveControl2X="0.288189102828183497" CurveControl2Y="0.830521061912185554"/>
+          <FloatEvent Id="2354" Time="28.1750692016317" Value="127"/>
+          <FloatEvent Id="2355" Time="28.34792239010989" Value="127" CurveControl1X="1" CurveControl1Y="0.252826758258186679" CurveControl2X="0" CurveControl2Y="0.757541813167593836"/>
+          <FloatEvent Id="2356" Time="28.491966887279386" Value="69" CurveControl1X="0.53436494668523471" CurveControl1Y="0.222653267512752051" CurveControl2X="1" CurveControl2Y="0.678377344162785167"/>
+          <FloatEvent Id="2357" Time="28.780055361305362" Value="117"/>
+          <FloatEvent Id="2358" Time="28.808864312770563" Value="117" CurveControl1X="0.734659614898753643" CurveControl1Y="0.309332110045290987" CurveControl2X="0.0923166747979595331" CurveControl2Y="0.617817978692135839"/>
+          <FloatEvent Id="2359" Time="29.039335144022644" Value="79"/>
+          <FloatEvent Id="2360" Time="29.125761738261737" Value="79"/>
+          <FloatEvent Id="2361" Time="29.154570689726938" Value="83"/>
+          <FloatEvent Id="2362" Time="29.212188332500833" Value="83"/>
+          <FloatEvent Id="2363" Time="29.327423878205128" Value="75"/>
+          <FloatEvent Id="2364" Time="29.385041520979019" Value="75" CurveControl1X="0.80887260294796437" CurveControl1Y="0.606655365271058677" CurveControl2X="0.493035633376955051" CurveControl2Y="0.239555739112356503"/>
+          <FloatEvent Id="2365" Time="29.471468115218116" Value="79" CurveControl1X="0.361108649711668395" CurveControl1Y="0.541663789810575058" CurveControl2X="0.693373004483382682" CurveControl2Y="0.540060891208113403"/>
+          <FloatEvent Id="2366" Time="29.644321303696305" Value="71"/>
+          <FloatEvent Id="2367" Time="29.673130255161507" Value="71" CurveControl1X="0.454712046337051534" CurveControl1Y="1" CurveControl2X="0.129911180873411414" CurveControl2Y="1"/>
+          <FloatEvent Id="2347" Time="29.7595568494006" Value="73"/>
+          <FloatEvent Id="2346" Time="29.7595568494006" Value="65.2423782" CurveControl1X="0.686735251982017569" CurveControl1Y="0.551459655112292779" CurveControl2X="0.446802274553962542" CurveControl2Y="0.285383397535736716"/>
+          <FloatEvent Id="1440" Time="30.588235202297703" Value="79" CurveControl1X="0.215773204537285768" CurveControl1Y="0.369896234136384006" CurveControl2X="0.660986232378624861" CurveControl2Y="0.709416500398814653"/>
+          <FloatEvent Id="1441" Time="31.427546672077924" Value="58" CurveControl1X="0.0550717077804661476" CurveControl1Y="0.0734289437072927209" CurveControl2X="0.236314130494927249" CurveControl2Y="1"/>
+          <FloatEvent Id="1426" Time="31.614060158591407" Value="40"/>
+          <FloatEvent Id="1428" Time="31.614060158591407" Value="47"/>
+          <FloatEvent Id="1075" Time="34" Value="47"/>
+          <FloatEvent Id="1074" Time="34.140041729104226" Value="86"/>
+          <FloatEvent Id="1073" Time="36" Value="97"/>
+          <FloatEvent Id="1072" Time="37" Value="57"/>
+          <FloatEvent Id="1071" Time="49" Value="57"/>
+          <FloatEvent Id="1070" Time="49.849895156926408" Value="105"/>
+          <FloatEvent Id="2368" Time="52" Value="59.8525314"/>
+          <FloatEvent Id="2541" Time="67.040277951215458" Value="59.8525314"/>
+          <FloatEvent Id="2927" Time="67.040277951215458" Value="62" CurveControl1X="0.370741478035205574" CurveControl1Y="0.3177782691630337" CurveControl2X="0.730215189059261194" CurveControl2Y="0.537511650373267424"/>
+          <FloatEvent Id="2928" Time="68.804495764652017" Value="83" CurveControl1X="0.0959864389754845615" CurveControl1Y="0" CurveControl2X="0.901499971692113045" CurveControl2Y="0.849352892755551814"/>
+          <FloatEvent Id="2929" Time="71.352810470779218" Value="100" CurveControl1X="0.858591658864161111" CurveControl1Y="0" CurveControl2X="0.558149804014758666" CurveControl2Y="0"/>
+          <FloatEvent Id="2930" Time="72.136907363469859" Value="101"/>
+          <FloatEvent Id="2896" Time="73.705100888694645" Value="65"/>
+          <FloatEvent Id="2898" Time="73.705100888694645" Value="59.8525314"/>
+          <FloatEvent Id="2390" Time="84" Value="59.8525314"/>
+          <FloatEvent Id="2374" Time="84.135849046786547" Value="57"/>
+          <FloatEvent Id="2375" Time="93" Value="57"/>
+          <FloatEvent Id="2376" Time="97" Value="57"/>
+          <FloatEvent Id="2377" Time="98" Value="107"/>
+          <FloatEvent Id="2378" Time="99" Value="105"/>
+          <FloatEvent Id="2379" Time="99.5" Value="71"/>
+          <FloatEvent Id="2380" Time="100.5" Value="107"/>
+          <FloatEvent Id="2381" Time="101.30482174075924" Value="57"/>
+          <FloatEvent Id="2382" Time="112" Value="56.7999992" CurveControl1X="0.16015625" CurveControl1Y="0.51953125" CurveControl2X="0.48046875" CurveControl2Y="0.83984375"/>
+          <FloatEvent Id="2383" Time="118" Value="116.800003" CurveControl1X="0.1171875" CurveControl1Y="0.6484375" CurveControl2X="0.3515625" CurveControl2Y="0.8828125"/>
+          <FloatEvent Id="2384" Time="120.66666666666667" Value="57"/>
+          <FloatEvent Id="2385" Time="145" Value="57"/>
+          <FloatEvent Id="2386" Time="145.84989515692641" Value="105"/>
+          <FloatEvent Id="2387" Time="148.13584904678655" Value="57"/>
+        </Events>
+        <AutomationTransformViewState>
+          <IsTransformPending Value="false"/>
+          <TimeAndValueTransforms/>
+        </AutomationTransformViewState>
+      </Automation>
+    </AutomationEnvelope>
+    <AutomationEnvelope Id="13">
+      <EnvelopeTarget>
+        <PointeeId Value="27890"/>
+      </EnvelopeTarget>
+      <Automation>
+        <Events>
+          <FloatEvent Id="796" Time="-63072000" Value="73"/>
+          <FloatEvent Id="967" Time="18" Value="73" CurveControl1X="0.05078125" CurveControl1Y="0.84765625" CurveControl2X="0.15234375" CurveControl2Y="0.94921875"/>
+          <FloatEvent Id="824" Time="20" Value="119"/>
+          <FloatEvent Id="1012" Time="22.27977048992674" Value="116" CurveControl1X="0.68359375" CurveControl1Y="0.10546875" CurveControl2X="0.89453125" CurveControl2Y="0.31640625"/>
+          <FloatEvent Id="894" Time="24" Value="75.3000031"/>
+          <FloatEvent Id="1017" Time="32" Value="75.3137512"/>
+          <FloatEvent Id="400" Time="40" Value="75.327507"/>
+          <FloatEvent Id="399" Time="41.194549200799202" Value="117"/>
+          <FloatEvent Id="398" Time="43.137945387945386" Value="109"/>
+          <FloatEvent Id="397" Time="44" Value="75"/>
+          <FloatEvent Id="396" Time="51" Value="75"/>
+          <FloatEvent Id="1013" Time="52" Value="116"/>
+          <FloatEvent Id="1019" Time="84" Value="116"/>
+          <FloatEvent Id="1020" Time="85.497693972693966" Value="108"/>
+          <FloatEvent Id="1021" Time="87.345911900599404" Value="76"/>
+          <FloatEvent Id="1022" Time="144" Value="76"/>
+          <FloatEvent Id="1023" Time="144" Value="75"/>
+          <FloatEvent Id="1024" Time="147" Value="75"/>
+          <FloatEvent Id="1025" Time="148" Value="116"/>
+          <FloatEvent Id="1026" Time="149.49769397269398" Value="108"/>
+          <FloatEvent Id="1027" Time="151.34591190059939" Value="76"/>
+        </Events>
+        <AutomationTransformViewState>
+          <IsTransformPending Value="false"/>
+          <TimeAndValueTransforms/>
+        </AutomationTransformViewState>
+      </Automation>
+    </AutomationEnvelope>
+    <AutomationEnvelope Id="15">
+      <EnvelopeTarget>
+        <PointeeId Value="27902"/>
+      </EnvelopeTarget>
+      <Automation>
+        <Events>
+          <FloatEvent Id="0" Time="-63072000" Value="75"/>
+          <FloatEvent Id="885" Time="16" Value="75" CurveControl1X="0.1015625" CurveControl1Y="0.6953125" CurveControl2X="0.3046875" CurveControl2Y="0.8984375"/>
+          <FloatEvent Id="904" Time="22" Value="121" CurveControl1X="0.14453125" CurveControl1Y="0.56640625" CurveControl2X="0.43359375" CurveControl2Y="0.85546875"/>
+          <FloatEvent Id="771" Time="24" Value="74"/>
+          <FloatEvent Id="179" Time="39.5" Value="75"/>
+          <FloatEvent Id="178" Time="40" Value="112"/>
+          <FloatEvent Id="177" Time="43.5" Value="112"/>
+          <FloatEvent Id="176" Time="44" Value="76"/>
+          <FloatEvent Id="175" Time="48.72958629911755" Value="76"/>
+          <FloatEvent Id="174" Time="51.5" Value="76"/>
+          <FloatEvent Id="905" Time="52" Value="103"/>
+          <FloatEvent Id="911" Time="84" Value="103"/>
+          <FloatEvent Id="912" Time="87.5" Value="103"/>
+          <FloatEvent Id="913" Time="88" Value="76"/>
+          <FloatEvent Id="914" Time="144.72958629911756" Value="76"/>
+          <FloatEvent Id="915" Time="147.5" Value="76"/>
+          <FloatEvent Id="916" Time="148" Value="103"/>
+          <FloatEvent Id="917" Time="151.5" Value="103"/>
+          <FloatEvent Id="918" Time="152" Value="76"/>
+        </Events>
+        <AutomationTransformViewState>
+          <IsTransformPending Value="false"/>
+          <TimeAndValueTransforms/>
+        </AutomationTransformViewState>
+      </Automation>
+    </AutomationEnvelope>
+  </Envelopes>
 </AutomationEnvelopes>
