@@ -16,11 +16,12 @@ tree = ET.parse(source_file)
 root = tree.getroot()
 ```
 
-**Advantages over sed:**
+**Key advantages:**
 - Proper XML parsing that understands structure and encoding
 - Handles special characters, quotes, and XML entities correctly
 - Provides structured access to XML elements and attributes
 - Better error handling and validation
+- Cross-platform compatibility using Python standard library
 
 ### Tag Matching Algorithm
 
@@ -158,19 +159,31 @@ def normalize_tag(tag):
 
 ### Debugging Tips
 
-#### Test Sed Patterns Manually
+#### Test XML Patterns Manually
 
-Before using the script, test sed patterns:
+Before using the script, test XML patterns:
 
 ```bash
 # Test opening tag detection
 grep -n "<InstrumentVector" source.xml
 
-# Test range extraction
-sed -n "/<InstrumentVector Id=\"0\">/,/<\/InstrumentVector>/p" source.xml
+# Test element extraction with Python (single line test)
+python3 -c "
+import xml.etree.ElementTree as ET
+tree = ET.parse('source.xml')
+for elem in tree.iter('InstrumentVector'):
+    if elem.get('Id') == '0':
+        print('Found element with Id=0')
+        break
+"
 
 # Test tag name extraction
-echo '<InstrumentVector Id="0">' | sed -n 's/<\([^>]*\)>/\1/p' | cut -d' ' -f1
+echo '<InstrumentVector Id="0">' | python3 -c "
+import sys, re
+line = sys.stdin.read().strip()
+match = re.match(r'<\s*([^>\s]+)', line)
+if match: print(match.group(1))
+"
 ```
 
 #### Validate XML Structure
@@ -195,24 +208,39 @@ grep -c "</InstrumentVector>" source.xml
 
 ### Customizing for Specific XML Structures
 
-For complex XML structures, modify the sed patterns:
+For complex XML structures, you can extend the Python script or use additional Python logic:
 
 **Nested Elements:**
-```bash
+```python
 # Extract only direct children, not nested ones
-sed -n "/<Parent>/,/<\/Parent>/p" | sed -n "/<Child>/,/<\/Child>/p"
+import xml.etree.ElementTree as ET
+
+tree = ET.parse('source.xml')
+parent = tree.find('.//Parent')
+if parent:
+    for child in parent:
+        if child.tag == 'Child':
+            print(ET.tostring(child).decode())
 ```
 
 **Multiple Attributes:**
-```bash
-# More specific matching
-sed -n "/<InstrumentVector Id=\"0\".*Type=\"Audio\">/,/<\/InstrumentVector>/p"
+```python
+# More specific matching with multiple attributes
+tree = ET.parse('source.xml')
+for elem in tree.iter('InstrumentVector'):
+    if elem.get('Id') == '0' and elem.get('Type') == 'Audio':
+        print(ET.tostring(elem).decode())
+        break
 ```
 
 **Conditional Extraction:**
-```bash
+```python
 # Extract only if element contains specific content
-sed -n "/<InstrumentVector/,/<\/InstrumentVector>/p" | grep -A 1000 "SpecificContent"
+tree = ET.parse('source.xml')
+for elem in tree.iter('InstrumentVector'):
+    if elem.findtext('.//SpecificContent') is not None:
+        print(ET.tostring(elem).decode())
+        break
 ```
 
 ### Performance Considerations
@@ -224,8 +252,9 @@ For large XML files:
 
 ## Alternative Tools
 
-When sed is insufficient:
-- `xmlstarlet`: XML-specific command-line tool
-- `xmllint`: More robust XML processing
-- Python with `xml.etree.ElementTree`: For complex XML manipulation
-- `xpath`: For XPath-based extraction
+For more complex XML processing needs:
+- `xmlstarlet`: XML-specific command-line tool with XPath support
+- `xmllint`: More robust XML processing and validation
+- Python with `lxml`: For advanced XML manipulation and XPath
+- `xpath`: Command-line XPath-based extraction
+- Python `BeautifulSoup`: For HTML/XML parsing with tolerance for malformed documents

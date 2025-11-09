@@ -9,6 +9,17 @@ description: Extract specific XML elements from source files using Python and op
 
 This skill enables precise extraction of XML elements from source files using Python's standard library (xml.etree.ElementTree), with optional xmllint formatting for clean output. Use this skill when you need to isolate a specific XML element from a larger document while maintaining its complete structure.
 
+## ⚠️ Agent Guidelines
+
+**DO NOT READ XML FILES DIRECTLY**
+
+- **Never use Read tool on XML files** - Large files can exceed context limits
+- **Never display XML content directly** - Always use the extraction script
+- **Always use the Python extraction script** - Optimized for efficient XML processing
+- **Process XML externally** - Let the script handle parsing, not the agent
+
+This prevents context overflow and maintains performance.
+
 **Key advantages of the Python implementation:**
 - **Maximum compatibility**: Uses only Python standard library, no third-party dependencies
 - **Robust parsing**: Proper XML parsing handles complex structures, special characters, and encoding
