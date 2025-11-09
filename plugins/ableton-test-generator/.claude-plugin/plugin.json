@@ -1,0 +1,13 @@
+{
+  "name": "ableton-test-generator",
+  "version": "1.0.0",
+  "description": "Generate test cases for Ableton Live Set devices and components by extracting expected values from XML files",
+  "author": {
+    "name": "Jay Xu",
+    "email": "jay.xu.krfantasy@gmail.com"
+  },
+  "homepage": "https://github.com/krfantasy/alsdiff",
+  "repository": "https://github.com/krfantasy/alsdiff",
+  "license": "MIT",
+  "keywords": ["ableton", "test", "generation", "xml", "ocaml"]
+}

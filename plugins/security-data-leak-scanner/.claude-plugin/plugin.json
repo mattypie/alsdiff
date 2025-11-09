@@ -1,0 +1,13 @@
+{
+  "name": "security-data-leak-scanner",
+  "version": "1.0.0",
+  "description": "Scan codebases for potential personal data leaks and sensitive information exposure",
+  "author": {
+    "name": "Jay Xu",
+    "email": "jay.xu.krfantasy@gmail.com"
+  },
+  "homepage": "https://github.com/krfantasy/alsdiff",
+  "repository": "https://github.com/krfantasy/alsdiff",
+  "license": "MIT",
+  "keywords": ["security", "privacy", "data-leak", "scanning", "compliance"]
+}

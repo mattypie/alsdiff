@@ -1,0 +1,57 @@
+{
+  "name": "alsdiff-tools",
+  "owner": {
+    "name": "Jay Xu",
+    "email": "jay.xu.krfantasy@gmail.com"
+  },
+  "metadata": {
+    "description": "Project-specific tools for Ableton Live Set development and diffing",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "xml-element-extractor",
+      "description": "Extract XML elements from Ableton Live Set files using Python",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jay Xu"
+      },
+      "source": "./plugins/xml-element-extractor",
+      "category": "utilities",
+      "tags": ["xml", "ableton", "extraction", "python"]
+    },
+    {
+      "name": "ableton-test-generator",
+      "description": "Generate test cases for Ableton Live Set devices and components",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jay Xu"
+      },
+      "source": "./plugins/ableton-test-generator",
+      "category": "development",
+      "tags": ["ableton", "test", "generation", "xml", "ocaml"]
+    },
+    {
+      "name": "security-data-leak-scanner",
+      "description": "Scan codebases for potential personal data leaks and sensitive information",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jay Xu"
+      },
+      "source": "./plugins/security-data-leak-scanner",
+      "category": "security",
+      "tags": ["security", "privacy", "data-leak", "scanning"]
+    },
+    {
+      "name": "zen-code-reviewer",
+      "description": "Comprehensive code review agent with thorough analysis and quality assurance",
+      "version": "1.0.0",
+      "author": {
+        "name": "Jay Xu"
+      },
+      "source": "./plugins/zen-code-reviewer",
+      "category": "development",
+      "tags": ["code-review", "quality", "analysis", "best-practices"]
+    }
+  ]
+}
