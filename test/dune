@@ -78,8 +78,13 @@
 (test
  (name test_device)
  (modules test_device)
- (libraries alsdiff_lib alcotest test_utils)
- (deps compressor_device.xml))
+ (libraries alsdiff_lib alcotest test_utils))
+
+(test
+ (name test_real_devices)
+ (modules test_real_devices)
+ (libraries alsdiff_lib alcotest test_utils str)
+ (deps compressor_device.xml eq8_device.xml wavetable_device.xml))
 
 (test
   (name test_group_device)
@@ -98,3 +103,9 @@
  (modules test_regex_match)
  (libraries alsdiff_lib alcotest test_utils)
  (deps regex_match.xml))
+
+(test
+ (name test_m4l_device)
+ (modules test_m4l_device)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps m4l_device.xml))

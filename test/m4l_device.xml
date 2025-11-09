@@ -1,0 +1,2187 @@
+<?xml version="1.0"?>
+<MxDeviceInstrument Id="0">
+  <LomId Value="544"/>
+  <LomIdView Value="0"/>
+  <IsExpanded Value="true"/>
+  <BreakoutIsExpanded Value="false"/>
+  <On>
+    <LomId Value="404"/>
+    <Manual Value="false"/>
+    <AutomationTarget Id="84268">
+      <LockEnvelope Value="0"/>
+    </AutomationTarget>
+    <MidiCCOnOffThresholds>
+      <Min Value="64"/>
+      <Max Value="127"/>
+    </MidiCCOnOffThresholds>
+  </On>
+  <ModulationSourceCount Value="0"/>
+  <ParametersListWrapper LomId="0"/>
+  <Pointee Id="84269"/>
+  <LastSelectedTimeableIndex Value="44"/>
+  <LastSelectedClipEnvelopeIndex Value="1"/>
+  <LastPresetRef>
+    <Value>
+      <FilePresetRef Id="1">
+        <FileRef>
+          <RelativePathType Value="6"/>
+          <RelativePath Value="Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv"/>
+          <Path Value="/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv"/>
+          <Type Value="2"/>
+          <LivePackName Value=""/>
+          <LivePackId Value=""/>
+          <OriginalFileSize Value="0"/>
+          <OriginalCrc Value="0"/>
+        </FileRef>
+      </FilePresetRef>
+    </Value>
+  </LastPresetRef>
+  <LockedScripts/>
+  <IsFolded Value="false"/>
+  <ShouldShowPresetName Value="true"/>
+  <UserName Value=""/>
+  <Annotation Value=""/>
+  <SourceContext>
+    <Value>
+      <BranchSourceContext Id="0">
+        <OriginalFileRef>
+          <FileRef Id="0">
+            <RelativePathType Value="6"/>
+            <RelativePath Value="Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv"/>
+            <Path Value="/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv"/>
+            <Type Value="2"/>
+            <LivePackName Value=""/>
+            <LivePackId Value=""/>
+            <OriginalFileSize Value="0"/>
+            <OriginalCrc Value="0"/>
+          </FileRef>
+        </OriginalFileRef>
+        <BrowserContentPath Value="query:Find#FileId_48744"/>
+        <LocalFiltersJson Value=""/>
+        <PresetRef>
+          <FilePresetRef Id="0">
+            <FileRef>
+              <RelativePathType Value="6"/>
+              <RelativePath Value="Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv"/>
+              <Path Value="/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv"/>
+              <Type Value="2"/>
+              <LivePackName Value=""/>
+              <LivePackId Value=""/>
+              <OriginalFileSize Value="0"/>
+              <OriginalCrc Value="0"/>
+            </FileRef>
+          </FilePresetRef>
+        </PresetRef>
+        <BranchDeviceId Value="device:ableton:instr:MxDeviceInstrument?n=Max%20Instrument"/>
+      </BranchSourceContext>
+    </Value>
+  </SourceContext>
+  <MpePitchBendUsesTuning Value="false"/>
+  <OverwriteProtectionNumber Value="3074"/>
+  <AudioOutputsListWrapper LomId="0"/>
+  <AudioInputsListWrapper LomId="0"/>
+  <MidiOutputsListWrapper LomId="0"/>
+  <MidiInputsListWrapper LomId="0"/>
+  <PatchSlot>
+    <Value>
+      <MxPatchRef Id="4">
+        <FileRef>
+          <RelativePathType Value="3"/>
+          <RelativePath Value="Cellular Degradation.amxd"/>
+          <Path Value="/Users/krfantasy/Desktop/Prelude/Thick Air Project/Cellular Degradation.amxd"/>
+          <Type Value="2"/>
+          <LivePackName Value=""/>
+          <LivePackId Value=""/>
+          <OriginalFileSize Value="444848"/>
+          <OriginalCrc Value="3851"/>
+        </FileRef>
+        <LastModDate Value="1742403843"/>
+        <SourceContext/>
+        <SampleUsageHint Value="0"/>
+      </MxPatchRef>
+    </Value>
+  </PatchSlot>
+  <ParameterList>
+    <ParameterList>
+      <MxDFloatParameter Id="51">
+        <Index Value="0"/>
+        <Type Value="0"/>
+        <Name Value="AM Mod Offset"/>
+        <ShortName Value="AM Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="65"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="22"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84270">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84271">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="52">
+        <Index Value="1"/>
+        <Type Value="0"/>
+        <Name Value="AM Mod Range"/>
+        <ShortName Value="AM Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="58"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="23"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84272">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84273">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="53">
+        <Index Value="2"/>
+        <Type Value="0"/>
+        <Name Value="Amp Mod Offset"/>
+        <ShortName Value="Amp Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="53"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84274">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84275">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="54">
+        <Index Value="3"/>
+        <Type Value="0"/>
+        <Name Value="Amp Mod Range"/>
+        <ShortName Value="Amp Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="100"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-99"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84276">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84277">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDEnumParameter Id="55">
+        <Index Value="4"/>
+        <Type Value="2"/>
+        <Name Value="Clear Grid"/>
+        <ShortName Value="Clear"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <AutomationTarget Id="84278">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDEnumParameter Id="56">
+        <Index Value="5"/>
+        <Type Value="2"/>
+        <Name Value="Clear Recordings"/>
+        <ShortName Value="Clear Rec"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <AutomationTarget Id="84279">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDFloatParameter Id="57">
+        <Index Value="6"/>
+        <Type Value="0"/>
+        <Name Value="Delay Time Mod Offset"/>
+        <ShortName Value="DelTime Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="11"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="24.047245"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84280">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84281">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="58">
+        <Index Value="7"/>
+        <Type Value="0"/>
+        <Name Value="Delay Time Mod Range"/>
+        <ShortName Value="DelTime Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="51"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-25.8425198"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84282">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84283">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDIntParameter Id="59">
+        <Index Value="8"/>
+        <Type Value="1"/>
+        <Name Value="Draw X"/>
+        <ShortName Value="Draw X"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="11"/>
+        <Default Value="5"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="11"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84284">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84285">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+        <ScrollPosArranger Value="-22"/>
+        <ScrollPosEnvelope Value="-1073741824"/>
+      </MxDIntParameter>
+      <MxDIntParameter Id="60">
+        <Index Value="9"/>
+        <Type Value="1"/>
+        <Name Value="Draw Y"/>
+        <ShortName Value="Draw Y"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="12"/>
+        <Default Value="6"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="8"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84286">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84287">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+        <ScrollPosArranger Value="-30"/>
+        <ScrollPosEnvelope Value="-1073741824"/>
+      </MxDIntParameter>
+      <MxDFloatParameter Id="61">
+        <Index Value="10"/>
+        <Type Value="0"/>
+        <Name Value="Envelope Decay Mod Offset"/>
+        <ShortName Value="EnvDec Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="35"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84288">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84289">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="62">
+        <Index Value="11"/>
+        <Type Value="0"/>
+        <Name Value="Envelope Decay Mod Range"/>
+        <ShortName Value="EnvDecay Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="35"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-67"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84290">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84291">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="63">
+        <Index Value="12"/>
+        <Type Value="0"/>
+        <Name Value="Envelope Filter Mod Offset"/>
+        <ShortName Value="EnvFilt Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="25"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84292">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84293">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="64">
+        <Index Value="13"/>
+        <Type Value="0"/>
+        <Name Value="Envelope Filter Mod Range"/>
+        <ShortName Value="EnvFilt Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="100"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-19"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84294">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84295">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="65">
+        <Index Value="14"/>
+        <Type Value="0"/>
+        <Name Value="Envelope Lo Clip Mod Offset"/>
+        <ShortName Value="EnvClip Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="1"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84296">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84297">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="66">
+        <Index Value="15"/>
+        <Type Value="0"/>
+        <Name Value="Envelope Lo Clip Mod Range"/>
+        <ShortName Value="EnvClip Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="40"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-64"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84298">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84299">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="67">
+        <Index Value="16"/>
+        <Type Value="0"/>
+        <Name Value="FM Mod Offset"/>
+        <ShortName Value="Fm Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="28"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="78"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84300">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84301">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="68">
+        <Index Value="17"/>
+        <Type Value="0"/>
+        <Name Value="FM Mod Range"/>
+        <ShortName Value="FM Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="68"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="42"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84302">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84303">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="69">
+        <Index Value="18"/>
+        <Type Value="0"/>
+        <Name Value="Feedback Mod Offset"/>
+        <ShortName Value="Feedback Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="60.0866127"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84304">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84305">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="70">
+        <Index Value="19"/>
+        <Type Value="0"/>
+        <Name Value="Feedback Mod Range"/>
+        <ShortName Value="Feedback Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="25"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-59"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84306">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84307">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="71">
+        <Index Value="20"/>
+        <Type Value="0"/>
+        <Name Value="Filter Cutoff Mod Offset"/>
+        <ShortName Value="FiltCut Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="31"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="23.1811028"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84308">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84309">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="72">
+        <Index Value="21"/>
+        <Type Value="0"/>
+        <Name Value="Filter Cutoff Mod Range"/>
+        <ShortName Value="FiltCut Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="30"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="44.6850395"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84310">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84311">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="73">
+        <Index Value="22"/>
+        <Type Value="0"/>
+        <Name Value="Filter Morph Mod Offset"/>
+        <ShortName Value="FiltMorph Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="22"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84312">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84313">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="74">
+        <Index Value="23"/>
+        <Type Value="0"/>
+        <Name Value="Filter Morph Mod Range"/>
+        <ShortName Value="FiltMorph Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="46"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-38"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84314">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84315">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="75">
+        <Index Value="24"/>
+        <Type Value="0"/>
+        <Name Value="Filter Q Mod Offset"/>
+        <ShortName Value="FiltQ Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="8"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84316">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84317">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="76">
+        <Index Value="25"/>
+        <Type Value="0"/>
+        <Name Value="Filter Q Mod Range"/>
+        <ShortName Value="FiltQ Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="56"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="56.7874031"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84318">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84319">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDEnumParameter Id="77">
+        <Index Value="26"/>
+        <Type Value="2"/>
+        <Name Value="Lock to Transport"/>
+        <ShortName Value="Lock"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <AutomationTarget Id="169820">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDIntParameter Id="78">
+        <Index Value="27"/>
+        <Type Value="1"/>
+        <Name Value="Lower Born Rule"/>
+        <ShortName Value="Born Low"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="7"/>
+        <Default Value="2"/>
+        <ModType Value="4"/>
+        <MinMod Value="0"/>
+        <MaxMod Value="127"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="3"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84320">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84321">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+        <ScrollPosArranger Value="-1073741824"/>
+        <ScrollPosEnvelope Value="-1073741824"/>
+      </MxDIntParameter>
+      <MxDIntParameter Id="79">
+        <Index Value="28"/>
+        <Type Value="1"/>
+        <Name Value="Lower Survival Rule"/>
+        <ShortName Value="Survive Low"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="7"/>
+        <Default Value="3"/>
+        <ModType Value="4"/>
+        <MinMod Value="0"/>
+        <MaxMod Value="127"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="4"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84322">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84323">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+        <ScrollPosArranger Value="-1073741824"/>
+        <ScrollPosEnvelope Value="-1073741824"/>
+      </MxDIntParameter>
+      <MxDFloatParameter Id="80">
+        <Index Value="29"/>
+        <Type Value="0"/>
+        <Name Value="Master Gain"/>
+        <ShortName Value="Gain"/>
+        <MinValue Value="-70"/>
+        <MaxValue Value="6"/>
+        <Default Value="-15"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-14.0536366"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84324">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84325">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="81">
+        <Index Value="30"/>
+        <Type Value="0"/>
+        <Name Value="Master Pan"/>
+        <ShortName Value="Pan"/>
+        <MinValue Value="-50"/>
+        <MaxValue Value="50"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84326">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84327">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="82">
+        <Index Value="31"/>
+        <Type Value="0"/>
+        <Name Value="Mouse Click Value"/>
+        <ShortName Value="Click Value"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="1"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="1"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84328">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84329">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDIntParameter Id="83">
+        <Index Value="32"/>
+        <Type Value="1"/>
+        <Name Value="Number of Generators"/>
+        <ShortName Value="Voices"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="6"/>
+        <Default Value="6"/>
+        <ModType Value="4"/>
+        <MinMod Value="0"/>
+        <MaxMod Value="127"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="3"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84330">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84331">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+        <ScrollPosArranger Value="-1073741824"/>
+        <ScrollPosEnvelope Value="-1073741824"/>
+      </MxDIntParameter>
+      <MxDFloatParameter Id="84">
+        <Index Value="33"/>
+        <Type Value="0"/>
+        <Name Value="Panning Width"/>
+        <ShortName Value="Width"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="100"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="100"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84332">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84333">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="85">
+        <Index Value="34"/>
+        <Type Value="0"/>
+        <Name Value="Pitch Shift"/>
+        <ShortName Value="Pitch Shift"/>
+        <MinValue Value="-24"/>
+        <MaxValue Value="24"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84334">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84335">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDEnumParameter Id="86">
+        <Index Value="35"/>
+        <Type Value="2"/>
+        <Name Value="Play Recording"/>
+        <ShortName Value="Play"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="1"/>
+          <AutomationTarget Id="84336">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDEnumParameter Id="87">
+        <Index Value="36"/>
+        <Type Value="2"/>
+        <Name Value="Randomize Mod Params"/>
+        <ShortName Value="Random"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <AutomationTarget Id="84337">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDFloatParameter Id="88">
+        <Index Value="37"/>
+        <Type Value="0"/>
+        <Name Value="Rate Hz"/>
+        <ShortName Value="Rate Hz"/>
+        <MinValue Value="0.25"/>
+        <MaxValue Value="200"/>
+        <Default Value="77.9349976"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0.25"/>
+          <MidiControllerRange>
+            <Min Value="0.25"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84338">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84339">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDEnumParameter Id="89">
+        <Index Value="38"/>
+        <Type Value="2"/>
+        <Name Value="Rate Mode"/>
+        <ShortName Value="Rate Mode"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="1"/>
+          <AutomationTarget Id="84340">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="hz"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="note"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDEnumParameter Id="90">
+        <Index Value="39"/>
+        <Type Value="2"/>
+        <Name Value="Record Clicks"/>
+        <ShortName Value="Record"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <AutomationTarget Id="84341">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDEnumParameter Id="91">
+        <Index Value="40"/>
+        <Type Value="2"/>
+        <Name Value="Reload Frame on Transport"/>
+        <ShortName Value="Retrig"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="1"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="1"/>
+          <AutomationTarget Id="84342">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDEnumParameter Id="92">
+        <Index Value="41"/>
+        <Type Value="2"/>
+        <Name Value="Reload Saved Frame"/>
+        <ShortName Value="Reinit"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <AutomationTarget Id="84343">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDFloatParameter Id="93">
+        <Index Value="42"/>
+        <Type Value="0"/>
+        <Name Value="Rule Intensity"/>
+        <ShortName Value="Intensity"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0.2154434621"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0.732283473"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84344">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84345">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDEnumParameter Id="94">
+        <Index Value="43"/>
+        <Type Value="2"/>
+        <Name Value="Run CA"/>
+        <ShortName Value="Run"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="1"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="725"/>
+          <Manual Value="1"/>
+          <AutomationTarget Id="84346">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDFloatParameter Id="95">
+        <Index Value="44"/>
+        <Type Value="0"/>
+        <Name Value="Sample Lookup Mod Offset"/>
+        <ShortName Value="Scan Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="0"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="69"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84347">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84348">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="96">
+        <Index Value="45"/>
+        <Type Value="0"/>
+        <Name Value="Sample Lookup Mod Range"/>
+        <ShortName Value="Scan Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="43"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="-90"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84349">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84350">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDEnumParameter Id="97">
+        <Index Value="46"/>
+        <Type Value="2"/>
+        <Name Value="Save Frame"/>
+        <ShortName Value="Save"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="1"/>
+        <Default Value="0"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="0"/>
+          <AutomationTarget Id="84351">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="off"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="on"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDEnumParameter Id="98">
+        <Index Value="47"/>
+        <Type Value="2"/>
+        <Name Value="Sync Rate"/>
+        <ShortName Value="Sync Rate"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="17"/>
+        <Default Value="15"/>
+        <ModType Value="0"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="12"/>
+          <AutomationTarget Id="84352">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+        </Timeable>
+        <Names>
+          <Name Id="0">
+            <Name Value="4b"/>
+          </Name>
+          <Name Id="1">
+            <Name Value="3b"/>
+          </Name>
+          <Name Id="2">
+            <Name Value="2b"/>
+          </Name>
+          <Name Id="3">
+            <Name Value="1.5b"/>
+          </Name>
+          <Name Id="4">
+            <Name Value="1b"/>
+          </Name>
+          <Name Id="5">
+            <Name Value="1.5n"/>
+          </Name>
+          <Name Id="6">
+            <Name Value="2n"/>
+          </Name>
+          <Name Id="7">
+            <Name Value="3n"/>
+          </Name>
+          <Name Id="8">
+            <Name Value="4n"/>
+          </Name>
+          <Name Id="9">
+            <Name Value="6n"/>
+          </Name>
+          <Name Id="10">
+            <Name Value="8n"/>
+          </Name>
+          <Name Id="11">
+            <Name Value="12n"/>
+          </Name>
+          <Name Id="12">
+            <Name Value="16n"/>
+          </Name>
+          <Name Id="13">
+            <Name Value="24n"/>
+          </Name>
+          <Name Id="14">
+            <Name Value="32n"/>
+          </Name>
+          <Name Id="15">
+            <Name Value="48n"/>
+          </Name>
+          <Name Id="16">
+            <Name Value="64n"/>
+          </Name>
+          <Name Id="17">
+            <Name Value="128n"/>
+          </Name>
+        </Names>
+      </MxDEnumParameter>
+      <MxDFloatParameter Id="99">
+        <Index Value="48"/>
+        <Type Value="0"/>
+        <Name Value="Tuning Mod Offset"/>
+        <ShortName Value="Tuning Offset"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="100"/>
+        <Default Value="32"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="56"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84353">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84354">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDFloatParameter Id="100">
+        <Index Value="49"/>
+        <Type Value="0"/>
+        <Name Value="Tuning Mod Range"/>
+        <ShortName Value="Tuning Range"/>
+        <MinValue Value="-100"/>
+        <MaxValue Value="100"/>
+        <Default Value="60"/>
+        <ModType Value="2"/>
+        <MinMod Value="-1"/>
+        <MaxMod Value="1"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="46"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84355">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84356">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+      </MxDFloatParameter>
+      <MxDIntParameter Id="101">
+        <Index Value="50"/>
+        <Type Value="1"/>
+        <Name Value="Upper Born Rule"/>
+        <ShortName Value="Born Hi"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="7"/>
+        <Default Value="3"/>
+        <ModType Value="4"/>
+        <MinMod Value="0"/>
+        <MaxMod Value="127"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="6"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84357">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84358">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+        <ScrollPosArranger Value="-1073741824"/>
+        <ScrollPosEnvelope Value="-1073741824"/>
+      </MxDIntParameter>
+      <MxDIntParameter Id="102">
+        <Index Value="51"/>
+        <Type Value="1"/>
+        <Name Value="upper Survival Rule"/>
+        <ShortName Value="Survive Hi"/>
+        <MinValue Value="0"/>
+        <MaxValue Value="7"/>
+        <Default Value="4"/>
+        <ModType Value="4"/>
+        <MinMod Value="0"/>
+        <MaxMod Value="127"/>
+        <Timeable>
+          <LomId Value="0"/>
+          <Manual Value="6"/>
+          <MidiControllerRange>
+            <Min Value="0"/>
+            <Max Value="1"/>
+          </MidiControllerRange>
+          <AutomationTarget Id="84359">
+            <LockEnvelope Value="0"/>
+          </AutomationTarget>
+          <ModulationTarget Id="84360">
+            <LockEnvelope Value="0"/>
+          </ModulationTarget>
+        </Timeable>
+        <ScrollPosArranger Value="-1073741824"/>
+        <ScrollPosEnvelope Value="-1073741824"/>
+      </MxDIntParameter>
+    </ParameterList>
+  </ParameterList>
+  <FileDropList>
+    <FileDropList>
+      <MxDFullFileDrop Id="5">
+        <Name Value="live.drop"/>
+        <FileRef>
+          <FileRef>
+            <RelativePathType Value="3"/>
+            <RelativePath Value="Samples/Kalimba.wav"/>
+            <Path Value="/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Kalimba.wav"/>
+            <Type Value="2"/>
+            <LivePackName Value=""/>
+            <LivePackId Value=""/>
+            <OriginalFileSize Value="7056044"/>
+            <OriginalCrc Value="5093"/>
+          </FileRef>
+          <LastModDate Value="1742403845"/>
+          <SourceContext/>
+          <SampleUsageHint Value="0"/>
+        </FileRef>
+      </MxDFullFileDrop>
+    </FileDropList>
+  </FileDropList>
+  <IdRefList>
+    <IdRefList/>
+  </IdRefList>
+  <BlobSlot>
+    <Value>
+      <MxDBlob Id="6">
+        <Blob>
+												7B0A0922646963745B315D22203A205B2009097B0A090909223122203A200909097B0A0909090922
+												737461727422203A20323631372C0A0909090922363422203A205B20302E3936383530342C203332
+												2E30205D2C0A0909090922393822203A205B20302E3936383530342C2033322E30205D2C0A090909
+												092231323922203A205B20302E3936383530342C2033322E30205D2C0A090909092231363022203A
+												205B20302E3936383530342C2033322E30205D2C0A090909092231373722203A205B20302E393638
+												3530342C2033322E30205D2C0A090909092232303422203A205B20302E3936383530342C2033322E
+												30205D2C0A090909092232323522203A205B20302E3936383530342C2033322E30205D2C0A090909
+												092232333922203A205B20302E3936383530342C2033322E30205D2C0A090909092232373022203A
+												205B20302E3936383530342C2033322E30205D2C0A090909092233313222203A205B20302E393638
+												3530342C2033322E30205D2C0A090909092233343622203A205B20302E3936383530342C2033322E
+												30205D2C0A090909092233363022203A205B20302E3936383530342C2033322E30205D2C0A090909
+												092233383022203A205B20302E3936383530342C2033322E30205D2C0A090909092234313522203A
+												205B20302E3936383530342C2033322E30205D2C0A090909092234323922203A205B20302E393638
+												3530342C2033322E30205D2C0A090909092234343722203A205B20302E3936383530342C2033322E
+												30205D2C0A090909092234383122203A205B20302E3936383530342C2033322E30205D2C0A090909
+												092235313222203A205B20302E3936383530342C2033322E30205D2C0A090909092235353722203A
+												205B20302E3936383530342C2033322E30205D2C0A090909092235363922203A205B20302E393638
+												3530342C2033322E30205D2C0A090909092235393622203A205B20302E3936383530342C2033322E
+												30205D2C0A090909092236333322203A205B20302E3936383530342C2033322E30205D2C0A090909
+												092236363422203A205B20302E3936383530342C2033322E30205D2C0A090909092236383122203A
+												205B20302E3936383530342C2033322E30205D2C0A090909092236393222203A205B20302E393638
+												3530342C2033322E30205D2C0A090909092237323122203A205B20302E3936383530342C2033322E
+												30205D2C0A090909092237353422203A205B20302E3936383530342C2033322E30205D2C0A090909
+												092237393022203A205B20302E3936383530342C2033322E30205D2C0A090909092238303522203A
+												205B20302E3936383530342C2033322E30205D2C0A090909092238323022203A205B20302E393638
+												3530342C2033322E30205D2C0A090909092238353222203A205B20302E3936383530342C2033322E
+												30205D2C0A090909092238373022203A205B20302E3936383530342C2033322E30205D2C0A090909
+												0922656E6422203A20333532350A0909097D0A2C0A090909223222203A200909097B0A0909090922
+												737461727422203A20343432392C0A0909090922363122203A205B20302E3539383432352C203139
+												2E30205D2C0A090909092231353822203A205B20302E3539383432352C2031392E30205D2C0A0909
+												09092232353722203A205B20302E3539383432352C2031392E30205D2C0A09090909223334372220
+												3A205B20302E3539383432352C2031392E30205D2C0A090909092233363222203A205B20302E3539
+												383432352C2031392E30205D2C0A090909092234353122203A205B20302E3539383432352C203139
+												2E30205D2C0A090909092235343522203A205B20302E3539383432352C2031392E30205D2C0A0909
+												09092236343422203A205B20302E3539383432352C2031392E30205D2C0A09090909223734372220
+												3A205B20302E3539383432352C2031392E30205D2C0A0909090922656E6422203A20353233320A09
+												09097D0A2C0A090909223322203A200909097B0A0909090922737461727422203A20363830312C0A
+												0909090922363422203A205B20312E302C2032362E30205D2C0A0909090922383522203A205B2031
+												2E302C2032362E30205D2C0A0909090922383622203A205B20312E302C2032362E30205D2C0A0909
+												090922383822203A205B20312E302C2032362E30205D2C0A0909090922393022203A205B20312E30
+												2C2032362E30205D2C0A0909090922393122203A205B20312E302C2033392E30205D2C0A09090909
+												22393322203A205B20312E302C2033392E30205D2C0A0909090922393522203A205B20312E302C20
+												33392E30205D2C0A0909090922393622203A205B20312E302C2033392E30205D2C0A090909092231
+												353522203A205B20312E302C2033392E30205D2C0A090909092231373022203A205B20312E302C20
+												32362E30205D2C0A090909092231373222203A205B20312E302C2032362E30205D2C0A0909090922
+												31373422203A205B20312E302C2032362E30205D2C0A090909092231373522203A205B20312E302C
+												2031332E30205D2C0A090909092231373722203A205B20312E302C2031332E30205D2C0A09090909
+												2231383322203A205B20312E302C2031332E30205D2C0A090909092231383422203A205B20312E30
+												2C2031332E30205D2C0A090909092231383622203A205B20312E302C2032362E30205D2C0A090909
+												092231383822203A205B20312E302C2032362E30205D2C0A090909092231383922203A205B20312E
+												302C2033392E30205D2C0A090909092231393122203A205B20312E302C2033392E30205D2C0A0909
+												09092231393322203A205B20312E302C2033392E30205D2C0A090909092231393422203A205B2031
+												2E302C2033392E30205D2C0A090909092231393622203A205B20312E302C2033392E30205D2C0A09
+												0909092235303222203A205B20312E302C2033392E30205D2C0A090909092235313622203A205B20
+												312E302C2032362E30205D2C0A090909092235313722203A205B20312E302C2032362E30205D2C0A
+												090909092235313922203A205B20312E302C2032362E30205D2C0A090909092235323622203A205B
+												20312E302C2032362E30205D2C0A090909092235323722203A205B20312E302C2032362E30205D2C
+												0A090909092235323922203A205B20312E302C2032362E30205D2C0A090909092235333122203A20
+												5B20312E302C2032362E30205D2C0A090909092235333222203A205B20312E302C2033392E30205D
+												2C0A090909092235333422203A205B20312E302C2033392E30205D2C0A090909092235333622203A
+												205B20312E302C2033392E30205D2C0A090909092235333722203A205B20312E302C2033392E3020
+												5D2C0A090909092235333922203A205B20312E302C2033392E30205D2C0A09090909223534312220
+												3A205B20312E302C2033392E30205D2C0A090909092235343322203A205B20312E302C2033392E30
+												205D2C0A090909092235343422203A205B20312E302C2033392E30205D2C0A090909092235343622
+												203A205B20312E302C2033392E30205D2C0A090909092235343822203A205B20312E302C2033392E
+												30205D2C0A090909092235353122203A205B20312E302C2033392E30205D2C0A0909090922353532
+												22203A205B20312E302C2033392E30205D2C0A090909092235353422203A205B20312E302C203339
+												2E30205D2C0A090909092235353622203A205B20312E302C2033392E30205D2C0A09090909223535
+												3722203A205B20312E302C2033392E30205D2C0A090909092235363022203A205B20312E302C2033
+												392E30205D2C0A090909092235363222203A205B20312E302C2033392E30205D2C0A090909092235
+												363422203A205B20312E302C2033392E30205D2C0A090909092235363522203A205B20312E302C20
+												32362E30205D2C0A090909092235363722203A205B20312E302C2032362E30205D2C0A0909090922
+												35373522203A205B20312E302C2032362E30205D2C0A090909092235373722203A205B20312E302C
+												2032362E30205D2C0A090909092235373922203A205B20312E302C2032362E30205D2C0A09090909
+												2235383122203A205B20312E302C2032362E30205D2C0A090909092235383722203A205B20312E30
+												2C2032362E30205D2C0A090909092235383922203A205B20312E302C2032362E30205D2C0A090909
+												092235393022203A205B20312E302C2032362E30205D2C0A090909092235393222203A205B20312E
+												302C2033392E30205D2C0A090909092235393422203A205B20312E302C2033392E30205D2C0A0909
+												09092235393522203A205B20312E302C2033392E30205D2C0A090909092235393722203A205B2031
+												2E302C2033392E30205D2C0A090909092235393922203A205B20312E302C2033392E30205D2C0A09
+												0909092236303022203A205B20312E302C2035322E30205D2C0A090909092236303222203A205B20
+												312E302C2035322E30205D2C0A090909092236303422203A205B20312E302C2035322E30205D2C0A
+												090909092236303922203A205B20312E302C2035322E30205D2C0A090909092236313422203A205B
+												20312E302C2035322E30205D2C0A090909092236313622203A205B20312E302C2033392E30205D2C
+												0A090909092236313722203A205B20312E302C2033392E30205D2C0A090909092236313922203A20
+												5B20312E302C2032362E30205D2C0A090909092236323122203A205B20312E302C2032362E30205D
+												2C0A090909092236323322203A205B20312E302C2032362E30205D2C0A090909092236323522203A
+												205B20312E302C2032362E30205D2C0A090909092236323822203A205B20312E302C2032362E3020
+												5D2C0A090909092236333022203A205B20312E302C2032362E30205D2C0A09090909223633332220
+												3A205B20312E302C2032362E30205D2C0A090909092236333622203A205B20312E302C2032362E30
+												205D2C0A090909092238323522203A205B20312E302C2032362E30205D2C0A090909092238343622
+												203A205B20312E302C2032362E30205D2C0A090909092238343822203A205B20312E302C2031332E
+												30205D2C0A090909092238353022203A205B20312E302C2031332E30205D2C0A0909090922383531
+												22203A205B20312E302C2031332E30205D2C0A090909092238353422203A205B20312E302C203133
+												2E30205D2C0A090909092238353522203A205B20312E302C2031332E30205D2C0A09090909223835
+												3722203A205B20312E302C2031332E30205D2C0A090909092238353922203A205B20312E302C2031
+												332E30205D2C0A090909092238363022203A205B20312E302C2032362E30205D2C0A090909092238
+												363222203A205B20312E302C2032362E30205D2C0A090909092238363422203A205B20312E302C20
+												32362E30205D2C0A090909092238363522203A205B20312E302C2032362E30205D2C0A0909090922
+												38363722203A205B20312E302C2032362E30205D2C0A090909092238363922203A205B20312E302C
+												2032362E30205D2C0A090909092238373022203A205B20312E302C2032362E30205D2C0A09090909
+												2238373222203A205B20312E302C2032362E30205D2C0A090909092238373422203A205B20312E30
+												2C2032362E30205D2C0A090909092238373522203A205B20312E302C2033392E30205D2C0A090909
+												092238373722203A205B20312E302C2034302E30205D2C0A090909092238373922203A205B20312E
+												302C2034302E30205D2C0A090909092238383022203A205B20312E302C2034302E30205D2C0A0909
+												09092238383222203A205B20312E302C2032372E30205D2C0A090909092238383422203A205B2031
+												2E302C2032372E30205D2C0A090909092238383622203A205B20312E302C2032372E30205D2C0A09
+												0909092238393222203A205B20312E302C2032372E30205D2C0A090909092238393322203A205B20
+												312E302C2034302E30205D2C0A090909092238393522203A205B20312E302C2034302E30205D2C0A
+												090909092238393722203A205B20312E302C2034302E30205D2C0A090909092238393822203A205B
+												20312E302C2034302E30205D2C0A090909092239303022203A205B20312E302C2033392E30205D2C
+												0A090909092239303222203A205B20312E302C2033392E30205D2C0A090909092239303322203A20
+												5B20312E302C2033392E30205D2C0A090909092239303522203A205B20312E302C2033392E30205D
+												2C0A090909092239303722203A205B20312E302C2033392E30205D2C0A090909092239303822203A
+												205B20312E302C2033392E30205D2C0A090909092239313022203A205B20312E302C2033392E3020
+												5D2C0A090909092239313222203A205B20312E302C2033392E30205D2C0A09090909223931332220
+												3A205B20312E302C2033392E30205D2C0A090909092239313522203A205B20312E302C2032362E30
+												205D2C0A090909092239313722203A205B20312E302C2032362E30205D2C0A090909092239313822
+												203A205B20312E302C2032362E30205D2C0A090909092239323022203A205B20312E302C2032362E
+												30205D2C0A090909092239323222203A205B20312E302C2032362E30205D2C0A0909090922393233
+												22203A205B20312E302C2032362E30205D2C0A090909092239323522203A205B20312E302C203236
+												2E30205D2C0A090909092239323722203A205B20312E302C2032362E30205D2C0A09090909223932
+												3822203A205B20312E302C2032362E30205D2C0A090909092239333022203A205B20312E302C2032
+												362E30205D2C0A090909092239333322203A205B20312E302C2032362E30205D2C0A090909092239
+												333822203A205B20312E302C2032362E30205D2C0A090909092239343022203A205B20312E302C20
+												32362E30205D2C0A090909092239343122203A205B20312E302C2032362E30205D2C0A0909090922
+												39343322203A205B20312E302C2032362E30205D2C0A090909092239343522203A205B20312E302C
+												2032362E30205D2C0A090909092239343622203A205B20312E302C2032362E30205D2C0A09090909
+												2239343822203A205B20312E302C2032362E30205D2C0A090909092239353022203A205B20312E30
+												2C2032362E30205D2C0A090909092239353122203A205B20312E302C2033392E30205D2C0A090909
+												092239353322203A205B20312E302C2033392E30205D2C0A090909092239353622203A205B20312E
+												302C2033392E30205D2C0A090909092239363322203A205B20312E302C2033392E30205D2C0A0909
+												09092239363422203A205B20312E302C2033392E30205D2C0A090909092239363622203A205B2031
+												2E302C2033392E30205D2C0A09090909223131323122203A205B20312E302C2033392E30205D2C0A
+												09090909223131333922203A205B20312E302C2032362E30205D2C0A09090909223131343022203A
+												205B20312E302C2032362E30205D2C0A09090909223131343222203A205B20312E302C2032362E30
+												205D2C0A09090909223131343422203A205B20312E302C2032362E30205D2C0A0909090922313134
+												3922203A205B20312E302C2032362E30205D2C0A09090909223131353022203A205B20312E302C20
+												32362E30205D2C0A09090909223131353222203A205B20312E302C2032362E30205D2C0A09090909
+												223131353422203A205B20312E302C2032362E30205D2C0A09090909223131353522203A205B2031
+												2E302C2032362E30205D2C0A09090909223131353722203A205B20312E302C2032362E30205D2C0A
+												09090909223131353922203A205B20312E302C2032362E30205D2C0A09090909223131363022203A
+												205B20312E302C2032362E30205D2C0A09090909223131363222203A205B20312E302C2032362E30
+												205D2C0A09090909223131363422203A205B20312E302C2032362E30205D2C0A0909090922313138
+												3122203A205B20312E302C2032362E30205D2C0A09090909223132303022203A205B20312E302C20
+												31332E30205D2C0A09090909223132303222203A205B20312E302C2031332E30205D2C0A09090909
+												223132303422203A205B20312E302C2031332E30205D2C0A09090909223132303822203A205B2031
+												2E302C2031332E30205D2C0A09090909223132313022203A205B20312E302C2031332E30205D2C0A
+												09090909223132313222203A205B20312E302C2031332E30205D2C0A09090909223132313322203A
+												205B20312E302C2031332E30205D2C0A09090909223132313522203A205B20312E302C2031342E30
+												205D2C0A09090909223132313722203A205B20312E302C2031342E30205D2C0A0909090922313231
+												3822203A205B20312E302C2031342E30205D2C0A09090909223132323022203A205B20312E302C20
+												31342E30205D2C0A09090909223132323222203A205B20312E302C2031342E30205D2C0A09090909
+												223132323422203A205B20312E302C2032372E30205D2C0A09090909223132323622203A205B2031
+												2E302C2032372E30205D2C0A09090909223132323822203A205B20312E302C2032372E30205D2C0A
+												09090909223132333022203A205B20312E302C2032372E30205D2C0A09090909223132333122203A
+												205B20312E302C2032372E30205D2C0A09090909223132333322203A205B20312E302C2032372E30
+												205D2C0A09090909223132333522203A205B20312E302C2032372E30205D2C0A0909090922313233
+												3622203A205B20312E302C2032362E30205D2C0A09090909223132333822203A205B20312E302C20
+												32362E30205D2C0A09090909223132343022203A205B20312E302C2033392E30205D2C0A09090909
+												223132343122203A205B20312E302C2033392E30205D2C0A09090909223132343322203A205B2031
+												2E302C2033392E30205D2C0A09090909223132343622203A205B20312E302C2033392E30205D2C0A
+												09090909223132353122203A205B20312E302C2033392E30205D2C0A09090909223132353322203A
+												205B20312E302C2033392E30205D2C0A09090909223132353622203A205B20312E302C2033392E30
+												205D2C0A09090909223132353722203A205B20312E302C2033392E30205D2C0A0909090922313235
+												3922203A205B20312E302C2033392E30205D2C0A09090909223132363122203A205B20312E302C20
+												33392E30205D2C0A09090909223132363222203A205B20312E302C2033392E30205D2C0A09090909
+												223132363622203A205B20312E302C2033392E30205D2C0A09090909223132363922203A205B2031
+												2E302C2033392E30205D2C0A09090909223132373022203A205B20312E302C2033392E30205D2C0A
+												09090909223132373222203A205B20312E302C2033392E30205D2C0A09090909223132373422203A
+												205B20312E302C2033392E30205D2C0A09090909223132373522203A205B20312E302C2034302E30
+												205D2C0A09090909223132373722203A205B20312E302C2034302E30205D2C0A0909090922313237
+												3922203A205B20312E302C2034302E30205D2C0A09090909223132383022203A205B20312E302C20
+												34302E30205D2C0A09090909223132383222203A205B20312E302C2034302E30205D2C0A09090909
+												223132383422203A205B20312E302C2034302E30205D2C0A09090909223132383522203A205B2031
+												2E302C2034302E30205D2C0A09090909223132383722203A205B20312E302C2034302E30205D2C0A
+												09090909223132383922203A205B20312E302C2034302E30205D2C0A09090909223132393022203A
+												205B20312E302C2034302E30205D2C0A09090909223132393222203A205B20312E302C2034302E30
+												205D2C0A09090909223132393422203A205B20312E302C2032372E30205D2C0A0909090922313239
+												3522203A205B20312E302C2032372E30205D2C0A09090909223132393722203A205B20312E302C20
+												32372E30205D2C0A09090909223132393922203A205B20312E302C2032362E30205D2C0A09090909
+												223133303022203A205B20312E302C2032362E30205D2C0A09090909223133303222203A205B2031
+												2E302C2032362E30205D2C0A09090909223133303422203A205B20312E302C2032362E30205D2C0A
+												09090909223133303722203A205B20312E302C2032362E30205D2C0A09090909223133313322203A
+												205B20312E302C2032362E30205D2C0A09090909223133313422203A205B20312E302C2032362E30
+												205D2C0A09090909223133313622203A205B20312E302C2032362E30205D2C0A0909090922313331
+												3822203A205B20312E302C2032362E30205D2C0A09090909223133313922203A205B20312E302C20
+												32362E30205D2C0A09090909223133323122203A205B20312E302C2032362E30205D2C0A09090909
+												223133323322203A205B20312E302C2032362E30205D2C0A09090909223133323422203A205B2031
+												2E302C2033392E30205D2C0A09090909223133323622203A205B20312E302C2033392E30205D2C0A
+												09090909223133323822203A205B20312E302C2033392E30205D2C0A09090909223133323922203A
+												205B20312E302C2033392E30205D2C0A09090909223133333522203A205B20312E302C2033392E30
+												205D2C0A09090909223133333722203A205B20312E302C2033392E30205D2C0A0909090922656E64
+												22203A20383139380A0909097D0A2C0A090909223422203A200909097B0A09090909227374617274
+												22203A20383336362C0A090909092231313822203A205B20312E302C2037302E30205D2C0A090909
+												092231333222203A205B20312E302C2037302E30205D2C0A090909092231333322203A205B20312E
+												302C2037312E30205D2C0A090909092231333522203A205B20312E302C2037312E30205D2C0A0909
+												09092231333722203A205B20312E302C2037312E30205D2C0A090909092231333822203A205B2031
+												2E302C2037322E30205D2C0A090909092231343022203A205B20312E302C2037322E30205D2C0A09
+												0909092231343922203A205B20312E302C2035392E30205D2C0A090909092231353322203A205B20
+												312E302C2035392E30205D2C0A090909092231353522203A205B20312E302C2035392E30205D2C0A
+												090909092231353922203A205B20312E302C2035392E30205D2C0A090909092231363022203A205B
+												20312E302C2035392E30205D2C0A090909092231363222203A205B20312E302C2035382E30205D2C
+												0A090909092231363422203A205B20312E302C2035382E30205D2C0A090909092231363522203A20
+												5B20312E302C2035382E30205D2C0A090909092231363722203A205B20312E302C2035372E30205D
+												2C0A090909092231363922203A205B20312E302C2035372E30205D2C0A090909092231373022203A
+												205B20312E302C2035372E30205D2C0A090909092231373322203A205B20312E302C2035372E3020
+												5D2C0A090909092231373722203A205B20312E302C2035372E30205D2C0A09090909223137392220
+												3A205B20312E302C2035372E30205D2C0A090909092231383022203A205B20312E302C2035372E30
+												205D2C0A090909092231383222203A205B20312E302C2035372E30205D2C0A090909092231383422
+												203A205B20312E302C2037302E30205D2C0A090909092231383522203A205B20312E302C2037302E
+												30205D2C0A090909092231383722203A205B20312E302C2037302E30205D2C0A0909090922313839
+												22203A205B20312E302C2037302E30205D2C0A090909092231393022203A205B20312E302C203730
+												2E30205D2C0A090909092231393222203A205B20312E302C2037302E30205D2C0A09090909223139
+												3422203A205B20312E302C2037302E30205D2C0A090909092231393522203A205B20312E302C2037
+												312E30205D2C0A090909092231393722203A205B20312E302C2037312E30205D2C0A090909092231
+												393922203A205B20312E302C2037312E30205D2C0A090909092232303022203A205B20312E302C20
+												37312E30205D2C0A090909092232303222203A205B20312E302C2037312E30205D2C0A0909090922
+												32303422203A205B20312E302C2037312E30205D2C0A090909092232303522203A205B20312E302C
+												2037312E30205D2C0A090909092232303722203A205B20312E302C2037312E30205D2C0A09090909
+												2232303922203A205B20312E302C2037312E30205D2C0A090909092232313022203A205B20312E30
+												2C2037322E30205D2C0A090909092232313222203A205B20312E302C2037322E30205D2C0A090909
+												092232313422203A205B20312E302C2037322E30205D2C0A090909092232313522203A205B20312E
+												302C2037322E30205D2C0A090909092234313122203A205B20312E302C2037322E30205D2C0A0909
+												09092234323622203A205B20312E302C2037312E30205D2C0A090909092234323822203A205B2031
+												2E302C2037302E30205D2C0A090909092234333022203A205B20312E302C2037302E30205D2C0A09
+												0909092234333122203A205B20312E302C2037302E30205D2C0A090909092234333322203A205B20
+												312E302C2036392E30205D2C0A090909092234333522203A205B20312E302C2036392E30205D2C0A
+												090909092234333622203A205B20312E302C2036392E30205D2C0A090909092234333822203A205B
+												20312E302C2035362E30205D2C0A090909092234343022203A205B20312E302C2035362E30205D2C
+												0A090909092234343222203A205B20312E302C2035372E30205D2C0A090909092234343322203A20
+												5B20312E302C2035372E30205D2C0A090909092234343522203A205B20312E302C2035372E30205D
+												2C0A090909092234343722203A205B20312E302C2035382E30205D2C0A090909092234343822203A
+												205B20312E302C2035382E30205D2C0A090909092234353022203A205B20312E302C2035382E3020
+												5D2C0A090909092234353222203A205B20312E302C2035382E30205D2C0A09090909223435332220
+												3A205B20312E302C2035392E30205D2C0A090909092234353522203A205B20312E302C2035392E30
+												205D2C0A090909092234353722203A205B20312E302C2035392E30205D2C0A090909092234353822
+												203A205B20312E302C2035392E30205D2C0A090909092234363022203A205B20312E302C2035392E
+												30205D2C0A090909092234363222203A205B20312E302C2035392E30205D2C0A0909090922343633
+												22203A205B20312E302C2035392E30205D2C0A090909092234363522203A205B20312E302C203732
+												2E30205D2C0A090909092234363722203A205B20312E302C2037322E30205D2C0A09090909223436
+												3822203A205B20312E302C2037322E30205D2C0A090909092234373022203A205B20312E302C2037
+												322E30205D2C0A090909092234373222203A205B20312E302C2037332E30205D2C0A090909092234
+												373322203A205B20312E302C2038372E30205D2C0A090909092234373522203A205B20312E302C20
+												38382E30205D2C0A090909092234373722203A205B20312E302C2038382E30205D2C0A0909090922
+												34373822203A205B20312E302C2038382E30205D2C0A090909092234383122203A205B20312E302C
+												2038382E30205D2C0A090909092234383222203A205B20312E302C2038382E30205D2C0A09090909
+												2234383422203A205B20312E302C2038382E30205D2C0A090909092234383622203A205B20312E30
+												2C2038372E30205D2C0A090909092234383722203A205B20312E302C2038372E30205D2C0A090909
+												092234383922203A205B20312E302C2038372E30205D2C0A090909092234393122203A205B20312E
+												302C2038362E30205D2C0A090909092234393222203A205B20312E302C2038352E30205D2C0A0909
+												09092234393422203A205B20312E302C2038352E30205D2C0A090909092234393622203A205B2031
+												2E302C2038352E30205D2C0A090909092238303322203A205B20312E302C2037302E30205D2C0A09
+												0909092238313622203A205B20312E302C2037302E30205D2C0A090909092238313722203A205B20
+												312E302C2037312E30205D2C0A090909092238313922203A205B20312E302C2037322E30205D2C0A
+												090909092238323122203A205B20312E302C2037322E30205D2C0A090909092238323222203A205B
+												20312E302C2037332E30205D2C0A090909092238323422203A205B20312E302C2037332E30205D2C
+												0A090909092238323822203A205B20312E302C2037332E30205D2C0A090909092238323922203A20
+												5B20312E302C2035392E30205D2C0A090909092238333122203A205B20312E302C2035392E30205D
+												2C0A090909092238333322203A205B20312E302C2035382E30205D2C0A090909092238333422203A
+												205B20312E302C2035382E30205D2C0A090909092238333622203A205B20312E302C2035382E3020
+												5D2C0A090909092238333822203A205B20312E302C2035382E30205D2C0A09090909223833392220
+												3A205B20312E302C2035382E30205D2C0A090909092238343122203A205B20312E302C2035382E30
+												205D2C0A090909092238343322203A205B20312E302C2035382E30205D2C0A090909092238343722
+												203A205B20312E302C2035382E30205D2C0A090909092238343822203A205B20312E302C2035382E
+												30205D2C0A090909092238353022203A205B20312E302C2035382E30205D2C0A0909090922383532
+												22203A205B20312E302C2035372E30205D2C0A090909092238353322203A205B20312E302C203730
+												2E30205D2C0A090909092238353522203A205B20312E302C2037302E30205D2C0A09090909223835
+												3722203A205B20312E302C2037302E30205D2C0A090909092238353822203A205B20312E302C2037
+												302E30205D2C0A090909092238393722203A205B20312E302C2036352E30205D2C0A090909092239
+												313422203A205B20312E302C2035322E30205D2C0A090909092239313622203A205B20312E302C20
+												35322E30205D2C0A090909092239313722203A205B20312E302C2035322E30205D2C0A0909090922
+												39313922203A205B20312E302C2035322E30205D2C0A090909092239323122203A205B20312E302C
+												2035322E30205D2C0A090909092239323222203A205B20312E302C2035322E30205D2C0A09090909
+												2239323422203A205B20312E302C2035322E30205D2C0A090909092239323622203A205B20312E30
+												2C2035322E30205D2C0A090909092239323722203A205B20312E302C2035322E30205D2C0A090909
+												092239323922203A205B20312E302C2035322E30205D2C0A090909092239333122203A205B20312E
+												302C2036362E30205D2C0A090909092239333222203A205B20312E302C2036362E30205D2C0A0909
+												09092239333422203A205B20312E302C2036362E30205D2C0A09090909223130333622203A205B20
+												312E302C2037322E30205D2C0A09090909223130353222203A205B20312E302C2037322E30205D2C
+												0A09090909223130353322203A205B20312E302C2037322E30205D2C0A0909090922313035352220
+												3A205B20312E302C2037332E30205D2C0A09090909223130353722203A205B20312E302C2037332E
+												30205D2C0A09090909223130353822203A205B20312E302C2037332E30205D2C0A09090909223130
+												363322203A205B20312E302C2036302E30205D2C0A09090909223130363522203A205B20312E302C
+												2036302E30205D2C0A09090909223130363722203A205B20312E302C2036302E30205D2C0A090909
+												09223130363822203A205B20312E302C2035392E30205D2C0A09090909223130373022203A205B20
+												312E302C2035392E30205D2C0A09090909223130373222203A205B20312E302C2035392E30205D2C
+												0A09090909223130373322203A205B20312E302C2035382E30205D2C0A0909090922313037352220
+												3A205B20312E302C2035382E30205D2C0A09090909223130373722203A205B20312E302C2035382E
+												30205D2C0A09090909223130373922203A205B20312E302C2035382E30205D2C0A09090909223130
+												383022203A205B20312E302C2035382E30205D2C0A09090909223130383222203A205B20312E302C
+												2035382E30205D2C0A09090909223130383622203A205B20312E302C2035382E30205D2C0A090909
+												09223130383822203A205B20312E302C2035382E30205D2C0A09090909223130383922203A205B20
+												312E302C2035382E30205D2C0A09090909223130393122203A205B20312E302C2035382E30205D2C
+												0A09090909223130393322203A205B20312E302C2035382E30205D2C0A0909090922313039342220
+												3A205B20312E302C2037312E30205D2C0A09090909223130393622203A205B20312E302C2037312E
+												30205D2C0A09090909223131343022203A205B20312E302C20362E30205D2C0A0909090922313135
+												3122203A205B20312E302C20362E30205D2C0A09090909223131353322203A205B20312E302C2037
+												2E30205D2C0A09090909223131353422203A205B20312E302C20372E30205D2C0A09090909223131
+												353622203A205B20312E302C20382E30205D2C0A09090909223131363422203A205B20312E302C20
+												382E30205D2C0A09090909223131363622203A205B20312E302C20382E30205D2C0A090909092231
+												31363722203A205B20312E302C20372E30205D2C0A09090909223131363922203A205B20312E302C
+												20372E30205D2C0A09090909223131373122203A205B20312E302C20372E30205D2C0A0909090922
+												3131373222203A205B20312E302C20372E30205D2C0A09090909223131373422203A205B20312E30
+												2C20372E30205D2C0A09090909223131373622203A205B20312E302C20372E30205D2C0A09090909
+												223131383122203A205B20312E302C20372E30205D2C0A09090909223131383222203A205B20312E
+												302C20372E30205D2C0A09090909223131383422203A205B20312E302C20372E30205D2C0A090909
+												09223131383622203A205B20312E302C20362E30205D2C0A09090909223132383822203A205B2031
+												2E302C2032342E30205D2C0A09090909223133303122203A205B20312E302C2032342E30205D2C0A
+												09090909223133303322203A205B20312E302C2032342E30205D2C0A09090909223133303522203A
+												205B20312E302C2032342E30205D2C0A09090909223133303822203A205B20312E302C2032342E30
+												205D2C0A09090909223133313022203A205B20312E302C2032342E30205D2C0A0909090922313331
+												3222203A205B20312E302C2033372E30205D2C0A09090909223133313322203A205B20312E302C20
+												33372E30205D2C0A09090909223133313522203A205B20312E302C2033372E30205D2C0A09090909
+												223133313722203A205B20312E302C2033372E30205D2C0A09090909223133323022203A205B2031
+												2E302C2033372E30205D2C0A09090909223133323122203A205B20312E302C2033372E30205D2C0A
+												09090909223133323322203A205B20312E302C2035302E30205D2C0A09090909223133323522203A
+												205B20312E302C2035302E30205D2C0A09090909223133323622203A205B20312E302C2035302E30
+												205D2C0A09090909223133323822203A205B20312E302C2035302E30205D2C0A0909090922313333
+												3022203A205B20312E302C2035302E30205D2C0A09090909223133333122203A205B20312E302C20
+												35302E30205D2C0A09090909223133333322203A205B20312E302C2035302E30205D2C0A09090909
+												223133333522203A205B20312E302C2035302E30205D2C0A09090909223133333622203A205B2031
+												2E302C2035302E30205D2C0A09090909223133343222203A205B20312E302C2035302E30205D2C0A
+												09090909223133343422203A205B20312E302C2035302E30205D2C0A09090909223133343622203A
+												205B20312E302C2035312E30205D2C0A09090909223133343722203A205B20312E302C2035312E30
+												205D2C0A09090909223133343922203A205B20312E302C2035312E30205D2C0A0909090922313335
+												3122203A205B20312E302C2035312E30205D2C0A09090909223133353222203A205B20312E302C20
+												35312E30205D2C0A09090909223133353422203A205B20312E302C2035312E30205D2C0A09090909
+												223133353622203A205B20312E302C2035312E30205D2C0A09090909223133353722203A205B2031
+												2E302C2033382E30205D2C0A09090909223133353922203A205B20312E302C2033372E30205D2C0A
+												09090909223133363122203A205B20312E302C2033372E30205D2C0A09090909223133363322203A
+												205B20312E302C2033372E30205D2C0A09090909223133363422203A205B20312E302C2033372E30
+												205D2C0A09090909223133363622203A205B20312E302C2033382E30205D2C0A0909090922313336
+												3822203A205B20312E302C2033382E30205D2C0A09090909223133363922203A205B20312E302C20
+												33382E30205D2C0A09090909223133373122203A205B20312E302C2033382E30205D2C0A09090909
+												223133373322203A205B20312E302C2032342E30205D2C0A09090909223133373422203A205B2031
+												2E302C2032342E30205D2C0A09090909223133373622203A205B20312E302C2032342E30205D2C0A
+												09090909223133383422203A205B20312E302C2032342E30205D2C0A09090909223133383522203A
+												205B20312E302C2033372E30205D2C0A09090909223133383722203A205B20312E302C2033372E30
+												205D2C0A09090909223133383922203A205B20312E302C2033372E30205D2C0A0909090922313339
+												3022203A205B20312E302C2033372E30205D2C0A09090909223133393222203A205B20312E302C20
+												33372E30205D2C0A09090909223133393422203A205B20312E302C2033372E30205D2C0A09090909
+												223133393522203A205B20312E302C2035302E30205D2C0A09090909223133393722203A205B2031
+												2E302C2035302E30205D2C0A09090909223133393922203A205B20312E302C2035312E30205D2C0A
+												09090909223134303022203A205B20312E302C2035312E30205D2C0A09090909223134303222203A
+												205B20312E302C2035312E30205D2C0A09090909223134303422203A205B20312E302C2035312E30
+												205D2C0A09090909223134303522203A205B20312E302C2035312E30205D2C0A0909090922313430
+												3722203A205B20312E302C2036342E30205D2C0A09090909223134303922203A205B20312E302C20
+												36342E30205D2C0A09090909223134313022203A205B20312E302C2036342E30205D2C0A09090909
+												223134313222203A205B20312E302C2036342E30205D2C0A09090909223134313422203A205B2031
+												2E302C2036342E30205D2C0A09090909223134313522203A205B20312E302C2036342E30205D2C0A
+												09090909223134313722203A205B20312E302C2036342E30205D2C0A09090909223134313922203A
+												205B20312E302C2036342E30205D2C0A09090909223134323022203A205B20312E302C2036342E30
+												205D2C0A09090909223134323222203A205B20312E302C2036342E30205D2C0A0909090922313432
+												3522203A205B20312E302C2036342E30205D2C0A09090909223134323722203A205B20312E302C20
+												36342E30205D2C0A09090909223134323922203A205B20312E302C2035302E30205D2C0A09090909
+												223134333022203A205B20312E302C2035302E30205D2C0A09090909223134333222203A205B2031
+												2E302C2034392E30205D2C0A09090909223134333422203A205B20312E302C2033352E30205D2C0A
+												09090909223134333522203A205B20312E302C2033352E30205D2C0A09090909223134333722203A
+												205B20312E302C2033352E30205D2C0A09090909223134333922203A205B20312E302C2032322E30
+												205D2C0A09090909223134343022203A205B20312E302C2032322E30205D2C0A0909090922313434
+												3222203A205B20312E302C2032322E30205D2C0A09090909223134343422203A205B20312E302C20
+												32322E30205D2C0A09090909223134343522203A205B20312E302C2032322E30205D2C0A09090909
+												223134343722203A205B20312E302C2032322E30205D2C0A09090909223134343922203A205B2031
+												2E302C20392E30205D2C0A09090909223134353022203A205B20312E302C20392E30205D2C0A0909
+												0909223134353222203A205B20312E302C2031302E30205D2C0A09090909223134353422203A205B
+												20312E302C2031302E30205D2C0A09090909223134353522203A205B20312E302C2031302E30205D
+												2C0A09090909223134353722203A205B20312E302C2031302E30205D2C0A09090909223134353922
+												203A205B20312E302C2031312E30205D2C0A09090909223134363022203A205B20312E302C203131
+												2E30205D2C0A09090909223134363222203A205B20312E302C2031312E30205D2C0A090909092231
+												34363422203A205B20312E302C2031312E30205D2C0A09090909223134363522203A205B20312E30
+												2C2032342E30205D2C0A09090909223134363722203A205B20312E302C2032352E30205D2C0A0909
+												0909223134363922203A205B20312E302C2032352E30205D2C0A09090909223134373022203A205B
+												20312E302C2032352E30205D2C0A09090909223134373222203A205B20312E302C2033382E30205D
+												2C0A09090909223134373422203A205B20312E302C2033382E30205D2C0A09090909223134373522
+												203A205B20312E302C2033382E30205D2C0A09090909223134373722203A205B20312E302C203338
+												2E30205D2C0A09090909223134373922203A205B20312E302C2033382E30205D2C0A090909092231
+												34383022203A205B20312E302C2033382E30205D2C0A09090909223134383222203A205B20312E30
+												2C2035312E30205D2C0A09090909223134383422203A205B20312E302C2035312E30205D2C0A0909
+												0909223134383522203A205B20312E302C2035302E30205D2C0A09090909223134383722203A205B
+												20312E302C2035302E30205D2C0A09090909223137323922203A205B20312E302C2035302E30205D
+												2C0A09090909223137343822203A205B20312E302C2033362E30205D2C0A09090909223137353022
+												203A205B20312E302C2033362E30205D2C0A09090909223137353222203A205B20312E302C203233
+												2E30205D2C0A09090909223137353322203A205B20312E302C2032332E30205D2C0A090909092231
+												37353522203A205B20312E302C2032332E30205D2C0A09090909223137353722203A205B20312E30
+												2C2032322E30205D2C0A09090909223137353922203A205B20312E302C2032322E30205D2C0A0909
+												0909223137363022203A205B20312E302C2032322E30205D2C0A09090909223137363222203A205B
+												20312E302C2032322E30205D2C0A09090909223137363422203A205B20312E302C2032322E30205D
+												2C0A09090909223137363522203A205B20312E302C2032322E30205D2C0A09090909223137363722
+												203A205B20312E302C20392E30205D2C0A09090909223137363922203A205B20312E302C2031302E
+												30205D2C0A09090909223137373022203A205B20312E302C2031302E30205D2C0A09090909223137
+												373222203A205B20312E302C2031302E30205D2C0A09090909223137373422203A205B20312E302C
+												2031312E30205D2C0A09090909223137373522203A205B20312E302C2031312E30205D2C0A090909
+												09223137373722203A205B20312E302C2031312E30205D2C0A09090909223137373922203A205B20
+												312E302C2031322E30205D2C0A09090909223137383022203A205B20312E302C2031322E30205D2C
+												0A09090909223137383222203A205B20312E302C2031322E30205D2C0A0909090922313738342220
+												3A205B20312E302C2031322E30205D2C0A09090909223137383522203A205B20312E302C2031322E
+												30205D2C0A09090909223137383722203A205B20312E302C2032352E30205D2C0A09090909223137
+												383922203A205B20312E302C2032352E30205D2C0A09090909223137393022203A205B20312E302C
+												2032352E30205D2C0A09090909223137393222203A205B20312E302C2032342E30205D2C0A090909
+												09223137393422203A205B20312E302C2032342E30205D2C0A09090909223137393522203A205B20
+												312E302C2032342E30205D2C0A09090909223137393722203A205B20312E302C2032342E30205D2C
+												0A09090909223137393922203A205B20312E302C2032342E30205D2C0A0909090922313830302220
+												3A205B20312E302C2033372E30205D2C0A09090909223138303222203A205B20312E302C2035302E
+												30205D2C0A09090909223138303422203A205B20312E302C2036332E30205D2C0A09090909223138
+												303522203A205B20312E302C2036332E30205D2C0A09090909223138303722203A205B20312E302C
+												2036332E30205D2C0A09090909223138303922203A205B20312E302C2037362E30205D2C0A090909
+												09223138313322203A205B20312E302C2037362E30205D2C0A09090909223138313722203A205B20
+												312E302C2037362E30205D2C0A09090909223138313822203A205B20312E302C2037362E30205D2C
+												0A09090909223138323022203A205B20312E302C2037362E30205D2C0A0909090922313832322220
+												3A205B20312E302C2038392E30205D2C0A09090909223138323322203A205B20312E302C2039302E
+												30205D2C0A09090909223138323522203A205B20312E302C2039302E30205D2C0A09090909223138
+												323722203A205B20312E302C2039302E30205D2C0A09090909223138323922203A205B20312E302C
+												2039302E30205D2C0A09090909223138333122203A205B20312E302C2037372E30205D2C0A090909
+												09223138333322203A205B20312E302C2037362E30205D2C0A09090909223138333422203A205B20
+												312E302C2037362E30205D2C0A09090909223138333622203A205B20312E302C2036332E30205D2C
+												0A09090909223138333822203A205B20312E302C2036332E30205D2C0A0909090922313833392220
+												3A205B20312E302C2036332E30205D2C0A09090909223138343122203A205B20312E302C2036332E
+												30205D2C0A09090909223138343322203A205B20312E302C2036332E30205D2C0A09090909223138
+												343422203A205B20312E302C2036332E30205D2C0A09090909223138343622203A205B20312E302C
+												2035302E30205D2C0A09090909223138343822203A205B20312E302C2035302E30205D2C0A090909
+												09223138343922203A205B20312E302C2033372E30205D2C0A09090909223138353122203A205B20
+												312E302C2032342E30205D2C0A09090909223138353322203A205B20312E302C2032342E30205D2C
+												0A09090909223138353422203A205B20312E302C2031322E30205D2C0A0909090922313835382220
+												3A205B20312E302C2031312E30205D2C0A09090909223138363022203A205B20312E302C2031312E
+												30205D2C0A09090909223138363222203A205B20312E302C2031312E30205D2C0A09090909223138
+												363322203A205B20312E302C2031312E30205D2C0A09090909223138363522203A205B20312E302C
+												2031302E30205D2C0A09090909223138363722203A205B20312E302C2031302E30205D2C0A090909
+												09223138363822203A205B20312E302C2031302E30205D2C0A09090909223138373022203A205B20
+												312E302C2031302E30205D2C0A09090909223138373422203A205B20312E302C2031302E30205D2C
+												0A09090909223138373622203A205B20312E302C2031302E30205D2C0A0909090922313837382220
+												3A205B20312E302C2031312E30205D2C0A09090909223138373922203A205B20312E302C2031312E
+												30205D2C0A09090909223138383122203A205B20312E302C2032342E30205D2C0A09090909223138
+												383322203A205B20312E302C2032342E30205D2C0A09090909223138383422203A205B20312E302C
+												2032352E30205D2C0A09090909223138383622203A205B20312E302C2032352E30205D2C0A090909
+												09223138383822203A205B20312E302C2032352E30205D2C0A09090909223138383922203A205B20
+												312E302C2032352E30205D2C0A09090909223138393122203A205B20312E302C2033382E30205D2C
+												0A09090909223138393322203A205B20312E302C2033382E30205D2C0A0909090922313839342220
+												3A205B20312E302C2035312E30205D2C0A09090909223138393622203A205B20312E302C2035312E
+												30205D2C0A09090909223138393822203A205B20312E302C2035312E30205D2C0A09090909223138
+												393922203A205B20312E302C2035312E30205D2C0A09090909223139303122203A205B20312E302C
+												2035302E30205D2C0A09090909223139303322203A205B20312E302C2036332E30205D2C0A090909
+												09223139303422203A205B20312E302C2036332E30205D2C0A09090909223139303622203A205B20
+												312E302C2036332E30205D2C0A09090909223139303822203A205B20312E302C2036332E30205D2C
+												0A09090909223139303922203A205B20312E302C2036332E30205D2C0A0909090922313931312220
+												3A205B20312E302C2036322E30205D2C0A09090909223139313322203A205B20312E302C2036322E
+												30205D2C0A09090909223139313422203A205B20312E302C2036322E30205D2C0A09090909223139
+												323222203A205B20312E302C2036322E30205D2C0A09090909223139383922203A205B20312E302C
+												2036322E30205D2C0A09090909223230303322203A205B20312E302C2034382E30205D2C0A090909
+												09223230303522203A205B20312E302C2034382E30205D2C0A09090909223230303622203A205B20
+												312E302C2034382E30205D2C0A09090909223230303822203A205B20312E302C2034382E30205D2C
+												0A09090909223230313022203A205B20312E302C2034382E30205D2C0A0909090922656E6422203A
+												2031303536330A0909097D0A2C0A090909223522203A200909097B0A090909092273746172742220
+												3A2031303836372C0A0909090922353622203A205B20312E302C20362E30205D2C0A090909092236
+												3922203A205B20312E302C20362E30205D2C0A0909090922373122203A205B20312E302C20362E30
+												205D2C0A0909090922373222203A205B20312E302C20372E30205D2C0A0909090922373422203A20
+												5B20312E302C20372E30205D2C0A0909090922373622203A205B20312E302C20372E30205D2C0A09
+												09090922373722203A205B20312E302C20372E30205D2C0A0909090922373922203A205B20312E30
+												2C20382E30205D2C0A0909090922383122203A205B20312E302C20382E30205D2C0A090909092238
+												3222203A205B20312E302C20392E30205D2C0A0909090922383422203A205B20312E302C20392E30
+												205D2C0A0909090922383622203A205B20312E302C20392E30205D2C0A0909090922393022203A20
+												5B20312E302C20392E30205D2C0A0909090922393222203A205B20312E302C20392E30205D2C0A09
+												09090922393322203A205B20312E302C20382E30205D2C0A0909090922393522203A205B20312E30
+												2C20382E30205D2C0A0909090922393722203A205B20312E302C20382E30205D2C0A090909092239
+												3822203A205B20312E302C20372E30205D2C0A090909092231303022203A205B20312E302C20372E
+												30205D2C0A090909092231303222203A205B20312E302C20372E30205D2C0A090909092231303422
+												203A205B20312E302C20372E30205D2C0A090909092231303622203A205B20312E302C20372E3020
+												5D2C0A090909092231303822203A205B20312E302C20372E30205D2C0A090909092233323222203A
+												205B20312E302C2036352E30205D2C0A090909092233343322203A205B20312E302C2035322E3020
+												5D2C0A090909092233343522203A205B20312E302C2035322E30205D2C0A09090909223334362220
+												3A205B20312E302C2035322E30205D2C0A090909092233343822203A205B20312E302C2035322E30
+												205D2C0A090909092233353022203A205B20312E302C2035322E30205D2C0A090909092233353322
+												203A205B20312E302C2035322E30205D2C0A090909092233353722203A205B20312E302C2035322E
+												30205D2C0A090909092233393222203A205B20312E302C2035332E30205D2C0A0909090922343732
+												22203A205B20312E302C2037332E30205D2C0A090909092234383522203A205B20312E302C203732
+												2E30205D2C0A090909092234383722203A205B20312E302C2037322E30205D2C0A09090909223438
+												3822203A205B20312E302C2037312E30205D2C0A090909092234393022203A205B20312E302C2037
+												312E30205D2C0A090909092234393222203A205B20312E302C2037312E30205D2C0A090909092234
+												393322203A205B20312E302C2037312E30205D2C0A090909092234393722203A205B20312E302C20
+												37312E30205D2C0A090909092234393922203A205B20312E302C2037312E30205D2C0A0909090922
+												35303022203A205B20312E302C2035392E30205D2C0A090909092235303222203A205B20312E302C
+												2035392E30205D2C0A090909092235303422203A205B20312E302C2036302E30205D2C0A09090909
+												2235303522203A205B20312E302C2036302E30205D2C0A090909092235303722203A205B20312E30
+												2C2036302E30205D2C0A090909092235303922203A205B20312E302C2034382E30205D2C0A090909
+												092235313022203A205B20312E302C2034382E30205D2C0A090909092235313222203A205B20312E
+												302C2034382E30205D2C0A090909092235313422203A205B20312E302C2034382E30205D2C0A0909
+												09092235313522203A205B20312E302C2034382E30205D2C0A090909092235313722203A205B2031
+												2E302C2034382E30205D2C0A090909092235313922203A205B20312E302C2033362E30205D2C0A09
+												0909092235323022203A205B20312E302C2032332E30205D2C0A090909092235323222203A205B20
+												312E302C2032332E30205D2C0A090909092235323422203A205B20312E302C2032332E30205D2C0A
+												090909092235323522203A205B20312E302C2031302E30205D2C0A090909092235323722203A205B
+												20312E302C2031302E30205D2C0A090909092235353322203A205B20312E302C2031302E30205D2C
+												0A090909092235393422203A205B20312E302C2035312E30205D2C0A090909092236303722203A20
+												5B20312E302C2035312E30205D2C0A090909092236303822203A205B20312E302C2036342E30205D
+												2C0A090909092236313022203A205B20312E302C2037372E30205D2C0A090909092236313222203A
+												205B20312E302C2037372E30205D2C0A090909092236393222203A205B20312E302C20372E30205D
+												2C0A090909092237303322203A205B20312E302C20372E30205D2C0A090909092237303522203A20
+												5B20312E302C20372E30205D2C0A090909092237303722203A205B20312E302C20382E30205D2C0A
+												090909092237303822203A205B20312E302C20382E30205D2C0A090909092237313022203A205B20
+												312E302C20382E30205D2C0A090909092237313522203A205B20312E302C20382E30205D2C0A0909
+												09092237313822203A205B20312E302C20382E30205D2C0A090909092237323022203A205B20312E
+												302C20382E30205D2C0A090909092237323222203A205B20312E302C20382E30205D2C0A09090909
+												2237323422203A205B20312E302C20382E30205D2C0A090909092237323622203A205B20312E302C
+												20382E30205D2C0A090909092238363522203A205B20312E302C20362E30205D2C0A090909092238
+												393322203A205B20312E302C2031392E30205D2C0A090909092239313822203A205B20312E302C20
+												33322E30205D2C0A090909092239353622203A205B20312E302C2034352E30205D2C0A0909090922
+												39383922203A205B20312E302C2035382E30205D2C0A09090909223130303322203A205B20312E30
+												2C2035382E30205D2C0A09090909223130303522203A205B20312E302C2037312E30205D2C0A0909
+												0909223130303622203A205B20312E302C2037312E30205D2C0A09090909223130303822203A205B
+												20312E302C2038342E30205D2C0A09090909223130313022203A205B20312E302C2038342E30205D
+												2C0A0909090922656E6422203A2031323030340A0909097D0A2C0A090909223622203A200909097B
+												0A0909090922737461727422203A2031363633332C0A0909090922353422203A205B20312E302C20
+												33342E30205D2C0A0909090922363922203A205B20312E302C2033342E30205D2C0A090909092237
+												3122203A205B20312E302C2033342E30205D2C0A0909090922373322203A205B20312E302C203335
+												2E30205D2C0A0909090922373422203A205B20312E302C2033352E30205D2C0A0909090922373622
+												203A205B20312E302C2033352E30205D2C0A0909090922373822203A205B20312E302C2033352E30
+												205D2C0A0909090922373922203A205B20312E302C2033342E30205D2C0A0909090922383122203A
+												205B20312E302C2033342E30205D2C0A0909090922383322203A205B20312E302C2033342E30205D
+												2C0A0909090922383422203A205B20312E302C2033342E30205D2C0A0909090922383622203A205B
+												20312E302C2033342E30205D2C0A0909090922383822203A205B20312E302C2033342E30205D2C0A
+												0909090922393022203A205B20312E302C2033342E30205D2C0A0909090922393122203A205B2031
+												2E302C2034372E30205D2C0A0909090922393322203A205B20312E302C2034372E30205D2C0A0909
+												090922393522203A205B20312E302C2034372E30205D2C0A0909090922393622203A205B20312E30
+												2C2034372E30205D2C0A0909090922393822203A205B20312E302C2034372E30205D2C0A09090909
+												2231303022203A205B20312E302C2034372E30205D2C0A090909092231303122203A205B20312E30
+												2C2034372E30205D2C0A090909092231303322203A205B20312E302C2034362E30205D2C0A090909
+												092231303522203A205B20312E302C2034362E30205D2C0A090909092231303622203A205B20312E
+												302C2034362E30205D2C0A090909092231303822203A205B20312E302C2034372E30205D2C0A0909
+												09092231313022203A205B20312E302C2034372E30205D2C0A090909092231313122203A205B2031
+												2E302C2034372E30205D2C0A090909092231313322203A205B20312E302C2034372E30205D2C0A09
+												0909092231313522203A205B20312E302C2034372E30205D2C0A090909092231313622203A205B20
+												312E302C2034382E30205D2C0A090909092231313822203A205B20312E302C2034382E30205D2C0A
+												090909092231323022203A205B20312E302C2034382E30205D2C0A090909092231323122203A205B
+												20312E302C2034382E30205D2C0A090909092231323322203A205B20312E302C2034382E30205D2C
+												0A090909092231323522203A205B20312E302C2034382E30205D2C0A090909092231323622203A20
+												5B20312E302C2033352E30205D2C0A090909092231323822203A205B20312E302C2033352E30205D
+												2C0A090909092231333022203A205B20312E302C2033352E30205D2C0A090909092231333122203A
+												205B20312E302C2033352E30205D2C0A090909092231333322203A205B20312E302C2033352E3020
+												5D2C0A090909092231333522203A205B20312E302C2033352E30205D2C0A09090909223133362220
+												3A205B20312E302C2033352E30205D2C0A090909092231333822203A205B20312E302C2033352E30
+												205D2C0A090909092231343022203A205B20312E302C2033352E30205D2C0A090909092231343122
+												203A205B20312E302C2033342E30205D2C0A090909092231343322203A205B20312E302C2033342E
+												30205D2C0A090909092231343522203A205B20312E302C2033342E30205D2C0A0909090922313436
+												22203A205B20312E302C2033342E30205D2C0A090909092231353022203A205B20312E302C203334
+												2E30205D2C0A090909092231353222203A205B20312E302C2033342E30205D2C0A09090909223135
+												3422203A205B20312E302C2033342E30205D2C0A090909092231353522203A205B20312E302C2034
+												372E30205D2C0A090909092231353722203A205B20312E302C2034372E30205D2C0A090909092231
+												353922203A205B20312E302C2034372E30205D2C0A090909092231363022203A205B20312E302C20
+												34372E30205D2C0A090909092231363222203A205B20312E302C2034372E30205D2C0A0909090922
+												31363422203A205B20312E302C2034372E30205D2C0A090909092231363522203A205B20312E302C
+												2034382E30205D2C0A090909092231363722203A205B20312E302C2034382E30205D2C0A09090909
+												2231373122203A205B20312E302C2034382E30205D2C0A090909092231373322203A205B20312E30
+												2C2034382E30205D2C0A090909092235313222203A205B20312E302C2037302E30205D2C0A090909
+												092237313322203A205B20312E302C2037362E30205D2C0A090909092237333122203A205B20312E
+												302C2036332E30205D2C0A090909092237333222203A205B20312E302C2036332E30205D2C0A0909
+												09092237333422203A205B20312E302C2036332E30205D2C0A090909092238333022203A205B2031
+												2E302C2036312E30205D2C0A090909092238363722203A205B20312E302C2036312E30205D2C0A09
+												0909092238383422203A205B20312E302C2036312E30205D2C0A090909092238383522203A205B20
+												312E302C2036312E30205D2C0A090909092238383722203A205B20312E302C2036312E30205D2C0A
+												090909092238383922203A205B20312E302C2036312E30205D2C0A0909090922656E6422203A2031
+												373635340A0909097D0A0A09097D0A205D2C0A09226D756C7469736C6964657222203A205B20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E302C20302E
+												302C20302E302C20302E302C20302E30205D0A7D0A00
+											</Blob>
+        <HasData Value="true"/>
+      </MxDBlob>
+    </Value>
+  </BlobSlot>
+  <Routables>
+    <InRoutings>
+      <MxDInRoutable Id="0">
+        <Routable>
+          <Target Value="AudioIn/None"/>
+          <UpperDisplayString Value="No Output"/>
+          <LowerDisplayString Value=""/>
+          <MpeSettings>
+            <ZoneType Value="0"/>
+            <FirstNoteChannel Value="1"/>
+            <LastNoteChannel Value="15"/>
+          </MpeSettings>
+          <MpePitchBendUsesTuning Value="true"/>
+        </Routable>
+        <LomId Value="0"/>
+      </MxDInRoutable>
+    </InRoutings>
+    <OutRoutings>
+      <MxDOutRoutable Id="0">
+        <Routable>
+          <Target Value="AudioOut/None"/>
+          <UpperDisplayString Value="No Output"/>
+          <LowerDisplayString Value=""/>
+          <MpeSettings>
+            <ZoneType Value="0"/>
+            <FirstNoteChannel Value="1"/>
+            <LastNoteChannel Value="15"/>
+          </MpeSettings>
+          <MpePitchBendUsesTuning Value="true"/>
+        </Routable>
+        <LomId Value="0"/>
+      </MxDOutRoutable>
+    </OutRoutings>
+    <MidiInRoutings/>
+    <MidiOutRoutings/>
+  </Routables>
+  <MpeEnabled Value="false"/>
+  <MpeTuningEnabled Value="false"/>
+</MxDeviceInstrument>
