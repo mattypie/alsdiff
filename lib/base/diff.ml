@@ -106,14 +106,16 @@ type ('a, 'p) collection_change = [
 *)
 
 
+module type PATCH = sig
+  type t
+  val is_empty : t -> bool
+end
+
 module type DIFFABLE_ID = sig
   type t
   include IDENTIFIABLE with type t := t
 
-  module Patch : sig
-    type t
-    val is_empty : t -> bool
-  end
+  module Patch : PATCH
 
   val diff : t -> t -> Patch.t
 end
@@ -122,10 +124,7 @@ module type DIFFABLE_EQ = sig
   type t
   include EQUALABLE with type t := t
 
-  module Patch : sig
-    type t
-    val is_empty : t -> bool
-  end
+  module Patch : PATCH
 
   val diff : t -> t -> Patch.t
 end
@@ -452,11 +451,6 @@ let diff_list_ord_id (type a) (module ID : IDENTIFIABLE with type t = a) (old_li
 let identify x = x [@@inline]
 
 
-module type PATCH = sig
-  type t
-  val is_empty : t -> bool
-end
-
 (* Utility functions *)
 let simple_structured_change_of_patch (type a) (module P : PATCH with type t = a)
     (x : a) : a simple_structured_change =
@@ -464,3 +458,19 @@ let simple_structured_change_of_patch (type a) (module P : PATCH with type t = a
     `Unchanged
   else
     `Patched x
+
+let simple_structured_change_of_flat (type a p)
+    (module D : DIFFABLE_EQ with type t = a and type Patch.t = p)
+    (x : a simple_flat_change) : p simple_structured_change =
+  match x with
+  | `Modified { old; new_ } -> `Patched (D.diff old new_)
+  | `Unchanged -> `Unchanged
+
+let structured_change_of_flat (type a p)
+    (module D : DIFFABLE_EQ with type t = a and type Patch.t = p)
+    (x : a flat_change) : (a, p) structured_change =
+  match x with
+  | `Added a -> `Added a
+  | `Removed a -> `Removed a
+  | `Unchanged -> `Unchanged
+  | `Modified { old; new_ } -> `Patched (D.diff old new_)

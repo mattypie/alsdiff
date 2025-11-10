@@ -109,3 +109,9 @@
  (modules test_m4l_device)
  (libraries alsdiff_lib alcotest test_utils)
  (deps m4l_device.xml))
+
+(test
+ (name test_plugin_device)
+ (modules test_plugin_device)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps plugin_device.xml))
