@@ -1,3 +1,4 @@
+open Alsdiff_base
 open Alsdiff_base.Xml
 open Alsdiff_live
 
@@ -25,7 +26,7 @@ let test_wavetable_device_xml_path =
 let extract_parameter_xml device_path parameter_name =
   let device_xml = read_file device_path in
   let param_path = Printf.sprintf "/%s" parameter_name in
-  snd (Alsdiff_base.Upath.find param_path device_xml)
+  snd (Upath.find param_path device_xml)
 
 (* Convenience functions for specific devices *)
 let extract_compressor_parameter_xml parameter_name =
@@ -47,7 +48,7 @@ let test_create_device_from_compressor_xml () =
   (* Extract the RegularDevice from the variant *)
   let regular_device = match device with
     | Device.Regular reg -> reg
-    | Device.Group _ -> failwith "Expected Regular device, got Group device"
+    | _ -> failwith "Expected Regular device"
   in
 
   (* Verify the device properties *)
@@ -126,7 +127,7 @@ let test_create_eq8_device_from_xml () =
   (* Extract the RegularDevice from the variant *)
   let regular_device = match device with
     | Device.Regular reg -> reg
-    | Device.Group _ -> failwith "Expected Regular device, got Group device"
+    | _ -> failwith "Expected Regular device"
   in
 
   (* Verify the device properties *)
@@ -135,13 +136,17 @@ let test_create_eq8_device_from_xml () =
   Alcotest.(check string) "eq8 display name" "EQ Eight" regular_device.display_name;
   Alcotest.(check int) "eq8 pointee id" 153285 regular_device.pointee;
 
+
+  Alcotest.(check bool) "preset exists" true (Option.is_some regular_device.preset);
+
+  let preset = Option.get regular_device.preset in
   (* Verify preset reference is AbletonDefaultPresetRef *)
-  (match regular_device.preset.preset_type with
+  (match preset.preset_type with
    | Device.PresetRef.DefaultPreset -> () (* Expected *)
    | Device.PresetRef.UserPreset -> Alcotest.fail "Expected DefaultPreset, got UserPreset");
 
-  Alcotest.(check int) "eq8 preset id" 1 regular_device.preset.id;
-  Alcotest.(check string) "eq8 preset name" "EQ Eight" regular_device.preset.name;
+  Alcotest.(check int) "eq8 preset id" 1 preset.id;
+  Alcotest.(check string) "eq8 preset name" "EQ Eight" preset.name;
 
   (* Verify we have the expected number of parameters *)
   Alcotest.(check (int)) "eq8 parameter count" 85 (List.length regular_device.params);
@@ -186,7 +191,7 @@ let test_eq8_scale_parameter () =
 let test_eq8_band_parameters () =
   (* Extract first band's frequency parameter from EQ8 XML *)
   let device_xml = read_file test_eq8_device_xml_path in
-  let freq_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterA/Freq" device_xml |> snd in
+  let freq_param_xml = Upath.find "/Bands.0/ParameterA/Freq" device_xml |> snd in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
@@ -200,7 +205,7 @@ let test_eq8_band_parameters () =
   Alcotest.(check int) "eq8 band 0 frequency automation id" 153292 freq_param.automation;
 
   (* Extract first band's gain parameter *)
-  let gain_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterA/Gain" device_xml |> snd in
+  let gain_param_xml = Upath.find "/Bands.0/ParameterA/Gain" device_xml |> snd in
   let gain_param = create gain_param_xml in
 
   (* Verify gain parameter properties *)
@@ -211,7 +216,7 @@ let test_eq8_band_parameters () =
   Alcotest.(check int) "eq8 band 0 gain automation id" 153294 gain_param.automation;
 
   (* Extract first band's Q parameter *)
-  let q_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterA/Q" device_xml |> snd in
+  let q_param_xml = Upath.find "/Bands.0/ParameterA/Q" device_xml |> snd in
   let q_param = create q_param_xml in
 
   (* Verify Q parameter properties *)
@@ -224,7 +229,7 @@ let test_eq8_band_parameters () =
 let test_eq8_mode_parameters () =
   (* Extract first band's mode parameter from EQ8 XML *)
   let device_xml = read_file test_eq8_device_xml_path in
-  let mode_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterA/Mode" device_xml |> snd in
+  let mode_param_xml = Upath.find "/Bands.0/ParameterA/Mode" device_xml |> snd in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
@@ -240,7 +245,7 @@ let test_eq8_mode_parameters () =
 let test_eq8_is_on_parameters () =
   (* Extract first band's IsOn parameter from EQ8 XML *)
   let device_xml = read_file test_eq8_device_xml_path in
-  let is_on_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterA/IsOn" device_xml |> snd in
+  let is_on_param_xml = Upath.find "/Bands.0/ParameterA/IsOn" device_xml |> snd in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
@@ -254,7 +259,7 @@ let test_eq8_is_on_parameters () =
   Alcotest.(check int) "eq8 band 0 IsOn automation id" 153290 is_on_param.automation;
 
   (* Test ParameterB IsOn (should be false) *)
-  let is_on_b_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterB/IsOn" device_xml |> snd in
+  let is_on_b_param_xml = Upath.find "/Bands.0/ParameterB/IsOn" device_xml |> snd in
   let is_on_b_param = create is_on_b_param_xml in
 
   (* Verify ParameterB IsOn parameter properties *)
@@ -270,7 +275,7 @@ let test_eq8_all_bands_exist () =
 
   for i = 0 to 7 do
     let band_path = Printf.sprintf "/Bands.%d/ParameterA/Freq" i in
-    let freq_param_xml = Alsdiff_base.Upath.find band_path device_xml |> snd in
+    let freq_param_xml = Upath.find band_path device_xml |> snd in
     let freq_param = create freq_param_xml in
 
     (* Verify that each band has a frequency parameter *)
@@ -289,11 +294,11 @@ let test_eq8_parameter_b_vs_parameter_a_differences () =
   let open Device.DeviceParam in
 
   (* Get ParameterA frequency *)
-  let freq_a_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterA/Freq" device_xml |> snd in
+  let freq_a_param_xml = Upath.find "/Bands.0/ParameterA/Freq" device_xml |> snd in
   let freq_a_param = create freq_a_param_xml in
 
   (* Get ParameterB frequency *)
-  let freq_b_param_xml = Alsdiff_base.Upath.find "/Bands.0/ParameterB/Freq" device_xml |> snd in
+  let freq_b_param_xml = Upath.find "/Bands.0/ParameterB/Freq" device_xml |> snd in
   let freq_b_param = create freq_b_param_xml in
 
   (* Verify they have different values *)
@@ -317,10 +322,10 @@ let test_eq8_preset_reference_details () =
 
   let regular_device = match device with
     | Device.Regular reg -> reg
-    | Group _ -> failwith "Expected Regular device, got Group device"
+    | _ -> failwith "Expected Regular device"
   in
 
-  let preset = regular_device.preset in
+  let preset = Option.get regular_device.preset in
 
   (* Verify preset type and detailed properties *)
   (match preset.preset_type with
@@ -353,7 +358,7 @@ let test_create_wavetable_device () =
   (* Extract the RegularDevice from the variant *)
   let regular_device = match device with
     | Device.Regular reg -> reg
-    | Device.Group _ -> failwith "Expected Regular device, got Group device"
+    | _ -> failwith "Expected Regular device"
   in
 
   (* Verify the basic device properties *)
@@ -362,12 +367,15 @@ let test_create_wavetable_device () =
   Alcotest.(check string) "wavetable display name" "InstrumentVector" regular_device.display_name;
   Alcotest.(check int) "wavetable pointee id" 25826 regular_device.pointee;
 
+    Alcotest.(check bool) "preset exists" true (Option.is_some regular_device.preset);
+
+  let preset = Option.get regular_device.preset in
   (* Verify preset information *)
-  (match regular_device.preset.preset_type with
+  (match preset.preset_type with
    | Device.PresetRef.UserPreset -> ()
    | _ -> Alcotest.fail "wavetable Expected UserPreset");
-  Alcotest.(check string) "wavetable preset name" "Quin" regular_device.preset.name;
-  Alcotest.(check string) "wavetable preset relative path" "../../../../../../../../../../../Quin.adv" regular_device.preset.relative_path;
+  Alcotest.(check string) "wavetable preset name" "Quin" preset.name;
+  Alcotest.(check string) "wavetable preset relative path" "../../../../../../../../../../../Quin.adv" preset.relative_path;
 
   (* Verify we have the expected number of parameters *)
   Alcotest.(check (int)) "wavetable parameter count" 93 (List.length regular_device.params);
@@ -456,7 +464,7 @@ let test_wavetable_float_parameter () =
 let test_wavetable_preset_creation () =
   (* Test creating PresetRef from the XML *)
   let device_xml = read_file test_wavetable_device_xml_path in
-  let preset_xml = Alsdiff_base.Upath.find "/LastPresetRef/Value/*" device_xml |> snd in
+  let preset_xml = Upath.find "/LastPresetRef/Value/*" device_xml |> snd in
 
   (* Create preset reference *)
   let preset = Device.PresetRef.create preset_xml in
@@ -480,7 +488,7 @@ let test_wavetable_parameter_values () =
   let device = Device.create device_xml in
   let regular_device = match device with
     | Device.Regular reg -> reg
-    | Device.Group _ -> failwith "Expected Regular device, got Group device"
+    | _ -> failwith "Expected Regular device"
   in
 
   let open Device.DeviceParam in

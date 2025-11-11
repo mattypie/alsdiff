@@ -1,5 +1,9 @@
 open Alsdiff_base.Xml
-open Alsdiff_live.Plugin
+open Alsdiff_live
+
+module PluginDevice = Device.PluginDevice
+module PluginParam = Device.PluginParam
+module PluginDesc = Device.PluginDesc
 
 (* Helper function to get the plugin device XML path *)
 let test_plugin_device_xml_path =
@@ -56,7 +60,7 @@ let test_plugin_parameter_float_creation () =
   (* Test creating a float parameter from real XML *)
   let device_xml = read_file test_plugin_device_xml_path in
   let plugin_device = PluginDevice.create device_xml in
-  let param = List.nth plugin_device.PluginDevice.params 0 in
+  let param = List.nth plugin_device.params 0 in
 
   (* Verify parameter properties *)
   Alcotest.(check int) "float param id" 0 param.PluginParam.id;
@@ -76,7 +80,7 @@ let test_plugin_parameter_with_automation () =
   (* Test parameter with automation target *)
   let device_xml = read_file test_plugin_device_xml_path in
   let plugin_device = PluginDevice.create device_xml in
-  let param = List.nth plugin_device.PluginDevice.params 10 in
+  let param = List.nth plugin_device.params 10 in
 
   (* Verify parameter properties *)
   Alcotest.(check int) "param id" 11 param.PluginParam.id;
@@ -98,10 +102,10 @@ let test_plugin_parameter_validation () =
   let plugin_device = PluginDevice.create device_xml in
 
   (* Verify parameter count *)
-  Alcotest.(check int) "plugin parameter count" 24 (List.length plugin_device.PluginDevice.params);
+  Alcotest.(check int) "plugin parameter count" 24 (List.length plugin_device.params);
 
   (* Extract all parameter IDs *)
-  let param_ids = List.map (fun p -> p.PluginParam.id) plugin_device.PluginDevice.params in
+  let param_ids = List.map (fun p -> p.PluginParam.id) plugin_device.params in
   let unique_ids = List.sort_uniq Stdlib.compare param_ids in
 
   (* Verify all IDs are unique *)
@@ -114,7 +118,7 @@ let test_plugin_parameter_validation () =
       Alcotest.fail (Printf.sprintf "Parameter %d has negative automation ID: %d" i param.PluginParam.automation);
     if param.PluginParam.modulation < 0 then
       Alcotest.fail (Printf.sprintf "Parameter %d has negative modulation ID: %d" i param.PluginParam.modulation)
-  ) plugin_device.PluginDevice.params
+  ) plugin_device.params
 
 let test_plugin_parameter_invalid_type_raises_exception () =
   (* Test that invalid parameter types raise exception *)

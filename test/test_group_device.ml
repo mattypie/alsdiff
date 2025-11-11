@@ -18,7 +18,7 @@ let test_group_device_macros_from_xml () =
   (* Extract the GroupDevice from the variant *)
   let group = match group_device with
     | Device.Group g -> g
-    | Device.Regular _ -> failwith "Expected Group device, got Regular device"
+    |  _ -> failwith "Expected Group device"
   in
 
   (* Verify we have macros *)
@@ -61,7 +61,7 @@ let test_group_device_structure_from_xml () =
   (* Extract the GroupDevice from the variant *)
   let group = match group_device with
     | Device.Group g -> g
-    | Device.Regular _ -> failwith "Expected Group device, got Regular device"
+    |  _ -> failwith "Expected Group device"
   in
 
   (* Verify basic group device properties *)
@@ -85,7 +85,7 @@ let test_group_device_structure_from_xml () =
   (match first_device with
    | Device.Regular reg ->
        Alcotest.(check string) "first device name" "Operator" reg.device_name
-   | Device.Group _ -> Alcotest.fail "Expected Regular device in branch")
+   |  _ -> Alcotest.fail "Expected Regular device in branch")
 
 let test_group_device_snapshots_from_xml () =
   (* Load the group device XML file *)
@@ -97,7 +97,7 @@ let test_group_device_snapshots_from_xml () =
   (* Extract the GroupDevice from the variant *)
   let group = match group_device with
     | Device.Group g -> g
-    | Device.Regular _ -> failwith "Expected Group device, got Regular device"
+    |  _ -> failwith "Expected Group device"
   in
 
   (* Verify we have snapshots *)

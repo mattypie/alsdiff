@@ -18,7 +18,7 @@ let test_create_m4l_device () =
   (* Extract the RegularDevice from the variant *)
   let regular_device = match device with
     | Device.Regular reg -> reg
-    | Device.Group _ -> failwith "Expected Regular device, got Group device"
+    |  _ -> failwith "Expected Regular device"
   in
 
   (* Verify the device properties *)
@@ -27,18 +27,21 @@ let test_create_m4l_device () =
   Alcotest.(check string) "display name" "Dark Forces" regular_device.display_name;
   Alcotest.(check int) "pointee id" 84269 regular_device.pointee;
 
+  Alcotest.(check bool) "preset exists" true (Option.is_some regular_device.preset);
+
+  let preset = Option.get regular_device.preset in
   (* Verify preset information *)
-  Alcotest.(check int) "preset id" 1 regular_device.preset.Device.PresetRef.id;
-  Alcotest.(check string) "preset name" "Dark Forces" regular_device.preset.Device.PresetRef.name;
-  Alcotest.(check string) "preset relative path" "Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv" regular_device.preset.Device.PresetRef.relative_path;
-  Alcotest.(check string) "preset path" "/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv" regular_device.preset.Device.PresetRef.path;
-  Alcotest.(check string) "preset pack name" "" regular_device.preset.Device.PresetRef.pack_name;
-  Alcotest.(check int) "preset pack id" 0 regular_device.preset.Device.PresetRef.pack_id;
-  Alcotest.(check int) "preset file size" 0 regular_device.preset.Device.PresetRef.file_size;
-  Alcotest.(check int) "preset crc" 0 regular_device.preset.Device.PresetRef.crc;
+  Alcotest.(check int) "preset id" 1 preset.Device.PresetRef.id;
+  Alcotest.(check string) "preset name" "Dark Forces" preset.Device.PresetRef.name;
+  Alcotest.(check string) "preset relative path" "Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv" preset.Device.PresetRef.relative_path;
+  Alcotest.(check string) "preset path" "/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv" preset.Device.PresetRef.path;
+  Alcotest.(check string) "preset pack name" "" preset.Device.PresetRef.pack_name;
+  Alcotest.(check int) "preset pack id" 0 preset.Device.PresetRef.pack_id;
+  Alcotest.(check int) "preset file size" 0 preset.Device.PresetRef.file_size;
+  Alcotest.(check int) "preset crc" 0 preset.Device.PresetRef.crc;
 
   (* Check preset type *)
-  (match regular_device.preset.Device.PresetRef.preset_type with
+  (match preset.Device.PresetRef.preset_type with
    | Device.PresetRef.UserPreset -> () (* Expected for M4L devices *)
    | Device.PresetRef.DefaultPreset -> Alcotest.fail "Expected UserPreset for M4L device");
 

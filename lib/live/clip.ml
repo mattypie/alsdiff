@@ -1,5 +1,4 @@
 open Alsdiff_base
-open Alsdiff_base.Equality
 open Alsdiff_base.Diff
 
 
@@ -50,6 +49,9 @@ module MidiNote = struct
     off_velocity : int;
   } [@@deriving eq]
 
+  let has_same_id a b = a.id = b.id
+
+  let id_hash a = Hashtbl.hash a.id
 
   let create (note: int) (xml : Xml.t) : t =
     match xml with
@@ -260,22 +262,10 @@ module MidiClip = struct
 
     (* Use diff_list_ord for notes - cleaner and more consistent *)
     let notes_change =
-      let module MidiNoteId = struct
-        type t = MidiNote.t
-        let equal = MidiNote.equal
-        let has_same_id a b = a.MidiNote.id = b.MidiNote.id
-        let id_hash t = Hashtbl.hash t.MidiNote.id
-      end in
-      let (module Id) = (module MidiNoteId : IDENTIFIABLE with type t = MidiNote.t) in
-      let flat_changes = diff_list_ord_id (module Id) old_notes new_notes in
-      (* Convert flat changes to structured changes *)
-      List.map (function
-        | `Added note -> `Added note
-        | `Removed note -> `Removed note
-        | `Unchanged -> `Unchanged
-        | `Modified { old; new_ } -> `Patched (MidiNote.diff old new_)
-      ) flat_changes
+      diff_list_ord_id (module MidiNote) old_notes new_notes
+      |> List.map @@ structured_change_of_flat (module MidiNote)
     in
+
     {
       name = name_change;
       start_time = start_time_change;

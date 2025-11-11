@@ -151,13 +151,28 @@ let diff_structured_value (type a p)
 
 
 let diff_structured_value_eq (type a p)
-    (module ID : DIFFABLE_EQ with type t = a and type Patch.t = p)
+    (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p)
     (old_value : a)
     (new_value : a) : p simple_structured_change =
   if old_value <> new_value then
-    `Patched (ID.diff old_value new_value)
+    `Patched (EQ.diff old_value new_value)
   else
     `Unchanged
+
+let diff_optional_structured_value (type a p)
+    (module ID : DIFFABLE_ID with type t = a and type Patch.t = p)
+    (old_value : a option)
+    (new_value : a option) : (a, p) structured_change =
+  match old_value, new_value with
+  | Some o, Some n ->
+    if not (ID.has_same_id o n) then
+      failwith "diff_optional_structured_value called on items with different IDs"
+    else
+      let patch = ID.diff o n in
+      if ID.Patch.is_empty patch then `Unchanged else `Patched patch
+  | Some o, None -> `Removed o
+  | None, Some n -> `Added n
+  | None, None -> `Unchanged
 
 
 (* Module type for a hashable type, used by diff_set_generic *)
