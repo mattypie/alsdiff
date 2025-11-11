@@ -2,18 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Build System
-
-This is an OCaml project using Dune build system:
-- `dune build` - Build the project
-- `dune runtest` - Run all tests
-- `dune runtest --force` - Force rerun all tests
-- `dune exec alsdiff` - Run the main executable
-- `dune exec test/test_upath.exe` - Run specific test `test/test_upath.ml` (Upath tests)
-- `dune exec test/test_diff_list.exe` - Run list diffing tests
-- `dune exec test/test_diff_list_myers.exe` - Run Myers diffing algorithm tests
-- `dune exec test/test_diff_automation.exe` - Run automation diffing tests
-
 ## Project Structure
 
 - `bin/main.ml` - Main executable entry point
@@ -23,12 +11,12 @@ This is an OCaml project using Dune build system:
     - `upath.ml` - XPath-like query language for XML
     - `file.ml` - File handling and .als file decompression
     - `equality.ml` - Equality checking utilities
+    - `diff.ml` - List diffing algorithms
   - `lib/live/` - Ableton Live specific modules:
     - `automation.ml` - Automation envelope handling
     - `clip.ml` - Clip and mixer functionality
     - `track.ml` - Track handling and management
-    - `device.ml` - Device and plugin functionality
-    - `diff.ml` - Live module diffing utilities
+    - `device.ml` - Device functionality (includes plugin, regular, and group devices)
     - `liveset.ml` - Live set management
     - `main_track.ml` - Main track handling
     - `mixer.ml` - Mixer functionality
@@ -43,15 +31,20 @@ This is an OCaml project using Dune build system:
   - `test_complex.ml` - Complex integration tests
   - `test_audio_clip.ml` - Tests for audio clip functionality
   - `test_midi_clip.ml` - Tests for MIDI clip functionality
+  - `test_midi_track.ml` - Tests for MIDI track functionality
   - `test_device.ml` - Tests for device functionality
+  - `test_plugin_device.ml` - Tests for plugin device functionality
+  - `test_group_device.ml` - Tests for group device functionality
+  - `test_m4l_device.ml` - Tests for Max for Live device functionality
+  - `test_real_devices.ml` - Tests for real device implementations
   - `test_diff_automation.ml` - Tests for diffing automation envelopes
   - `test_diff_list.ml` - Tests for list diffing functionality
-  - `test_diff_list_ord.ml` - Tests for ordered list diffing
-  - `test_diff_list_myers.ml` - Tests for Myers diffing algorithm
-  - `test_diff_mixer.ml` - Tests for mixer diffing functionality
   - `test_diff_audio_clip.ml` - Tests for audio clip diffing
   - `test_diff_midi_clip.ml` - Tests for MIDI clip diffing
+  - `test_diff_mixer.ml` - Tests for mixer diffing functionality
   - `test_clip_patch.ml` - Tests for clip patching functionality
+  - `test_current_parent.ml` - Tests for current parent tracking
+  - `test_regex_match.ml` - Tests for regex matching functionality
   - `utils.ml` - Shared test utilities
 
 ## Key Dependencies
@@ -65,6 +58,8 @@ This is an OCaml project using Dune build system:
 - `ppx_deriving.eq` - PPX extension for deriving equality functions
 - `ppx_deriving_jsonschema` - PPX extension for JSON schema generation
 - `ppx_deriving_yojson` - PPX extension for Yojson serialization
+- `re` - Regular expression library
+- `cmdliner` - Command line interface library
 
 ## Third-Party Dependency Repositories
 
@@ -77,6 +72,8 @@ This is an OCaml project using Dune build system:
 - `ppx_deriving` - https://github.com/ocaml-ppx/ppx_deriving
 - `ppx_deriving_yojson` - https://github.com/ocaml-ppx/ppx_deriving_yojson
 - `ppx_deriving_jsonschema` - https://github.com/ahrefs/ppx_deriving_jsonschema
+- `cmdliner` - https://github.com/dbuenzli/cmdliner
+- `re` - https://github.com/ocaml/ocaml-re
 
 ## Architecture Overview
 
@@ -99,6 +96,17 @@ The `Diff` module implements multiple diffing algorithms:
 - Ordered diffing for sequential data
 - Myers O(ND) algorithm for optimal diffing performance
 - Specialized diffing for automation envelopes in Live sets
+- Structured diffing with patch generation for complex data types
+
+### Device Support
+
+The project includes comprehensive support for Ableton Live devices:
+- **Device Types**: Regular devices, Plugin devices (VST2, VST3, AUv2), and Group devices
+- **Device Architecture**: Consolidated in device.ml with unified device type system
+- **Device Mapping**: Type-safe mapping from XML to OCaml data structures
+- **Real Device Support**: Support for actual Ableton Live device implementations
+- **Test Coverage**: Extensive test suite covering all device types and edge cases
+- **Diffing Support**: Advanced diffing algorithms for all device types with proper patch generation
 
 ## Library Organization
 
@@ -116,6 +124,7 @@ When working with the libraries, use specific module opens for cleaner code:
 (* Base modules *)
 open Alsdiff_base.Xml
 open Alsdiff_base.Upath
+open Alsdiff_base.Diff
 
 (* Live modules *)
 open Alsdiff_live.Automation
@@ -130,24 +139,31 @@ open Alsdiff_output.Text_output.TextOutput
 
 This allows you to write `Automation.t` instead of `Alsdiff_live.Automation.Automation.t` and `Xml.read_file` instead of `Alsdiff_base.Xml.read_file`.
 
-### Legacy Modules
-
-The following modules have been refactored into the new library structure:
-- `config.ml`, `time.ml`, `eff.ml`, `gadt.ml`, `fraction.ml`, `oop.ml` - Moved to lib/base/ or removed
-- `live.ml` - Split into `automation.ml` and `clip.ml` in lib/live/
-- `output.ml` - Split into interface (`output.ml`) and implementation (`text_output.ml`) in lib/output/
-
-
 ## Development Commands
 
+This is an OCaml project using Dune build system.
+
+### Build and Test Commands
+- `dune build` - Build the project
+- `dune runtest` - Run all tests
+- `dune runtest --force` - Force rerun all tests
+- `dune exec alsdiff` - Run the main executable
+- `dune exec test/test_upath.exe` - Run specific test `test/test_upath.ml` (Upath tests)
+
+### Development Utilities
 - `dune build @fmt` - Format code
 - `dune promote` - Promote generated files
 - `dune clean` - Clean build artifacts
 - `dune utop` - Load this library into Utop REPL
 - `dune utop . -- -emacs` - Load this library into Utop REPL for Emacs utop-mode
 
+### PPX Code Inspection
+To inspect code after PPX rewriting (e.g., to see generated equality functions from `[@@deriving eq]`):
+- `dune describe pp lib/live/device.ml` - Show PPX-expanded code for a specific file\n\n## Git commits conventions
+
 ## Git commit message convention
-Always adding the texts inside the code block to the end of git commit message,
+- Using Conventional Commits, https://www.conventionalcommits.org/en/v1.0.0/
+- Always adding the texts inside the code block to the end of the git commit message,
 ```
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
