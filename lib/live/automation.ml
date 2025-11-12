@@ -36,8 +36,8 @@ module EnvelopeEvent = struct
     else
       let { time = old_time; value = old_value; _ } = old_event in
       let { time = new_time; value = new_value; _ } = new_event in
-      let time_change = if old_time <> new_time then `Modified { old = old_time; new_ = new_time } else `Unchanged in
-      let value_change = if old_value <> new_value then `Modified { old = old_value; new_ = new_value } else `Unchanged in
+      let time_change = diff_value old_time new_time in
+      let value_change = diff_value old_value new_value in
       { time = time_change; value = value_change }
 end
 
@@ -85,10 +85,4 @@ let diff (old_envelope : t) (new_envelope : t) : Patch.t =
       |> List.map @@ structured_change_of_flat (module EnvelopeEvent)
     in
 
-    match event_changes with
-    | [] -> { id = new_envelope.id; target = new_envelope.target; events = [] } (* No changes in events *)
-    | changes -> {
-        id = new_envelope.id;
-        target = new_envelope.target;
-        events = changes;
-      }
+    { id = new_envelope.id; target = new_envelope.target; events = event_changes }

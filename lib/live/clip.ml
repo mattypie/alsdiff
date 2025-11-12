@@ -27,14 +27,8 @@ module TimeSignature = struct
   let diff (old_sig : t) (new_sig : t) : Patch.t =
     let { numer = old_numer; denom = old_denom } = old_sig in
     let { numer = new_numer; denom = new_denom } = new_sig in
-    let numer = if old_numer <> new_numer then
-        `Modified { old = old_numer; new_ = new_numer }
-      else
-        `Unchanged in
-    let denom = if old_denom <> new_denom then
-        `Modified { old = old_denom; new_ = new_denom }
-      else
-        `Unchanged in
+    let numer = diff_value old_numer new_numer in
+    let denom = diff_value old_denom new_denom in
     { numer; denom }
 end
 
@@ -81,7 +75,7 @@ module MidiNote = struct
           off_velocity = `Unchanged;
           note = `Unchanged } -> true
       | _ -> false
-    [@@inline]
+
   end
 
 
@@ -89,26 +83,11 @@ module MidiNote = struct
     let  { id = _; time = old_time; duration = old_duration; velocity = old_velocity; off_velocity = old_off_velocity; note = old_note } : t = old_note in
     let { id = _; time = new_time; duration = new_duration; velocity = new_velocity; off_velocity = new_off_velocity; note = new_note } : t = new_note in
 
-    let time_change =
-      if old_time = new_time then `Unchanged
-      else `Modified { old = old_time; new_ = new_time }
-    in
-    let duration_change =
-      if old_duration = new_duration then `Unchanged
-      else `Modified { old = old_duration; new_ = new_duration }
-    in
-    let velocity_change =
-      if old_velocity = new_velocity then `Unchanged
-      else `Modified { old = old_velocity; new_ = new_velocity }
-    in
-    let off_velocity_change =
-      if old_off_velocity = new_off_velocity then `Unchanged
-      else `Modified { old = old_off_velocity; new_ = new_off_velocity }
-    in
-    let note_change =
-      if old_note = new_note then `Unchanged
-      else `Modified { old = old_note; new_ = new_note }
-    in
+    let time_change = diff_value old_time new_time in
+    let duration_change = diff_value old_duration new_duration in
+    let velocity_change = diff_value old_velocity new_velocity in
+    let off_velocity_change = diff_value old_off_velocity new_off_velocity in
+    let note_change = diff_value old_note new_note in
     {
       time = time_change;
       duration = duration_change;
@@ -116,8 +95,24 @@ module MidiNote = struct
       off_velocity = off_velocity_change;
       note = note_change;
     }
-end
 
+  type note_display_style = Sharp | Flat
+
+  let get_note_name ?(style=Sharp) (note : t) : string =
+    let note_names_sharp = [| "C"; "C#"; "D"; "D#"; "E"; "F"; "F#"; "G"; "G#"; "A"; "A#"; "B" |] in
+    let note_names_flat = [| "C"; "Db"; "D"; "Eb"; "E"; "F"; "Gb"; "G"; "Ab"; "A"; "Bb"; "B" |] in
+
+    let note_class = note.note mod 12 in
+    let octave_num = note.note / 12 - 1 in (* MIDI octave adjustment *)
+
+    let note_name = match style with
+      | Sharp -> note_names_sharp.(note_class)
+      | Flat -> note_names_flat.(note_class)
+    in
+
+    Printf.sprintf "%s%d" note_name octave_num
+
+end
 
 module Loop = struct
   type t = {
@@ -147,23 +142,14 @@ module Loop = struct
     let is_empty = function
       | { start_time = `Unchanged; end_time = `Unchanged; on = `Unchanged } -> true
       | _ -> false
-    [@@inline]
+
   end
 
 
   let diff (old_loop : t) (new_loop : t) : Patch.t =
-      let start_time_change =
-        if old_loop.start_time = new_loop.start_time then `Unchanged
-        else `Modified { old = old_loop.start_time; new_ = new_loop.start_time }
-      in
-      let end_time_change =
-        if old_loop.end_time = new_loop.end_time then `Unchanged
-        else `Modified { old = old_loop.end_time; new_ = new_loop.end_time }
-      in
-      let on_change =
-        if old_loop.on = new_loop.on then `Unchanged
-        else `Modified { old = old_loop.on; new_ = new_loop.on }
-      in
+      let start_time_change = diff_value old_loop.start_time new_loop.start_time in
+      let end_time_change = diff_value old_loop.end_time new_loop.end_time in
+      let on_change = diff_value old_loop.on new_loop.on in
       { start_time = start_time_change; end_time = end_time_change; on = on_change }
 end
 
@@ -248,20 +234,11 @@ module MidiClip = struct
     if old_id <> new_id then
       failwith "cannot diff two clips with different Id"
     else
-      let name_change =
-        if old_name = new_name then `Unchanged
-        else `Modified { old = old_name; new_ = new_name }
-      in
-      let start_time_change =
-        if old_start = new_start then `Unchanged
-        else `Modified { old = old_start; new_ = new_start }
-    in
-    let end_time_change =
-      if old_end = new_end then `Unchanged
-      else `Modified { old = old_end; new_ = new_end }
-    in
-    let loop_patch = Loop.diff old_loop new_loop in
-    let signature_change = if old_sig <> new_sig then `Modified { old = old_sig; new_ = new_sig } else `Unchanged in
+      let name_change = diff_value old_name new_name in
+      let start_time_change = diff_value old_start new_start in
+      let end_time_change = diff_value old_end new_end in
+      let loop_patch = Loop.diff old_loop new_loop in
+      let signature_change = diff_value old_sig new_sig in
 
     (* Use diff_list_ord for notes - cleaner and more consistent *)
     let notes_change =
@@ -313,24 +290,9 @@ module SampleRef = struct
     let { file_path = old_file_path; crc = old_crc; last_modified_date = old_date } = old_sample_ref in
     let { file_path = new_file_path; crc = new_crc; last_modified_date = new_date } = new_sample_ref in
 
-    let file_path_change =
-      if old_file_path = new_file_path then
-        `Unchanged
-      else
-        `Modified { old = old_file_path; new_ = new_file_path }
-    in
-    let crc_change =
-      if old_crc = new_crc then
-        `Unchanged
-      else
-        `Modified { old = old_crc; new_ = new_crc }
-    in
-    let last_modified_date_change =
-      if old_date = new_date then
-        `Unchanged
-      else
-        `Modified { old = old_date; new_ = new_date }
-    in
+    let file_path_change = diff_value old_file_path new_file_path in
+    let crc_change = diff_value old_crc new_crc in
+    let last_modified_date_change = diff_value old_date new_date in
     { file_path = file_path_change; crc = crc_change; last_modified_date = last_modified_date_change }
 
 end
@@ -402,27 +364,14 @@ module AudioClip = struct
     if old_id <> new_id then
       failwith "cannot diff two clips with different Id"
     else
-      let name_change =
-        if old_name = new_name then `Unchanged
-        else `Modified { old = old_name; new_ = new_name }
-      in
-      let start_time_change =
-        if old_start = new_start then `Unchanged
-        else `Modified { old = old_start; new_ = new_start }
-      in
-      let end_time_change =
-        if old_end = new_end then `Unchanged
-        else `Modified { old = old_end; new_ = new_end }
-      in
+      let name_change = diff_value old_name new_name in
+      let start_time_change = diff_value old_start new_start in
+      let end_time_change = diff_value old_end new_end in
       let loop_patch =
         if Loop.equal old_loop new_loop then `Unchanged
         else `Patched (Loop.diff old_loop new_loop)
       in
-      let signature_change = if old_sig <> new_sig then
-          `Modified { old = old_sig; new_ = new_sig }
-        else
-          `Unchanged
-      in
+      let signature_change = diff_value old_sig new_sig in
       let sample_ref_patch = SampleRef.diff old_sample new_sample in
       let sample_ref_change = Diff.simple_structured_change_of_patch (module SampleRef.Patch) sample_ref_patch in
       {

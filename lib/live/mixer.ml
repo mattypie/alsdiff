@@ -14,7 +14,6 @@ module Send = struct
     (* As mentioned in TODO.org, the target track's ID is currently unknown *)
     { target; amount }
 
-
   module Patch = struct
     type t = {
       target : int flat_change;
@@ -24,23 +23,11 @@ module Send = struct
     let is_empty = function
       | { target = `Unchanged; amount = `Unchanged } -> true
       | _ -> false
-    [@@warning "-32"]
   end
 
-
   let diff (old_send : t) (new_send : t) : Patch.t =
-    let target_change =
-      if old_send.target = new_send.target then
-        `Unchanged
-      else
-        `Modified { old = old_send.target; new_ = new_send.target }
-    in
-    let amount_change =
-      if old_send.amount = new_send.amount then
-        `Unchanged
-      else
-        `Modified { old = old_send.amount; new_ = new_send.amount }
-    in
+    let target_change = diff_value old_send.target new_send.target in
+    let amount_change = diff_value old_send.amount new_send.amount in
     { target = target_change; amount = amount_change }
 end
 
@@ -76,7 +63,7 @@ let create (xml : Xml.t) : t =
       )
   in
   { volume; pan; mute; solo; sends }
-[@@warning "-32"]
+
 
 (* Mixer doesn't have a natural ID, so use placeholder interface *)
 let has_same_id _ _ = true
@@ -95,42 +82,17 @@ module Patch = struct
 
   let is_empty = function
     | { volume = `Unchanged; pan = `Unchanged; mute = `Unchanged; solo = `Unchanged; sends } ->
-      (match sends with
-      | [] -> true
-      | _ -> List.fold_right (fun x y ->
-          (match x with
-           | `Unchanged -> true
-           | _ -> false) && y) sends true)
+      List.for_all (function `Unchanged -> true | _ -> false) sends
     | _ -> false
-  [@@warning "-32"]
+
 end
 
 
 let diff (old_mixer : t) (new_mixer : t) : Patch.t =
-  let volume_change =
-    if old_mixer.volume = new_mixer.volume then
-      `Unchanged
-    else
-      `Modified { old = old_mixer.volume; new_ = new_mixer.volume }
-  in
-  let pan_change =
-    if old_mixer.pan = new_mixer.pan then
-      `Unchanged
-    else
-      `Modified { old = old_mixer.pan; new_ = new_mixer.pan }
-  in
-  let mute_change =
-    if old_mixer.mute = new_mixer.mute then
-      `Unchanged
-    else
-      `Modified { old = old_mixer.mute; new_ = new_mixer.mute }
-  in
-  let solo_change =
-    if old_mixer.solo = new_mixer.solo then
-      `Unchanged
-    else
-      `Modified { old = old_mixer.solo; new_ = new_mixer.solo }
-  in
+  let volume_change = diff_value old_mixer.volume new_mixer.volume in
+  let pan_change = diff_value old_mixer.pan new_mixer.pan in
+  let mute_change = diff_value old_mixer.mute new_mixer.mute in
+  let solo_change = diff_value old_mixer.solo new_mixer.solo in
 
   (* To properly handle send changes, we need to match sends that represent the same logical send
      Since the target is always 0, we'll use a combination of target and amount to match sends
@@ -153,19 +115,19 @@ let diff (old_mixer : t) (new_mixer : t) : Patch.t =
   let new_map = to_map new_mixer.sends in
 
   (* Merge the maps to find changes *)
-  let send_changes = SendMap.merge (fun _ old_opt new_opt ->
+  let send_changes =
+    let merge_change _key old_opt new_opt =
       match old_opt, new_opt with
       | Some old_send, None -> Some (`Removed old_send)
       | None, Some new_send -> Some (`Added new_send)
+      | Some old_send, Some new_send when Send.equal old_send new_send -> None
       | Some old_send, Some new_send ->
-        if Send.equal old_send new_send then
-          None  (* Unchanged, don't include in changes list *)
-        else
-          (* Send was modified, create a patch *)
-          let patch = Send.diff old_send new_send in
-          Some (`Patched patch)
+        let patch = Send.diff old_send new_send in
+        Some (`Patched patch)
       | None, None -> None
-    ) old_map new_map |> SendMap.to_seq |> Seq.map snd |> List.of_seq in
+    in
+    SendMap.merge merge_change old_map new_map
+    |> SendMap.to_seq |> Seq.map snd |> List.of_seq in
 
   { volume = volume_change;
     pan = pan_change;
@@ -173,4 +135,3 @@ let diff (old_mixer : t) (new_mixer : t) : Patch.t =
     solo = solo_change;
     sends = send_changes;
   }
-[@@warning "-32"]
