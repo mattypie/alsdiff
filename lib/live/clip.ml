@@ -209,6 +209,9 @@ module MidiClip = struct
       { id; name; start_time; end_time; loop; signature; notes }
     | _ -> failwith "Expected MidiClip element"
 
+  let has_same_id a b = a.id = b.id
+  let id_hash t = Hashtbl.hash t.id
+
 
   module Patch = struct
     type note_change = (MidiNote.t, MidiNote.Patch.t) structured_change
@@ -367,6 +370,9 @@ module AudioClip = struct
       { id; name; start_time; end_time; loop; signature; sample_ref }
     | _ -> failwith "Expected AudioClip element"
 
+  let has_same_id a b = a.id = b.id
+  let id_hash t = Hashtbl.hash t.id
+
 
   module Patch = struct
     type t = {
@@ -377,6 +383,14 @@ module AudioClip = struct
       signature : TimeSignature.t simple_flat_change;
       sample_ref : SampleRef.Patch.t simple_structured_change;
     }
+
+    let is_empty patch =
+      patch.name = `Unchanged &&
+      patch.start_time = `Unchanged &&
+      patch.end_time = `Unchanged &&
+      patch.loop = `Unchanged &&
+      patch.signature = `Unchanged &&
+      patch.sample_ref = `Unchanged
   end
 
 

@@ -700,8 +700,8 @@ and group_device_patch = {
   (* devices always have preset, its either user-defined one or the defualt one,
      so only Unchanged/Patched cases *)
   branches : (branch, branch_patch) structured_change list;
-  macros : Macro.t flat_change list;
-  snapshots : Snapshot.t flat_change list;
+  macros : (Macro.t, Macro.Patch.t) structured_change list;
+  snapshots : (Snapshot.t, Snapshot.Patch.t) structured_change list;
   preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
 }
 
@@ -829,8 +829,14 @@ and group_device_diff (old_group : group_device) (new_group : group_device) =
       diff_list_id (module BranchId) old_group.branches new_group.branches
       |> List.map @@ structured_change_of_flat (module BranchId)
     in
-    let macros_changes = diff_list_id (module Macro) old_group.macros new_group.macros in
-    let snapshots_changes = diff_list_id (module Snapshot) old_group.snapshots new_group.snapshots in
+    let macros_changes =
+      diff_list_id (module Macro) old_group.macros new_group.macros
+      |> List.map @@ structured_change_of_flat (module Macro)
+    in
+    let snapshots_changes =
+      diff_list_id (module Snapshot) old_group.snapshots new_group.snapshots
+      |> List.map @@ structured_change_of_flat (module Snapshot)
+    in
     {
       display_name = display_name_change;
       enabled = enabled_change;
@@ -1053,6 +1059,19 @@ let rec create (xml : Xml.t) : t =
      | _ -> Regular (RegularDevice.create xml))
 
   | _ -> invalid_arg "Cannot create a Device on Data"
+
+let has_same_id old_device new_device =
+  match old_device, new_device with
+  | Regular old_reg, Regular new_reg -> old_reg.id = new_reg.id
+  | Plugin old_plug, Plugin new_plug -> old_plug.id = new_plug.id
+  | Group old_group, Group new_group -> old_group.id = new_group.id
+  | _ -> false
+
+let id_hash device =
+  match device with
+  | Regular reg -> Hashtbl.hash reg.id
+  | Plugin plug -> Hashtbl.hash plug.id
+  | Group group -> Hashtbl.hash group.id
 
 module Patch = struct
   type t =

@@ -78,6 +78,9 @@ let create (xml : Xml.t) : t =
   { volume; pan; mute; solo; sends }
 [@@warning "-32"]
 
+(* Mixer doesn't have a natural ID, so use placeholder interface *)
+let has_same_id _ _ = true
+let id_hash _ = Hashtbl.hash 0
 
 module Patch = struct
   type send_changes = (Send.t, Send.Patch.t) structured_change list

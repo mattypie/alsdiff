@@ -3,7 +3,7 @@ open Alsdiff_live
 
 type t = string
 
-let render_event_change (change : Automation.EnvelopeEvent.t Diff.flat_change) =
+let render_event_change (change : (Automation.EnvelopeEvent.t, Automation.EnvelopeEvent.Patch.t) Diff.structured_change) =
   match change with
   | `Unchanged -> ""
   | `Added event ->
@@ -12,9 +12,9 @@ let render_event_change (change : Automation.EnvelopeEvent.t Diff.flat_change) =
   | `Removed event ->
       Printf.sprintf "    - Event at time %.2f with value %.4f"
         event.Automation.EnvelopeEvent.time event.Automation.EnvelopeEvent.value
-  | `Modified m ->
-      Printf.sprintf "    ~ Event changed: time %.2f->%.2f, value %.4f->%.4f"
-        m.old.Automation.EnvelopeEvent.time m.new_.Automation.EnvelopeEvent.time m.old.Automation.EnvelopeEvent.value m.new_.Automation.EnvelopeEvent.value
+  | `Patched _patch ->
+      (* For now, just show that the event was patched without details *)
+      Printf.sprintf "    ~ Event patched (details available)"
 
 let render_envelope_patch (patch : Automation.Patch.t) =
   let header =

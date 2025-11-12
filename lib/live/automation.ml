@@ -60,11 +60,13 @@ let create (xml : Alsdiff_base.Xml.t) : t =
 
 let has_same_id a b = a.id = b.id && a.target = b.target
 
+let id_hash t = Hashtbl.hash (t.id, t.target)
+
 module Patch = struct
   type t = {
     id : int;
     target : int;
-    events : EnvelopeEvent.t flat_change list; (* TODO: should be structured_change *)
+    events : (EnvelopeEvent.t, EnvelopeEvent.Patch.t) structured_change list;
   }
 
   let is_empty x =
@@ -78,7 +80,10 @@ let diff (old_envelope : t) (new_envelope : t) : Patch.t =
      old_envelope.target <> new_envelope.target then
     failwith "cannot diff two AutomationEnvelopes with different Id or Target"
   else
-    let event_changes = diff_list_id (module EnvelopeEvent) old_envelope.events new_envelope.events in
+    let event_changes =
+      diff_list_id (module EnvelopeEvent) old_envelope.events new_envelope.events
+      |> List.map @@ structured_change_of_flat (module EnvelopeEvent)
+    in
 
     match event_changes with
     | [] -> { id = new_envelope.id; target = new_envelope.target; events = [] } (* No changes in events *)

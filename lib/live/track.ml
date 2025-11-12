@@ -1,4 +1,5 @@
 open Alsdiff_base
+open Alsdiff_base.Diff
 
 
 module MidiTrack = struct
@@ -29,6 +30,52 @@ module MidiTrack = struct
     let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Mixer.create in
 
     { id; name; clips; automations; devices; mixer }
+
+  let has_same_id a b = a.id = b.id
+  let id_hash t = Hashtbl.hash t.id
+
+  module Patch = struct
+    type t = {
+      name : string flat_change;
+      clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change list;
+      automations : (Automation.t, Automation.Patch.t) structured_change list;
+      devices : (Device.t, Device.Patch.t) structured_change list;
+      mixer : Mixer.Patch.t simple_structured_change;
+    }
+
+    let is_empty patch =
+      patch.name = `Unchanged &&
+      patch.mixer = `Unchanged &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.clips &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.automations &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+  end
+
+  let diff (old_track : t) (new_track : t) : Patch.t =
+    if old_track.id <> new_track.id then
+      failwith "cannot diff two MidiTracks with different Ids"
+    else
+      let name_change = diff_value old_track.name new_track.name in
+      let clips_changes =
+        diff_list_id (module Clip.MidiClip) old_track.clips new_track.clips
+        |> List.map @@ structured_change_of_flat (module Clip.MidiClip)
+      in
+      let automations_changes =
+        diff_list_id (module Automation) old_track.automations new_track.automations
+        |> List.map @@ structured_change_of_flat (module Automation)
+      in
+      let devices_changes =
+        diff_list_id (module Device) old_track.devices new_track.devices
+        |> List.map @@ structured_change_of_flat (module Device)
+      in
+      let mixer_change = diff_structured_value (module Mixer) old_track.mixer new_track.mixer in
+      {
+        Patch.name = name_change;
+        clips = clips_changes;
+        automations = automations_changes;
+        devices = devices_changes;
+        mixer = mixer_change;
+      }
 end
 
 module AudioTrack = struct
@@ -59,4 +106,80 @@ module AudioTrack = struct
     let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Mixer.create in
 
     { id; name; clips; automations; devices; mixer }
+
+  let has_same_id a b = a.id = b.id
+  let id_hash t = Hashtbl.hash t.id
+
+  module Patch = struct
+    type t = {
+      name : string flat_change;
+      clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
+      automations : (Automation.t, Automation.Patch.t) structured_change list;
+      devices : (Device.t, Device.Patch.t) structured_change list;
+      mixer : Mixer.Patch.t simple_structured_change;
+    }
+
+    let is_empty patch =
+      patch.name = `Unchanged &&
+      patch.mixer = `Unchanged &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.clips &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.automations &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+  end
+
+  let diff (old_track : t) (new_track : t) : Patch.t =
+    if old_track.id <> new_track.id then
+      failwith "cannot diff two AudioTracks with different Ids"
+    else
+      let name_change = diff_value old_track.name new_track.name in
+      let clips_changes =
+        diff_list_id (module Clip.AudioClip) old_track.clips new_track.clips
+        |> List.map @@ structured_change_of_flat (module Clip.AudioClip)
+      in
+      let automations_changes =
+        diff_list_id (module Automation) old_track.automations new_track.automations
+        |> List.map @@ structured_change_of_flat (module Automation)
+      in
+      let devices_changes =
+        diff_list_id (module Device) old_track.devices new_track.devices
+        |> List.map @@ structured_change_of_flat (module Device)
+      in
+      let mixer_change = diff_structured_value (module Mixer) old_track.mixer new_track.mixer in
+      {
+        Patch.name = name_change;
+        clips = clips_changes;
+        automations = automations_changes;
+        devices = devices_changes;
+        mixer = mixer_change;
+      }
 end
+
+(* Sum type that represents either a MidiTrack or AudioTrack *)
+type t =
+  | Midi of MidiTrack.t
+  | Audio of AudioTrack.t
+[@@deriving eq]
+
+type patch =
+  | MidiPatch of MidiTrack.Patch.t
+  | AudioPatch of AudioTrack.Patch.t
+
+let create (xml : Xml.t) : t =
+  match xml with
+  | Xml.Element { name = "MidiTrack"; _ } -> Midi (MidiTrack.create xml)
+  | Xml.Element { name = "AudioTrack"; _ } -> Audio (AudioTrack.create xml)
+  | _ -> failwith ("Unsupported track type: " ^
+                 match xml with
+                 | Xml.Element { name; _ } -> name
+                 | _ -> "non-element")
+
+let diff (old_track : t) (new_track : t) : patch =
+  match old_track, new_track with
+  | Midi old_midi, Midi new_midi ->
+    let midi_patch = MidiTrack.diff old_midi new_midi in
+    MidiPatch midi_patch
+  | Audio old_audio, Audio new_audio ->
+    let audio_patch = AudioTrack.diff old_audio new_audio in
+    AudioPatch audio_patch
+  | Midi _, Audio _ | Audio _, Midi _ ->
+    failwith "cannot diff tracks of different types (MidiTrack vs AudioTrack)"
