@@ -346,13 +346,13 @@ module AudioClip = struct
     loop : Loop.t;
     signature : TimeSignature.t;
     sample_ref : SampleRef.t;
-  }
+  } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
     match xml with
     | Xml.Element { name = "AudioClip"; parent = _; _ } ->
       let id = Xml.get_int_attr "Id" xml in
-      let name = Upath.get_attr "/AudioClip/Name" "Value" xml in
+      let name = Upath.get_attr "/Name" "Value" xml in
       let start_time = Upath.get_float_attr "/CurrentStart" "Value" xml in
       let end_time = Upath.get_float_attr "/CurrentEnd" "Value" xml in
 

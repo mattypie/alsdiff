@@ -99,6 +99,12 @@
  (deps midi_track.xml))
 
 (test
+ (name test_audio_track)
+ (modules test_audio_track)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps audio_track.xml))
+
+(test
  (name test_regex_match)
  (modules test_regex_match)
  (libraries alsdiff_lib alcotest test_utils)
