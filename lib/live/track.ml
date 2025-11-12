@@ -154,15 +154,23 @@ module AudioTrack = struct
       }
 end
 
+
 (* Sum type that represents either a MidiTrack or AudioTrack *)
 type t =
   | Midi of MidiTrack.t
   | Audio of AudioTrack.t
+  (* TODO: send track, group track *)
 [@@deriving eq]
 
-type patch =
-  | MidiPatch of MidiTrack.Patch.t
-  | AudioPatch of AudioTrack.Patch.t
+let has_same_id old_track new_track =
+  match old_track, new_track with
+  | Midi old_midi, Midi new_midi -> MidiTrack.has_same_id old_midi new_midi
+  | Audio old_audio, Audio new_audio -> AudioTrack.has_same_id old_audio new_audio
+  | _ -> false
+
+let id_hash = function
+  | Midi midi -> MidiTrack.id_hash midi
+  | Audio audio -> AudioTrack.id_hash audio
 
 let create (xml : Xml.t) : t =
   match xml with
@@ -173,13 +181,23 @@ let create (xml : Xml.t) : t =
                  | Xml.Element { name; _ } -> name
                  | _ -> "non-element")
 
-let diff (old_track : t) (new_track : t) : patch =
+module Patch = struct
+  type t =
+    | MidiPatch of MidiTrack.Patch.t
+    | AudioPatch of AudioTrack.Patch.t
+
+  let is_empty = function
+    | MidiPatch patch -> MidiTrack.Patch.is_empty patch
+    | AudioPatch patch -> AudioTrack.Patch.is_empty patch
+end
+
+let diff (old_track : t) (new_track : t) : Patch.t =
   match old_track, new_track with
   | Midi old_midi, Midi new_midi ->
     let midi_patch = MidiTrack.diff old_midi new_midi in
-    MidiPatch midi_patch
+    Patch.MidiPatch midi_patch
   | Audio old_audio, Audio new_audio ->
     let audio_patch = AudioTrack.diff old_audio new_audio in
-    AudioPatch audio_patch
+    Patch.AudioPatch audio_patch
   | Midi _, Audio _ | Audio _, Midi _ ->
     failwith "cannot diff tracks of different types (MidiTrack vs AudioTrack)"
