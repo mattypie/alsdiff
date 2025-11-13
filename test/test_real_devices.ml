@@ -26,7 +26,7 @@ let test_wavetable_device_xml_path =
 let extract_parameter_xml device_path parameter_name =
   let device_xml = read_file device_path in
   let param_path = Printf.sprintf "/%s" parameter_name in
-  snd (Upath.find param_path device_xml)
+  (param_path, snd (Upath.find param_path device_xml))
 
 (* Convenience functions for specific devices *)
 let extract_compressor_parameter_xml parameter_name =
@@ -82,11 +82,11 @@ let test_create_device_from_compressor_xml () =
 
 let test_device_param_creation () =
   (* Use Threshold parameter from real compressor device XML *)
-  let param_xml = extract_compressor_parameter_xml "Threshold" in
+  let param_path, param_xml = extract_compressor_parameter_xml "Threshold" in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create param_path param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "param name" "Threshold" param.name;
@@ -97,11 +97,11 @@ let test_device_param_creation () =
 
 let test_device_param_without_macro_mapping () =
   (* Use Ratio parameter from real compressor device XML - it has no KeyMidi/macro mapping *)
-  let param_xml = extract_compressor_parameter_xml "Ratio" in
+  let param_path, param_xml = extract_compressor_parameter_xml "Ratio" in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create param_path param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "param name" "Ratio" param.name;
@@ -160,11 +160,11 @@ let test_create_eq8_device_from_xml () =
 
 let test_eq8_global_gain_parameter () =
   (* Extract GlobalGain parameter from EQ8 XML *)
-  let param_xml = extract_eq8_parameter_xml "GlobalGain" in
+  let param_path, param_xml = extract_eq8_parameter_xml "GlobalGain" in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create param_path param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "eq8 global gain param name" "GlobalGain" param.name;
@@ -175,11 +175,11 @@ let test_eq8_global_gain_parameter () =
 
 let test_eq8_scale_parameter () =
   (* Extract Scale parameter from EQ8 XML *)
-  let param_xml = extract_eq8_parameter_xml "Scale" in
+  let param_path, param_xml = extract_eq8_parameter_xml "Scale" in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create param_path param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "eq8 scale param name" "Scale" param.name;
@@ -191,36 +191,36 @@ let test_eq8_scale_parameter () =
 let test_eq8_band_parameters () =
   (* Extract first band's frequency parameter from EQ8 XML *)
   let device_xml = read_file test_eq8_device_xml_path in
-  let freq_param_xml = Upath.find "/Bands.0/ParameterA/Freq" device_xml |> snd in
+  let freq_path, freq_param_xml = Upath.find "/Bands.0/ParameterA/Freq" device_xml in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let freq_param = create freq_param_xml in
+  let freq_param = create freq_path freq_param_xml in
 
   (* Verify frequency parameter properties *)
-  Alcotest.(check string) "eq8 freq param name" "Freq" freq_param.name;
+  Alcotest.(check string) "eq8 freq param name" "Bands.0/ParameterA/Freq" freq_param.name;
   (match freq_param.value with
    | Float v -> Alcotest.(check (float 0.001)) "eq8 band 0 frequency value" 77.237999 v
    | _ -> Alcotest.fail "eq8 frequency parameter should be float");
   Alcotest.(check int) "eq8 band 0 frequency automation id" 153292 freq_param.automation;
 
   (* Extract first band's gain parameter *)
-  let gain_param_xml = Upath.find "/Bands.0/ParameterA/Gain" device_xml |> snd in
-  let gain_param = create gain_param_xml in
+  let gain_path, gain_param_xml = Upath.find "/Bands.0/ParameterA/Gain" device_xml in
+  let gain_param = create gain_path gain_param_xml in
 
   (* Verify gain parameter properties *)
-  Alcotest.(check string) "eq8 gain param name" "Gain" gain_param.name;
+  Alcotest.(check string) "eq8 gain param name" "Bands.0/ParameterA/Gain" gain_param.name;
   (match gain_param.value with
    | Float v -> Alcotest.(check (float 0.01)) "eq8 band 0 gain value" (-2.85714293) v
    | _ -> Alcotest.fail "eq8 gain parameter should be float");
   Alcotest.(check int) "eq8 band 0 gain automation id" 153294 gain_param.automation;
 
   (* Extract first band's Q parameter *)
-  let q_param_xml = Upath.find "/Bands.0/ParameterA/Q" device_xml |> snd in
-  let q_param = create q_param_xml in
+  let q_path, q_param_xml = Upath.find "/Bands.0/ParameterA/Q" device_xml in
+  let q_param = create q_path q_param_xml in
 
   (* Verify Q parameter properties *)
-  Alcotest.(check string) "eq8 q param name" "Q" q_param.name;
+  Alcotest.(check string) "eq8 q param name" "Bands.0/ParameterA/Q" q_param.name;
   (match q_param.value with
    | Float v -> Alcotest.(check (float 0.001)) "eq8 band 0 Q value" 0.7071067095 v
    | _ -> Alcotest.fail "eq8 Q parameter should be float");
@@ -229,14 +229,14 @@ let test_eq8_band_parameters () =
 let test_eq8_mode_parameters () =
   (* Extract first band's mode parameter from EQ8 XML *)
   let device_xml = read_file test_eq8_device_xml_path in
-  let mode_param_xml = Upath.find "/Bands.0/ParameterA/Mode" device_xml |> snd in
+  let mode_path, mode_param_xml = Upath.find "/Bands.0/ParameterA/Mode" device_xml in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let mode_param = create mode_param_xml in
+  let mode_param = create mode_path mode_param_xml in
 
   (* Verify mode parameter properties *)
-  Alcotest.(check string) "eq8 mode param name" "Mode" mode_param.name;
+  Alcotest.(check string) "eq8 mode param name" "Bands.0/ParameterA/Mode" mode_param.name;
   (match mode_param.value with
    | Float v -> Alcotest.(check (float 0.01)) "eq8 band 0 mode value" 2.0 v
    | _ -> Alcotest.fail "eq8 mode parameter should be float");
@@ -245,22 +245,22 @@ let test_eq8_mode_parameters () =
 let test_eq8_is_on_parameters () =
   (* Extract first band's IsOn parameter from EQ8 XML *)
   let device_xml = read_file test_eq8_device_xml_path in
-  let is_on_param_xml = Upath.find "/Bands.0/ParameterA/IsOn" device_xml |> snd in
+  let is_on_path, is_on_param_xml = Upath.find "/Bands.0/ParameterA/IsOn" device_xml in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let is_on_param = create is_on_param_xml in
+  let is_on_param = create is_on_path is_on_param_xml in
 
   (* Verify IsOn parameter properties *)
-  Alcotest.(check string) "eq8 is_on param name" "IsOn" is_on_param.name;
+  Alcotest.(check string) "eq8 is_on param name" "Bands.0/ParameterA/IsOn" is_on_param.name;
   (match is_on_param.value with
    | Bool v -> Alcotest.(check bool) "eq8 band 0 IsOn value" true v
    | _ -> Alcotest.fail "eq8 IsOn parameter should be bool");
   Alcotest.(check int) "eq8 band 0 IsOn automation id" 153290 is_on_param.automation;
 
   (* Test ParameterB IsOn (should be false) *)
-  let is_on_b_param_xml = Upath.find "/Bands.0/ParameterB/IsOn" device_xml |> snd in
-  let is_on_b_param = create is_on_b_param_xml in
+  let is_on_b_path, is_on_b_param_xml = Upath.find "/Bands.0/ParameterB/IsOn" device_xml in
+  let is_on_b_param = create is_on_b_path is_on_b_param_xml in
 
   (* Verify ParameterB IsOn parameter properties *)
   (match is_on_b_param.value with
@@ -275,11 +275,11 @@ let test_eq8_all_bands_exist () =
 
   for i = 0 to 7 do
     let band_path = Printf.sprintf "/Bands.%d/ParameterA/Freq" i in
-    let freq_param_xml = Upath.find band_path device_xml |> snd in
-    let freq_param = create freq_param_xml in
+    let freq_path, freq_param_xml = Upath.find band_path device_xml in
+    let freq_param = create freq_path freq_param_xml in
 
     (* Verify that each band has a frequency parameter *)
-    Alcotest.(check string) (Printf.sprintf "eq8 band %d param name" i) "Freq" freq_param.name;
+    Alcotest.(check string) (Printf.sprintf "eq8 band %d param name" i) (Printf.sprintf "Bands.%d/ParameterA/Freq" i) freq_param.name;
     (match freq_param.value with
      | Float v ->
        (* Verify that frequency values are reasonable (between 20Hz and 20kHz) *)
@@ -294,12 +294,12 @@ let test_eq8_parameter_b_vs_parameter_a_differences () =
   let open Device.DeviceParam in
 
   (* Get ParameterA frequency *)
-  let freq_a_param_xml = Upath.find "/Bands.0/ParameterA/Freq" device_xml |> snd in
-  let freq_a_param = create freq_a_param_xml in
+  let freq_a_path, freq_a_param_xml = Upath.find "/Bands.0/ParameterA/Freq" device_xml in
+  let freq_a_param = create freq_a_path freq_a_param_xml in
 
   (* Get ParameterB frequency *)
-  let freq_b_param_xml = Upath.find "/Bands.0/ParameterB/Freq" device_xml |> snd in
-  let freq_b_param = create freq_b_param_xml in
+  let freq_b_path, freq_b_param_xml = Upath.find "/Bands.0/ParameterB/Freq" device_xml in
+  let freq_b_param = create freq_b_path freq_b_param_xml in
 
   (* Verify they have different values *)
   (match (freq_a_param.value, freq_b_param.value) with
@@ -427,11 +427,11 @@ let test_create_wavetable_device () =
 
 let test_wavetable_parameter_creation () =
   (* Test creating a specific parameter from XML *)
-  let param_xml = extract_wavetable_parameter_xml "Voice_Oscillator1_On" in
+  let param_path, param_xml = extract_wavetable_parameter_xml "Voice_Oscillator1_On" in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create param_path param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "wavetable param name" "Voice_Oscillator1_On" param.name;
@@ -448,11 +448,11 @@ let test_wavetable_parameter_creation () =
 
 let test_wavetable_float_parameter () =
   (* Test creating a float parameter from XML *)
-  let param_xml = extract_wavetable_parameter_xml "Voice_Oscillator1_Pitch_Transpose" in
+  let param_path, param_xml = extract_wavetable_parameter_xml "Voice_Oscillator1_Pitch_Transpose" in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create param_path param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "wavetable float param name" "Voice_Oscillator1_Pitch_Transpose" param.name;

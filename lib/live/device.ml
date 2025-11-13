@@ -26,6 +26,7 @@ module DeviceParam = struct
     name : string;
     value : value;
     automation : int;
+    (* TODO: add modulation *)
     mapping : macro_mapping option;
   } [@@deriving eq]
 
@@ -84,9 +85,17 @@ module DeviceParam = struct
       It raises [Failure "Invalid XML element for creating DeviceParam"] if the XML
       is not a valid element, and raises [Failure "Failed to parse device parameter"]
       if the parameter value cannot be parsed. *)
-  let create (xml : Xml.t) : t =
+  let create (path : string) (xml : Xml.t) : t =
     match xml with
-    | Xml.Element { name; _ } ->
+    | Xml.Element _ ->
+      let name =
+        let path_parts = String.split_on_char '/' path in
+        let non_empty_parts = List.filter (fun s -> s <> "") path_parts in
+        match non_empty_parts with
+        | [] -> ""
+        | [single] -> single (* Only one part, return it as-is *)
+        | _ :: rest -> String.concat "/" rest (* Skip first part, join rest *)
+      in
       let automation =
         Upath.get_int_attr_opt "/AutomationTarget" "Id" xml
         |> Option.value ~default:0
@@ -105,6 +114,8 @@ module DeviceParam = struct
       let mapping = parse_macro_mapping xml in
       { name; value; automation; mapping }
     | _ -> failwith "Invalid XML element for creating DeviceParam"
+
+  let create_from_upath_find (path, xml) = create path xml
 
   module Patch = struct
     type t = {
@@ -245,6 +256,7 @@ module PluginParam = struct
     value : param_value;        (* Manual *)
     automation : int;           (* ParameterValue/AutomationTarget *)
     modulation : int;           (* ParameterValue/ModulationTarget *)
+    (* TODO: macro mapping *)
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
@@ -437,21 +449,10 @@ module MixerDevice = struct
     match xml with
     | Xml.Element { name = "MixerDevice"; _ } ->
       (* Extract On parameter *)
-      let on_xml = Upath.find "/On" xml |> snd in
-      let on = DeviceParam.create on_xml in
-
-      (* Extract Speaker parameter *)
-      let speaker_xml = Upath.find "/Speaker" xml |> snd in
-      let speaker = DeviceParam.create speaker_xml in
-
-      (* Extract Volume parameter *)
-      let volume_xml = Upath.find "/Volume" xml |> snd in
-      let volume = DeviceParam.create volume_xml in
-
-      (* Extract Panorama parameter *)
-      let pan_xml = Upath.find "/Panorama" xml |> snd in
-      let pan = DeviceParam.create pan_xml in
-
+      let on = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
+      let speaker = Upath.find "/Speaker" xml |> DeviceParam.create_from_upath_find in
+      let volume = Upath.find "/Volume" xml |> DeviceParam.create_from_upath_find in
+      let pan = Upath.find "/Panorama" xml |> DeviceParam.create_from_upath_find in
       { on; speaker; volume; pan }
     | _ -> failwith "Invalid XML element for creating MixerDevice"
 
@@ -881,8 +882,12 @@ module RegularDevice = struct
       let pointee = Alsdiff_base.Upath.get_int_attr "/Pointee" "Id" xml in
       let preset = Upath.find_opt "/LastPresetRef/Value/*" xml |> Option.map snd |> Option.map PresetRef.create in
       let display_name = get_display_name preset xml in
-      let enabled = Upath.find "/On" xml |> snd |> DeviceParam.create in
-      let params = Alsdiff_base.Upath.find_all "/**/LomId/../Manual/.." xml |> List.map snd |> List.map DeviceParam.create in
+      let enabled = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
+
+      (* Find all elements that has both LomId and Manual child elements *)
+      let params = Alsdiff_base.Upath.find_all "/**/LomId/../Manual/.." xml
+        |> List.map DeviceParam.create_from_upath_find
+      in
       { id; device_name=name; display_name; pointee; enabled; params; preset }
     | _ -> failwith "Invalid XML element for creating Device"
 
@@ -915,7 +920,7 @@ module PluginDevice = struct
 
     (* Get pointee ID *)
     let pointee = Upath.get_int_attr "/Pointee" "Id" xml in
-    let enabled = Upath.find "/On" xml |> snd |> DeviceParam.create in
+    let enabled = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
 
     (* Find the PluginDesc element *)
     let plugin_desc_xml = Upath.find "/PluginDesc" xml |> snd in
@@ -996,7 +1001,7 @@ module GroupDevice = struct
         |> Option.map snd
         |> Option.map PresetRef.create in
       let display_name = get_display_name preset xml in
-      let enabled = Upath.find "/On" xml |> snd |> DeviceParam.create in
+      let enabled = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
 
       let branches = Upath.find "/Branches" xml
         |> snd

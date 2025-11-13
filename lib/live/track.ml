@@ -19,7 +19,7 @@ module MidiTrack = struct
       Upath.find_all_seq "/AutomationEnvelopes/*/AutomationEnvelope" xml
       |> Seq.map (fun x -> x |> snd |> Automation.create)
       |> List.of_seq in
-    let clips = Upath.find_all_seq "/**/MidiClip" xml
+    let clips = Upath.find_all_seq "/**/ClipTimeable/ArrangerAutomation/Events/MidiClip" xml
               |> Seq.map (fun x -> x |> snd |> Clip.MidiClip.create)
               |> List.of_seq in
     let devices = Upath.find_all_seq "/DeviceChain/*/Devices" xml

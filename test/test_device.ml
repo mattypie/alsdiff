@@ -21,7 +21,7 @@ let test_device_param_with_missing_values () =
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create "TestParam" param_xml in
 
   (* Verify parameter properties with defaults *)
   Alcotest.(check string) "param name" "TestParam" param.name;
@@ -44,7 +44,7 @@ let test_param_creation_with_invalid_xml () =
 
   (* This should raise an exception *)
   Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating DeviceParam")
-    (fun () -> ignore (Device.DeviceParam.create invalid_xml))
+    (fun () -> ignore (Device.DeviceParam.create "test" invalid_xml))
 
 let test_device_param_with_continuous_macro_mapping () =
   (* Create a parameter XML structure with continuous macro mapping *)
@@ -151,7 +151,7 @@ let test_device_param_with_continuous_macro_mapping () =
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create "Coarse" param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "param name" "Coarse" param.name;
@@ -274,7 +274,7 @@ let test_device_param_with_onoff_macro_mapping () =
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create "IsOn" param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "param name" "IsOn" param.name;
@@ -367,7 +367,7 @@ let test_device_param_with_invalid_controller_map_mode () =
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
-  let param = create param_xml in
+  let param = create "NonMacroParam" param_xml in
 
   (* Verify parameter properties *)
   Alcotest.(check string) "param name" "NonMacroParam" param.name;
