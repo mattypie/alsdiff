@@ -5,14 +5,22 @@ open Alsdiff_base.Equality
 
 exception Not_implemented of string
 
+type enum_desc = {
+  min : int;
+  max : int;
+  enums : string array;
+} [@@deriving eq]
+
+type param_value =
+  | Float of float
+  | Int of int
+  | Bool of bool
+  | Enum of int * enum_desc
+[@@deriving eq]
+
+
 (* ================== Common modules ================== *)
 module DeviceParam = struct
-  (** Represents the value of a device parameter, which can be one of several types. *)
-  type value =
-    | Bool of bool
-    | Int of int                (* probably will never be used *)
-    | Float of float
-  [@@deriving eq]
 
   type macro_mapping = {
     id : int;                   (* macro id *)
@@ -20,11 +28,12 @@ module DeviceParam = struct
     high : int;
   } [@@deriving eq]
 
+
   (** Represents a single device parameter with a name, a value of a mixed type,
       and an automation ID. *)
   type t = {
     name : string;
-    value : value;
+    value : param_value;
     automation : int;
     (* TODO: add modulation *)
     mapping : macro_mapping option;
@@ -38,7 +47,7 @@ module DeviceParam = struct
       For device parameters, we always prefer float values for numeric parameters,
       as device parameters are typically continuous values even when they appear
       as whole numbers. This is a private helper function. *)
-  let value_of_string_opt (s : string) : value option =
+  let value_of_string_opt (s : string) : param_value option =
     match float_of_string_opt s with
     | Some f -> Some (Float f)
     | None ->
@@ -119,7 +128,7 @@ module DeviceParam = struct
 
   module Patch = struct
     type t = {
-      value : value simple_flat_change;
+      value : param_value simple_flat_change;
       automation : int simple_flat_change;
     }
 
@@ -240,15 +249,105 @@ module PresetRef = struct
 end
 
 
+(* ================== M4L PatchRef module ================== *)
+module PatchRef = struct
+  type t = {
+    id : int;
+    name : string;
+    preset_type : PresetRef.preset_type;
+    relative_path : string;
+    path : string;
+    pack_name : string;
+    pack_id : int;
+    file_size : int;
+    crc : int;
+    last_mod_date : int64;  (* LastModDate Value attribute - UNIX timestamp *)
+  } [@@deriving eq]
+
+  let has_same_id a b = a.id = b.id
+
+  let id_hash t = Hashtbl.hash t.id
+
+  let create (xml : Xml.t) : t =
+    match xml with
+    | Xml.Element { name="MxPatchRef"; childs; _ } ->
+      let id = Xml.get_int_attr "Id" xml in
+      let preset_type = PresetRef.UserPreset in (* M4L patches are always user presets *)
+
+      (* Extract FileRef element *)
+      let file_ref_xml =
+        try List.find (function
+          | Xml.Element { name = "FileRef"; _ } -> true
+          | _ -> false) childs
+        with Not_found -> failwith "FileRef element not found in MxPatchRef"
+      in
+
+      (* Extract all the required fields from FileRef *)
+      let relative_path = Upath.get_attr "/RelativePath" "Value" file_ref_xml in
+      let path = Upath.get_attr "/Path" "Value" file_ref_xml in
+      let preset_file_name = Upath.get_attr "/Path" "Value" file_ref_xml |> Filename.basename |> Filename.remove_extension in
+
+      (* Extract LastModDate as int64 UNIX timestamp *)
+      let last_mod_date =
+        try Upath.get_attr "/LastModDate" "Value" xml |> Int64.of_string
+        with _ -> 0L (* Default to 0L if not found *)
+      in
+
+      let name = preset_file_name in
+      let pack_name = Upath.get_attr "/LivePackName" "Value" file_ref_xml in
+      let pack_id = Upath.get_int_attr_opt "/LivePackId" "Value" file_ref_xml |> Option.value ~default:0 in
+      let file_size = Upath.get_int_attr "/OriginalFileSize" "Value" file_ref_xml in
+      let crc = Upath.get_int_attr_opt "/OriginalCrc" "Value" file_ref_xml |> Option.value ~default:0 in
+
+      { id; name; preset_type; relative_path; path; pack_name; pack_id; file_size; crc; last_mod_date }
+    | _ -> failwith "Invalid XML element for creating PatchRef (expected MxPatchRef)"
+
+  module Patch = struct
+    type t = {
+      relative_path : string simple_flat_change;
+      path : string simple_flat_change;
+      pack_name : string simple_flat_change;
+      pack_id : int simple_flat_change;
+      file_size : int simple_flat_change;
+      crc : int simple_flat_change;
+      last_mod_date : int64 simple_flat_change;
+    }
+
+    let is_empty patch =
+      patch.relative_path = `Unchanged &&
+      patch.path = `Unchanged &&
+      patch.pack_name = `Unchanged &&
+      patch.pack_id = `Unchanged &&
+      patch.file_size = `Unchanged &&
+      patch.crc = `Unchanged &&
+      patch.last_mod_date = `Unchanged
+  end
+
+  let diff (old_patch : t) (new_patch : t) : Patch.t =
+    if old_patch.id <> new_patch.id then
+      failwith "cannot diff two PatchRefs with different Ids"
+    else
+      let relative_path_change = diff_value old_patch.relative_path new_patch.relative_path in
+      let path_change = diff_value old_patch.path new_patch.path in
+      let pack_name_change = diff_value old_patch.pack_name new_patch.pack_name in
+      let pack_id_change = diff_value old_patch.pack_id new_patch.pack_id in
+      let file_size_change = diff_value old_patch.file_size new_patch.file_size in
+      let crc_change = diff_value old_patch.crc new_patch.crc in
+      let last_mod_date_change = diff_value old_patch.last_mod_date new_patch.last_mod_date in
+      {
+        relative_path = relative_path_change;
+        path = path_change;
+        pack_name = pack_name_change;
+        pack_id = pack_id_change;
+        file_size = file_size_change;
+        crc = crc_change;
+        last_mod_date = last_mod_date_change;
+      }
+end
+
+
 (* ================== Plugin related modules ================== *)
 module PluginParam = struct
-  type param_value =
-    | Float of float
-    | Int of int
-    | Bool of bool
-    | Enum of int
-  [@@deriving eq]
-
   type t = {
     id : int;                   (* ParameterId *)
     name : string;              (* ParameterName *)
@@ -273,6 +372,8 @@ module PluginParam = struct
         Int (Upath.get_int_attr "/ParameterValue/Manual" "Value" xml)
       | "PluginBoolParameter" ->
         Bool (Upath.get_bool_attr "/ParameterValue/Manual" "Value" xml)
+      | "PluginEnumParameter" ->
+        failwith "PluginEnumParameter parsing not yet implemented - needs further analysis of Ableton Live XML format"
       | _ -> failwith ("Invalid parameter type " ^ parameter_type)
     in
 
@@ -433,6 +534,118 @@ module PluginDesc = struct
   let id_hash t = Hashtbl.hash t.uid
 
 end
+
+
+(* ================== Max4Live device related modules ================== *)
+module Max4LiveParam = struct
+  type t = {
+    id : int;                   (* ParameterId *)
+    name : string;              (* ParameterName *)
+    index : int;                (* VisualIndex *)
+    value : param_value;        (* Manual *)
+    automation : int;           (* Timeable/AutomationTarget *)
+    modulation : int;           (* Timeable/ModulationTarget *)
+    (* TODO: macro mapping *)
+  } [@@deriving eq]
+
+  (** Extract enum description from Names/Name/Name structure - specific to M4L *)
+  let extract_enum_desc (xml : Xml.t) : enum_desc =
+    try
+      (* Find all Name elements under Names *)
+      let name_elements = Upath.find_all "/Names/Name/Name" xml in
+      let enums =
+        List.map (fun (_, name_xml) ->
+          Xml.get_attr "Value" name_xml
+        ) name_elements
+        |> Array.of_list
+      in
+      if Array.length enums > 0 then
+        let max_id = Array.length enums - 1 in
+        { min = 0; max = max_id; enums }
+      else
+        (* Fallback to empty enum if no names found *)
+        { min = 0; max = 0; enums = [|""|] }
+    with
+    | _ ->
+      (* Fallback if parsing fails *)
+      { min = 0; max = 0; enums = [|""|] }
+
+  (** Create M4L parameter from XML element *)
+  let create (xml : Xml.t) : t =
+    let id = Xml.get_int_attr "Id" xml in
+    let name = Upath.get_attr "/Name" "Value" xml in
+    let index = Upath.get_int_attr "/Index" "Value" xml in
+
+    let value =
+      let parameter_type = Xml.get_name xml in
+      match parameter_type with
+      | "MxDFloatParameter" ->
+        Float (Upath.get_float_attr "/Timeable/Manual" "Value" xml)
+      | "MxDIntParameter" ->
+        Int (Upath.get_int_attr "/Timeable/Manual" "Value" xml)
+      | "MxDBoolParameter" ->
+        Bool (Upath.get_bool_attr "/Timeable/Manual" "Value" xml)
+      | "MxDEnumParameter" ->
+        let enum_value = Upath.get_int_attr "/Timeable/Manual" "Value" xml in
+        let enum_desc = extract_enum_desc xml in
+        Enum (enum_value, enum_desc)
+      | _ -> failwith ("Invalid M4L parameter type: " ^ parameter_type)
+    in
+
+    (* AutomationTarget is optional, use -1 as fallback *)
+    let automation =
+      try Upath.get_int_attr "/Timeable/AutomationTarget" "Id" xml
+      with _ -> -1
+    in
+
+    (* ModulationTarget is optional, use -1 as fallback *)
+    let modulation =
+      try Upath.get_int_attr "/Timeable/ModulationTarget" "Id" xml
+      with _ -> -1
+    in
+
+    { id; name; index; value; automation; modulation }
+
+  module Patch = struct
+    type t = {
+      name : string simple_flat_change;
+      index : int simple_flat_change;
+      value : param_value simple_flat_change;
+      automation : int simple_flat_change;
+      modulation : int simple_flat_change;
+    }
+
+    let is_empty patch =
+      patch.name = `Unchanged &&
+      patch.index = `Unchanged &&
+      patch.value = `Unchanged &&
+      patch.automation = `Unchanged &&
+      patch.modulation = `Unchanged
+  end
+
+  let has_same_id a b = a.id = b.id
+
+  let id_hash t = Hashtbl.hash t.id
+
+  let diff (old_param : t) (new_param : t) : Patch.t =
+    if old_param.id <> new_param.id then
+      failwith "cannot diff two Max4LiveParams with different Ids"
+    else
+      let name_change = diff_value old_param.name new_param.name in
+      let index_change = diff_value old_param.index new_param.index in
+      let value_change = diff_value old_param.value new_param.value in
+      let automation_change = diff_value old_param.automation new_param.automation in
+      let modulation_change = diff_value old_param.modulation new_param.modulation in
+
+      {
+        Patch.name = name_change;
+        index = index_change;
+        value = value_change;
+        automation = automation_change;
+        modulation = modulation_change;
+      }
+end
+
 
 
 (* ================== Group device related modules ================== *)
@@ -624,6 +837,7 @@ end
 type device =
   | Regular of regular_device
   | Plugin of plugin_device
+  | Max4Live of max4live_device
   | Group of group_device [@@deriving eq]
 
 and regular_device = {
@@ -633,6 +847,29 @@ and regular_device = {
   pointee : int;
   enabled : DeviceParam.t;
   params : DeviceParam.t list;
+  preset : PresetRef.t option;
+} [@@deriving eq]
+
+and plugin_device = {
+  id : int;
+  device_name : string;
+  display_name : string;
+  pointee : int;
+  enabled : DeviceParam.t;
+  desc : PluginDesc.t;
+  params : PluginParam.t list;
+  preset : PresetRef.t option;
+  (* TODO: Support sidechain and MPE settigns *)
+} [@@deriving eq]
+
+and max4live_device = {
+  id : int;
+  device_name : string;
+  display_name : string;
+  pointee : int;
+  enabled : DeviceParam.t;
+  patch_ref : PatchRef.t;       (* the .amxd file *)
+  params : Max4LiveParam.t list;
   preset : PresetRef.t option;
 } [@@deriving eq]
 
@@ -653,22 +890,10 @@ and group_device = {
   preset : PresetRef.t option;
 } [@@deriving eq]
 
-and plugin_device = {
-  id : int;
-  device_name : string;
-  display_name : string;
-  pointee : int;
-  enabled : DeviceParam.t;
-  desc : PluginDesc.t;
-  params : PluginParam.t list;
-  preset : PresetRef.t option;
-  (* TODO: Support sidechain and MPE settigns *)
-} [@@deriving eq]
-
-
 type device_patch =
   | RegularPatch of regular_device_patch
   | PluginPatch of plugin_device_patch
+  | Max4LivePatch of max4live_device_patch
   | GroupPatch of group_device_patch
 
 and regular_device_patch = {
@@ -686,6 +911,14 @@ and plugin_device_patch = {
   enabled : DeviceParam.Patch.t simple_structured_change;
   desc : PluginDesc.Patch.t simple_structured_change;
   params : (PluginParam.t, PluginParam.Patch.t) structured_change list;
+  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
+}
+
+and max4live_device_patch = {
+  display_name : string simple_flat_change;
+  enabled : DeviceParam.Patch.t simple_structured_change;
+  patch_ref : (PatchRef.t, PatchRef.Patch.t) structured_change;
+  params : (Max4LiveParam.t, Max4LiveParam.Patch.t) structured_change list;
   preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
 }
 
@@ -756,6 +989,36 @@ and plugin_device_diff (old_device : plugin_device) (new_device : plugin_device)
       preset = preset_change
     }
 
+(* max4live_device diff functions *)
+and max4live_device_diff (old_device : max4live_device) (new_device : max4live_device) : max4live_device_patch =
+  if old_device.id <> new_device.id then
+    failwith "cannot diff two Max4LiveDevices with different IDs"
+  else
+    let display_name_change =
+      diff_value old_device.display_name new_device.display_name
+    in
+    let enabled_change =
+      diff_structured_value (module DeviceParam) old_device.enabled new_device.enabled
+    in
+    let patch_ref_change =
+      let patch = PatchRef.diff old_device.patch_ref new_device.patch_ref in
+      `Patched patch
+    in
+    let params_change =
+      diff_list_id (module Max4LiveParam) old_device.params new_device.params
+      |> List.map @@ structured_change_of_flat (module Max4LiveParam)
+    in
+    let preset_change =
+      diff_optional_structured_value (module PresetRef) old_device.preset new_device.preset
+    in
+    {
+      display_name = display_name_change;
+      enabled = enabled_change;
+      patch_ref = patch_ref_change;
+      params = params_change;
+      preset = preset_change
+    }
+
 (* group_device diff functions *)
 and  branch_diff (old_branch : branch) (new_branch : branch) =
   if old_branch.id <> new_branch.id then
@@ -770,11 +1033,13 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
         | Regular old_reg, Regular new_reg -> old_reg.id = new_reg.id
         | Plugin old_plug, Plugin new_plug -> old_plug.id = new_plug.id
         | Group old_group, Group new_group -> old_group.id = new_group.id
+        | Max4Live old_m4l, Max4Live new_m4l -> old_m4l.id = new_m4l.id
         | _ -> false
       let id_hash = function
         | Regular reg -> Hashtbl.hash reg.id
         | Plugin plug -> Hashtbl.hash plug.id
         | Group grp -> Hashtbl.hash grp.id
+        | Max4Live m4l -> Hashtbl.hash m4l.id
     end in
     let devices_changes =
       diff_list_id (module DeviceId) old_branch.devices new_branch.devices
@@ -794,6 +1059,9 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
               | Group old_group, Group new_group ->
                 let patch = group_device_diff old_group new_group in
                 `Patched (GroupPatch patch)
+              | Max4Live old_m4l, Max4Live new_m4l ->
+                let patch = max4live_device_diff old_m4l new_m4l in
+                `Patched (Max4LivePatch patch)
               | _ -> failwith "Cannot diff devices of different types")
     in
     let mixer_change =
@@ -1051,6 +1319,72 @@ module GroupDevice = struct
 end
 
 
+module Max4LiveDevice = struct
+  type t = max4live_device [@@deriving eq]
+
+  let create (xml : Xml.t) : t =
+    (* Get device ID *)
+    let id = Xml.get_int_attr "Id" xml in
+    let device_name = Xml.get_name xml in
+
+    let preset = Upath.find_opt "/LastPresetRef/Value/*" xml
+               |> Option.map snd
+               |> Option.map PresetRef.create in
+    let display_name = get_display_name preset xml in
+
+    (* Get pointee ID *)
+    let pointee = Upath.get_int_attr "/Pointee" "Id" xml in
+    let enabled = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
+
+    (* Parse PatchSlot/MxPatchRef for patch_ref *)
+    let patch_ref =
+      try
+        let patch_slot_xml = Upath.find "/PatchSlot/Value/MxPatchRef" xml |> snd in
+        PatchRef.create patch_slot_xml
+      with _ ->
+        (* Fallback if PatchSlot/MxPatchRef not found *)
+        {
+          id = 0;
+          name = "";
+          preset_type = PresetRef.UserPreset;
+          relative_path = "";
+          path = "";
+          pack_name = "";
+          pack_id = 0;
+          file_size = 0;
+          crc = 0;
+          last_mod_date = 0L;
+        }
+    in
+
+    (* Extract all M4L parameters *)
+    let float_params = Alsdiff_base.Upath.find_all "**/MxDFloatParameter" xml in
+    let int_params = Alsdiff_base.Upath.find_all "**/MxDIntParameter" xml in
+    let bool_params = Alsdiff_base.Upath.find_all "**/MxDBoolParameter" xml in
+    let enum_params = Alsdiff_base.Upath.find_all "**/MxDEnumParameter" xml in
+    let all_params = float_params @ int_params @ bool_params @ enum_params in
+    let params = List.map (fun (_, param_xml) -> Max4LiveParam.create param_xml) all_params in
+
+    { id; device_name; display_name; pointee; enabled; patch_ref; params; preset }
+
+  module Patch = struct
+    type t = max4live_device_patch
+
+    let is_empty (patch : t) =
+      patch.enabled = `Unchanged &&
+      patch.patch_ref = `Unchanged &&
+      List.for_all (function
+          | `Unchanged -> true
+          | _ -> false
+        ) patch.params
+  end
+
+  let has_same_id (a : t) (b : t) = a.id = b.id
+
+  let diff = max4live_device_diff
+end
+
+
 type t = device [@@deriving eq]
 
 let rec create (xml : Xml.t) : t =
@@ -1061,6 +1395,8 @@ let rec create (xml : Xml.t) : t =
        Group (GroupDevice.create create xml)
      | "PluginDevice" | "AuPluginDevice" ->
        Plugin (PluginDevice.create xml)
+     | "MxDeviceInstrument" | "MxDeviceAudioEffect" | "MxDeviceMidiEffect" ->
+       Max4Live (Max4LiveDevice.create xml)
      | _ -> Regular (RegularDevice.create xml))
 
   | _ -> invalid_arg "Cannot create a Device on Data"
@@ -1070,22 +1406,26 @@ let has_same_id old_device new_device =
   | Regular old_reg, Regular new_reg -> old_reg.id = new_reg.id
   | Plugin old_plug, Plugin new_plug -> old_plug.id = new_plug.id
   | Group old_group, Group new_group -> old_group.id = new_group.id
+  | Max4Live old_m4l, Max4Live new_m4l -> old_m4l.id = new_m4l.id
   | _ -> false
 
 let id_hash device =
   match device with
   | Regular reg -> Hashtbl.hash reg.id
   | Plugin plug -> Hashtbl.hash plug.id
+  | Max4Live m4l -> Hashtbl.hash m4l.id
   | Group group -> Hashtbl.hash group.id
 
 module Patch = struct
   type t =
     | RegularPatch of RegularDevice.Patch.t
     | PluginPatch of PluginDevice.Patch.t
+    | Max4LivePatch of Max4LiveDevice.Patch.t
     | GroupPatch of GroupDevice.Patch.t
   let is_empty = function
     | RegularPatch patch -> RegularDevice.Patch.is_empty patch
     | PluginPatch patch -> PluginDevice.Patch.is_empty patch
+    | Max4LivePatch patch -> Max4LiveDevice.Patch.is_empty patch
     | GroupPatch patch -> GroupDevice.Patch.is_empty patch
 end
 
@@ -1100,4 +1440,7 @@ let diff (old_device : t) (new_device : t) : Patch.t =
   | (Plugin old_plug, Plugin new_plug) ->
     let patch = PluginDevice.diff old_plug new_plug in
     Patch.PluginPatch patch
+  | (Max4Live old_m4l, Max4Live new_m4l) ->
+    let patch = Max4LiveDevice.diff old_m4l new_m4l in
+    Patch.Max4LivePatch patch
   | _ -> failwith "cannot diff devices of different types (Regular vs Group)"

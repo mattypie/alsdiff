@@ -86,6 +86,7 @@ let test_midi_track_devices_order () =
     | Device.Regular reg -> reg.device_name
     | Device.Plugin plug -> plug.device_name
     | Device.Group group -> group.device_name
+    | Device.Max4Live m4l -> m4l.device_name
   ) midi_track.devices in
   let expected_device_names = [
     "InstrumentGroupDevice";
@@ -97,6 +98,7 @@ let test_midi_track_devices_order () =
     | Device.Regular reg -> reg.display_name
     | Device.Plugin plug -> plug.display_name
     | Device.Group group -> group.display_name
+    | Device.Max4Live m4l -> m4l.display_name
   ) midi_track.devices in
   let expected_display_names = [
     "Galaxy Voices Philipp & Fiona";

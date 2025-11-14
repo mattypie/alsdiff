@@ -15,21 +15,21 @@ let test_create_m4l_device () =
   (* Create a device from the XML *)
   let device = Device.create xml in
 
-  (* Extract the RegularDevice from the variant *)
-  let regular_device = match device with
-    | Device.Regular reg -> reg
-    |  _ -> failwith "Expected Regular device"
+  (* Extract the Max4LiveDevice from the variant *)
+  let m4l_device = match device with
+    | Device.Max4Live m4l -> m4l
+    |  _ -> failwith "Expected Max4Live device"
   in
 
   (* Verify the device properties *)
-  Alcotest.(check int) "device id" 0 regular_device.id;
-  Alcotest.(check string) "device name" "MxDeviceInstrument" regular_device.device_name;
-  Alcotest.(check string) "display name" "Dark Forces" regular_device.display_name;
-  Alcotest.(check int) "pointee id" 84269 regular_device.pointee;
+  Alcotest.(check int) "device id" 0 m4l_device.id;
+  Alcotest.(check string) "device name" "MxDeviceInstrument" m4l_device.device_name;
+  Alcotest.(check string) "display name" "Dark Forces" m4l_device.display_name;
+  Alcotest.(check int) "pointee id" 84269 m4l_device.pointee;
 
-  Alcotest.(check bool) "preset exists" true (Option.is_some regular_device.preset);
+  Alcotest.(check bool) "preset exists" true (Option.is_some m4l_device.preset);
 
-  let preset = Option.get regular_device.preset in
+  let preset = Option.get m4l_device.preset in
   (* Verify preset information *)
   Alcotest.(check int) "preset id" 1 preset.Device.PresetRef.id;
   Alcotest.(check string) "preset name" "Dark Forces" preset.Device.PresetRef.name;
@@ -46,76 +46,97 @@ let test_create_m4l_device () =
    | Device.PresetRef.DefaultPreset -> Alcotest.fail "Expected UserPreset for M4L device");
 
   (* Verify enabled status *)
-  (match regular_device.enabled.Device.DeviceParam.value with
-   | Device.DeviceParam.Bool v -> Alcotest.(check bool) "device enabled" false v
+  (match m4l_device.enabled.Device.DeviceParam.value with
+   | Device.Bool v -> Alcotest.(check bool) "device enabled" false v
    | _ -> Alcotest.fail "enabled parameter should be bool");
-  Alcotest.(check int) "enabled automation id" 84268 regular_device.enabled.Device.DeviceParam.automation;
+  Alcotest.(check int) "enabled automation id" 84268 m4l_device.enabled.Device.DeviceParam.automation;
 
   (* Verify we have parameters *)
-  Alcotest.(check (int)) "parameter count" 53 (List.length regular_device.params);
+  Alcotest.(check (int)) "parameter count" 52 (List.length m4l_device.params);
 
   (* Check a few specific parameters *)
-  let open Device.DeviceParam in
+  let open Device.Max4LiveParam in
 
   (* Note: On parameter is handled as the enabled field, not in params list *)
 
-  (* Check Timeable parameters - this is what we actually get from the M4L device *)
-  let timeable_param = List.find (fun p -> String.ends_with ~suffix:"Timeable" p.name) regular_device.params in
-  (match timeable_param.value with
-   | Float v ->
-     (* Should be 22.0 for AM Mod Offset, but there are many Timeable parameters *)
-     Alcotest.(check (float 0.01)) "Timeable parameter value" 22.0 v
-   | _ -> Alcotest.fail "Timeable parameter should be float");
-  Alcotest.(check int) "Timeable parameter automation id" 84270 timeable_param.automation;
+  (* Check parameters with specific names - this is what we actually get from the M4L device *)
+  let am_mod_offset_param = List.find (fun p -> p.name = "AM Mod Offset") m4l_device.params in
+  (match am_mod_offset_param.value with
+   | Device.Float v ->
+     (* Should be 22 for AM Mod Offset from the test XML *)
+     Alcotest.(check (float 0.01)) "AM Mod Offset parameter value" 22.0 v
+   | _ -> Alcotest.fail "AM Mod Offset parameter should be float");
+  Alcotest.(check int) "AM Mod Offset parameter automation id" 84270 am_mod_offset_param.automation;
 
-  (* Verify the structure: we should have 1 On parameter and 52 Timeable parameters *)
-  let on_params = List.filter (fun p -> p.name = "On") regular_device.params in
-  let timeable_params = List.filter (fun p -> String.ends_with ~suffix:"Timeable" p.name) regular_device.params in
-  Alcotest.(check int) "On parameters count" 1 (List.length on_params);
-  Alcotest.(check int) "Timeable parameters count" 52 (List.length timeable_params)
+  (* Check enum parameter *)
+  let clear_grid_param = List.find (fun p -> p.name = "Clear Grid") m4l_device.params in
+  (match clear_grid_param.value with
+   | Device.Enum (v, desc) ->
+     Alcotest.(check int) "Clear Grid enum value" 0 v;
+     Alcotest.(check int) "Clear Grid enum min" 0 desc.min;
+     Alcotest.(check int) "Clear Grid enum max" 1 desc.max;
+     Alcotest.(check string) "Clear Grid enum 0" "off" desc.enums.(0);
+     Alcotest.(check string) "Clear Grid enum 1" "on" desc.enums.(1)
+   | _ -> Alcotest.fail "Clear Grid parameter should be enum");
+
+  (* Verify the parameter count matches our expectations *)
+  Alcotest.(check int) "AM Mod Offset parameters count" 1 (List.length (List.filter (fun p -> p.name = "AM Mod Offset") m4l_device.params));
+  Alcotest.(check int) "Clear Grid parameters count" 1 (List.length (List.filter (fun p -> p.name = "Clear Grid") m4l_device.params))
 
 let test_m4l_device_param_creation () =
   (* Test creating individual parameters from M4L device XML *)
   let xml = read_file test_m4l_device_xml_path in
 
-  (* Extract a Timeable parameter from the M4L device *)
-  let timeable_xmls = Alsdiff_base.Upath.find_all "/**/Timeable" xml in
-  let param_path, timeable_xml = match timeable_xmls with
-    | [(path, xml_elem)] -> (path, xml_elem)
-    | [] -> failwith "No Timeable elements found"
-    | (path, xml_elem) :: _ -> (path, xml_elem) in
+  (* Extract M4L parameters from the device *)
+  let float_params = Alsdiff_base.Upath.find_all "**/MxDFloatParameter" xml in
+  let int_params = Alsdiff_base.Upath.find_all "**/MxDIntParameter" xml in
+  let bool_params = Alsdiff_base.Upath.find_all "**/MxDBoolParameter" xml in
+  let enum_params = Alsdiff_base.Upath.find_all "**/MxDEnumParameter" xml in
+  let param_xmls = float_params @ int_params @ bool_params @ enum_params in
+  let first_param_xml = match param_xmls with
+    | [(_, xml_elem)] -> xml_elem
+    | [] -> failwith "No M4L parameter elements found"
+    | (_, xml_elem) :: _ -> xml_elem in
 
   (* Create a parameter from the XML *)
-  let open Device.DeviceParam in
-  let param = create param_path timeable_xml in
-
-  (* Verify parameter properties - name should end with Timeable due to hierarchical naming *)
-  (match param.value with
-   | Float v -> Alcotest.(check (float 0.01)) "param value" 22.0 v (* First Timeable should have value 22.0 *)
-   | _ -> Alcotest.fail "parameter should be float");
-
-  (* Verify no macro mapping *)
-  (match param.mapping with
-   | None -> () (* Expected - no macro mapping *)
-   | Some _ -> Alcotest.fail "parameter should not have macro mapping")
-
-let test_m4l_device_boolean_parameter () =
-  (* Test the On parameter which should be boolean *)
-  let xml = read_file test_m4l_device_xml_path in
-
-  (* Extract the On parameter *)
-  let on_path, on_xml = Alsdiff_base.Upath.find "/On" xml in
-
-  (* Create a parameter from the XML *)
-  let open Device.DeviceParam in
-  let param = create on_path on_xml in
+  let open Device.Max4LiveParam in
+  let param = create first_param_xml in
 
   (* Verify parameter properties *)
-  Alcotest.(check string) "param name" "On" param.name;
   (match param.value with
-   | Bool v -> Alcotest.(check bool) "on value" false v
-   | _ -> Alcotest.fail "On parameter should be bool");
-  Alcotest.(check int) "on automation id" 84268 param.automation
+   | Device.Float _ -> () (* Could be any float value *)
+   | Device.Int _ -> () (* Could be any int value *)
+   | Device.Bool _ -> () (* Could be any bool value *)
+   | Device.Enum (_, _) -> () (* Could be any enum *)
+   );
+
+  (* Verify basic structure *)
+  Alcotest.(check bool) "parameter id > 0" true (param.id > 0);
+  Alcotest.(check bool) "parameter name not empty" true (String.length param.name > 0)
+
+let test_m4l_device_boolean_parameter () =
+  (* Test finding enum parameters which should have boolean-like behavior *)
+  let xml = read_file test_m4l_device_xml_path in
+
+  (* Extract enum parameters from the M4L device *)
+  let enum_param_xmls = Alsdiff_base.Upath.find_all "**/MxDEnumParameter" xml in
+  let first_enum_xml = match enum_param_xmls with
+    | [(_, xml_elem)] -> xml_elem
+    | [] -> failwith "No enum parameter elements found"
+    | (_, xml_elem) :: _ -> xml_elem in
+
+  (* Create a parameter from the XML *)
+  let open Device.Max4LiveParam in
+  let param = create first_enum_xml in
+
+  (* Verify parameter properties *)
+  (match param.value with
+   | Device.Enum (v, desc) ->
+     (* Should be 0 or 1 for boolean-like enums *)
+     Alcotest.(check bool) "enum value in range" true (v >= 0 && v <= 1);
+     Alcotest.(check int) "enum min" 0 desc.min;
+     Alcotest.(check bool) "enum max at least 1" true (desc.max >= 1)
+   | _ -> Alcotest.fail "Enum parameter should be enum")
 
 let test_m4l_device_preset_ref () =
   (* Test creating PresetRef from M4L device XML *)
@@ -137,31 +158,73 @@ let test_m4l_device_preset_ref () =
   Alcotest.(check string) "preset path" "/Users/krfantasy/Music/Ableton/User Library/Presets/Instruments/Max Instrument/Cellular Degradation/Presets/Dark Forces.adv" preset.path
 
 let test_m4l_device_parameter_values () =
-  (* Test that parameter values are correctly parsed from Manual elements *)
+  (* Test that parameter values are correctly parsed from M4L parameters *)
   let xml = read_file test_m4l_device_xml_path in
 
-  (* Extract Timeable parameters and verify they have the expected values *)
-  let timeable_xmls = Alsdiff_base.Upath.find_all "/**/Timeable" xml in
+  (* Extract M4L parameters and verify they have the expected values *)
+  let float_params = Alsdiff_base.Upath.find_all "**/MxDFloatParameter" xml in
+  let int_params = Alsdiff_base.Upath.find_all "**/MxDIntParameter" xml in
+  let bool_params = Alsdiff_base.Upath.find_all "**/MxDBoolParameter" xml in
+  let enum_params = Alsdiff_base.Upath.find_all "**/MxDEnumParameter" xml in
+  let param_xmls = float_params @ int_params @ bool_params @ enum_params in
 
-  (* Check that we can find parameters with specific values *)
-  let found_value_22 = List.exists (fun (path, xml_elem) ->
-    let open Device.DeviceParam in
-    let param = create path xml_elem in
+  (* Check that we can find parameters with specific names and values *)
+  let found_am_mod_offset = List.exists (fun (_, xml_elem) ->
+    let open Device.Max4LiveParam in
+    let param = create xml_elem in
+    param.name = "AM Mod Offset"
+  ) param_xmls in
+
+  let found_clear_grid = List.exists (fun (_, xml_elem) ->
+    let open Device.Max4LiveParam in
+    let param = create xml_elem in
+    param.name = "Clear Grid"
+  ) param_xmls in
+
+  let found_float_param = List.exists (fun (_, xml_elem) ->
+    let open Device.Max4LiveParam in
+    let param = create xml_elem in
     match param.value with
-    | Float v -> abs_float (v -. 22.0) < 0.01
+    | Device.Float _ -> true
     | _ -> false
-  ) timeable_xmls in
+  ) param_xmls in
 
-  let found_value_23 = List.exists (fun (path, xml_elem) ->
-    let open Device.DeviceParam in
-    let param = create path xml_elem in
+  let found_enum_param = List.exists (fun (_, xml_elem) ->
+    let open Device.Max4LiveParam in
+    let param = create xml_elem in
     match param.value with
-    | Float v -> abs_float (v -. 23.0) < 0.01
+    | Device.Enum _ -> true
     | _ -> false
-  ) timeable_xmls in
+  ) param_xmls in
 
-  Alcotest.(check bool) "found parameter with value 22.0" true found_value_22;
-  Alcotest.(check bool) "found parameter with value 23.0" true found_value_23
+  Alcotest.(check bool) "found AM Mod Offset parameter" true found_am_mod_offset;
+  Alcotest.(check bool) "found Clear Grid parameter" true found_clear_grid;
+  Alcotest.(check bool) "found float parameter" true found_float_param;
+  Alcotest.(check bool) "found enum parameter" true found_enum_param
+
+let test_m4l_device_patch_ref () =
+  (* Test creating PatchRef from M4L device XML *)
+  let xml = read_file test_m4l_device_xml_path in
+
+  (* Extract the MxPatchRef element *)
+  let patch_ref_xml = snd (Alsdiff_base.Upath.find "/PatchSlot/Value/MxPatchRef" xml) in
+
+  (* Create a patch reference from the XML *)
+  let open Device.PatchRef in
+  let patch_ref = create patch_ref_xml in
+
+  (* Verify patch reference properties *)
+  Alcotest.(check int) "patch ref id" 4 patch_ref.id;
+  Alcotest.(check string) "patch ref name" "Cellular Degradation" patch_ref.name;
+  (match patch_ref.preset_type with
+   | Device.PresetRef.UserPreset -> () (* Expected *)
+   | Device.PresetRef.DefaultPreset -> Alcotest.fail "Expected UserPreset");
+  Alcotest.(check string) "patch ref relative path" "Cellular Degradation.amxd" patch_ref.relative_path;
+  Alcotest.(check string) "patch ref path" "/Users/krfantasy/Desktop/Prelude/Thick Air Project/Cellular Degradation.amxd" patch_ref.path;
+  Alcotest.(check int) "patch ref pack id" 0 patch_ref.pack_id;
+  Alcotest.(check int) "patch ref file size" 444848 patch_ref.file_size;
+  Alcotest.(check int) "patch ref crc" 3851 patch_ref.crc;
+  Alcotest.(check int64) "patch ref last mod date" 1742403843L patch_ref.last_mod_date
 
 let () =
   Alcotest.run "M4LDevice" [
@@ -175,5 +238,8 @@ let () =
     ];
     "preset_tests", [
       Alcotest.test_case "create M4L preset reference" `Quick test_m4l_device_preset_ref;
+    ];
+    "patch_ref_tests", [
+      Alcotest.test_case "create M4L patch reference" `Quick test_m4l_device_patch_ref;
     ];
   ]

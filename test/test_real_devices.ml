@@ -496,15 +496,19 @@ let test_wavetable_parameter_values () =
   (* Test that all parameters have valid values *)
   List.iter (fun param ->
     match param.value with
-    | Bool _ -> () (* Boolean values are always valid *)
-    | Float f ->
+    | Device.Bool _ -> () (* Boolean values are always valid *)
+    | Device.Float f ->
       (* Float values should be finite *)
       if not (Float.is_finite f) then
         Alcotest.fail (Printf.sprintf "wavetable Parameter %s has non-finite float value: %f" param.name f)
-    | Int i ->
+    | Device.Int i ->
       (* Int values should be reasonable *)
       if abs i > 1000000 then
         Alcotest.fail (Printf.sprintf "wavetable Parameter %s has suspicious int value: %d" param.name i)
+    | Device.Enum (value, desc) ->
+      (* Enum values should be within valid range *)
+      if value < desc.min || value > desc.max then
+        Alcotest.fail (Printf.sprintf "wavetable Parameter %s has enum value %d outside range [%d, %d]" param.name value desc.min desc.max)
   ) regular_device.params;
 
   (* Test that automation IDs are unique and positive *)

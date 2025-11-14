@@ -67,7 +67,7 @@ let test_group_device_structure_from_xml () =
   (* Verify basic group device properties *)
   Alcotest.(check string) "group device display name" "Industrial FM Kick" group.display_name;
   (match group.enabled.Device.DeviceParam.value with
-   | Device.DeviceParam.Bool b -> Alcotest.(check bool) "group device enabled" true b
+   | Device.Bool b -> Alcotest.(check bool) "group device enabled" true b
    | _ -> Alcotest.fail "enabled should be bool");
 
   (* Verify we have branches *)

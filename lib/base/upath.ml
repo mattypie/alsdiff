@@ -29,7 +29,7 @@
 
     Example usage:
     let result = parse_path "/bookstore/book@category=\"cooking\"/title"
-    let wildcard_with_attr = parse_path "/*[@type=\"magic\"]"
+    let wildcard_with_attr = parse_path "/*@type=\"magic\""
     let regex_match = parse_path "/**/'MacroControls\.[0-9]'"  (* matches all MacroControls with single digits *)
     let regex_range = parse_path "/**/'MacroControls\.[1-5]'"  (* matches MacroControls.1 through MacroControls.5 *)
     let current_node = parse_path "/a/b/c/."  (* returns 'c' node *)

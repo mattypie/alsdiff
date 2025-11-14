@@ -69,7 +69,7 @@ let test_plugin_parameter_float_creation () =
 
   (* Verify parameter value *)
   (match param.PluginParam.value with
-   | PluginParam.Float v -> Alcotest.(check (float 0.01)) "float param value" 0.0 v
+   | Device.Float v -> Alcotest.(check (float 0.01)) "float param value" 0.0 v
    | _ -> Alcotest.fail "parameter should be float");
 
   (* Verify automation and modulation IDs *)
@@ -89,7 +89,7 @@ let test_plugin_parameter_with_automation () =
 
   (* Verify parameter value *)
   (match param.PluginParam.value with
-   | PluginParam.Float v -> Alcotest.(check (float 0.01)) "param value" 0.0 v
+   | Device.Float v -> Alcotest.(check (float 0.01)) "param value" 0.0 v
    | _ -> Alcotest.fail "parameter should be float");
 
   (* Verify automation and modulation IDs *)
