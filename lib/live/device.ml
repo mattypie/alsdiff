@@ -154,7 +154,7 @@ module PresetRef = struct
   [@@deriving eq]
 
   type t = {
-    id : int;
+    id : int;                   (* not unique *)
     name : string;
     preset_type : preset_type;
     relative_path : string;
@@ -373,12 +373,13 @@ module PluginParam = struct
       | "PluginBoolParameter" ->
         Bool (Upath.get_bool_attr "/ParameterValue/Manual" "Value" xml)
       | "PluginEnumParameter" ->
-        failwith "PluginEnumParameter parsing not yet implemented - needs further analysis of Ableton Live XML format"
+        (* failwith "PluginEnumParameter parsing not yet implemented - needs further analysis of Ableton Live XML format" *)
+        Float (Upath.get_float_attr "/ParameterValue/Manual" "Value" xml)  (* FIXME: Temporary fallback *)
       | _ -> failwith ("Invalid parameter type " ^ parameter_type)
     in
 
     let automation = Upath.get_int_attr "/ParameterValue/AutomationTarget" "Id" xml in
-    let modulation = Upath.get_int_attr "/ParameterValue/ModulationTarget" "Id" xml in
+    let modulation = Upath.get_int_attr_opt "/ParameterValue/ModulationTarget" "Id" xml |> Option.value ~default:0 in
 
     { id; name; index; value; automation; modulation }
 
@@ -455,17 +456,141 @@ module PluginDesc = struct
     if left > right then ""
     else String.sub s left (right - left + 1)
 
-  let parse_uid xml =
+  let parse_vst3_uid xml =
     let fields = Upath.find_all "/'Fields\\.[0-9]+$'" xml in
     let sorted_fields = List.sort (fun (a, _) (b, _) -> String.compare a b) fields in
     sorted_fields
     |> List.map (fun (_, field_xml) -> Xml.get_attr "Value" field_xml)
     |> String.concat "-"
 
+  let parse_vst3_processor_state plugin_info_xml =
+    match Upath.find_opt "/Preset/Vst3Preset/ProcessorState" plugin_info_xml with
+    | Some (_, state_xml) ->
+      (* Get all text content and trim it *)
+      let content =
+        state_xml
+        |> Xml.get_childs
+        |> List.filter_map (function Xml.Data { value; _ } -> Some value | _ -> None)
+        |> String.concat ""
+        |> trim_blob_str
+      in
+      content
+    | None -> ""
+
+  let parse_vst3_info plugin_info_xml =
+    (* Get plugin name - try different possible locations *)
+    let name =
+      match Upath.get_attr_opt "/Name" "Value" plugin_info_xml with
+      | Some value -> value
+      | None ->
+        match Upath.get_attr_opt "/PlugName" "Value" plugin_info_xml with
+        | Some plug_name -> plug_name
+        | None -> "Unknown VST3 Plugin"
+    in
+
+    (* Get UID from VST3 specific structure *)
+    let uid = Upath.find "/Uid" plugin_info_xml |> snd |> parse_vst3_uid in
+
+    (* Get processor state from VST3 preset *)
+    let state = parse_vst3_processor_state plugin_info_xml in
+
+    (name, uid, state)
+
+  let parse_vst2_processor_state plugin_info_xml =
+    (* VST2 plugins typically don't have processor state in the same way as VST3 *)
+    match Upath.find_opt "/Preset/VstPreset/State" plugin_info_xml with
+    | Some (_, state_xml) ->
+      (* Get all text content and trim it *)
+      let content =
+        state_xml
+        |> Xml.get_childs
+        |> List.filter_map (function Xml.Data { value; _ } -> Some value | _ -> None)
+        |> String.concat ""
+        |> trim_blob_str
+      in
+      content
+    | None -> ""
+
+  let parse_vst2_info plugin_info_xml =
+    (* Get plugin name - try different possible locations for VST2 *)
+    let name =
+      match Upath.get_attr_opt "/PlugName" "Value" plugin_info_xml with
+      | Some plug_name -> plug_name
+      | None ->
+        match Upath.get_attr_opt "/Name" "Value" plugin_info_xml with
+        | Some value -> value
+        | None -> "Unknown VST2 Plugin"
+    in
+
+    (* Get UID from VST2 specific structure *)
+    let uid =
+      match Upath.get_attr_opt "/UniqueId" "Value" plugin_info_xml with
+      | Some unique_id -> unique_id
+      | None ->
+        (* Try to extract from path as fallback *)
+        match Upath.get_attr_opt "/Path" "Value" plugin_info_xml with
+        | Some path ->
+          (* Extract plugin name from path and create a simple hash *)
+          let filename = Filename.basename path in
+          string_of_int (Hashtbl.hash filename)
+        | None -> "0"
+    in
+
+    (* Get processor state from VST2 preset *)
+    let state = parse_vst2_processor_state plugin_info_xml in
+
+    (name, uid, state)
+
+  let parse_au_processor_state plugin_info_xml =
+    (* AU plugins use Buffer element for state data *)
+    match Upath.find_opt "/Preset/AuPreset/Buffer" plugin_info_xml with
+    | Some (_, buffer_xml) ->
+      (* Get all text content and trim it *)
+      let content =
+        buffer_xml
+        |> Xml.get_childs
+        |> List.filter_map (function Xml.Data { value; _ } -> Some value | _ -> None)
+        |> String.concat ""
+        |> trim_blob_str
+      in
+      content
+    | None -> ""
+
+  let parse_au_info plugin_info_xml =
+    (* Get plugin name for AU plugins *)
+    let name =
+      match Upath.get_attr_opt "/Name" "Value" plugin_info_xml with
+      | Some value -> value
+      | None -> "Unknown AU Plugin"
+    in
+
+    (* Create UID from AU component identifiers *)
+    let uid =
+      match Upath.get_attr_opt "/ComponentType" "Value" plugin_info_xml,
+            Upath.get_attr_opt "/ComponentSubType" "Value" plugin_info_xml,
+            Upath.get_attr_opt "/ComponentManufacturer" "Value" plugin_info_xml with
+      | Some comp_type, Some comp_subtype, Some comp_manufacturer ->
+        Printf.sprintf "%s-%s-%s" comp_type comp_subtype comp_manufacturer
+      | _ ->
+        (* Fallback: try to use manufacturer and name *)
+        match Upath.get_attr_opt "/Manufacturer" "Value" plugin_info_xml with
+        | Some manufacturer ->
+          let combined = manufacturer ^ "-" ^ name in
+          string_of_int (Hashtbl.hash combined)
+        | None ->
+          (* Last resort: hash the plugin name *)
+          string_of_int (Hashtbl.hash name)
+    in
+
+    (* Get processor state from AU preset buffer *)
+    let state = parse_au_processor_state plugin_info_xml in
+
+    (name, uid, state)
+
   let create (xml : Xml.t) : t =
     (* Extract plugin type based on the element name *)
     let plugin_info_xml = Xml.get_childs xml |> List.hd in
-
+    Printf.printf "Creating PluginDesc from XML element: %s\n" (Xml.get_name plugin_info_xml);
     let plugin_type =
       match Xml.get_name plugin_info_xml with
       | "Vst3PluginInfo" -> Vst3
@@ -474,26 +599,11 @@ module PluginDesc = struct
       | name -> failwith ("Unsupported plugin type: " ^ name)
     in
 
-    (* Get plugin name *)
-    let name = Upath.get_attr "/Name" "Value" plugin_info_xml in
-
-    (* Get UID *)
-    let uid = Upath.find "/Uid" plugin_info_xml |> snd |> parse_uid in
-
-    (* Get processor state - look for it in the preset first, then in the main plugin info *)
-    let state =
-      match Upath.find_opt "/Preset/Vst3Preset/ProcessorState" plugin_info_xml with
-      | Some (_, state_xml) ->
-        (* Get all text content and trim it *)
-        let content =
-          state_xml
-          |> Xml.get_childs
-          |> List.filter_map (function Xml.Data { value; _ } -> Some value | _ -> None)
-          |> String.concat ""
-          |> trim_blob_str
-        in
-        content
-      | None -> ""
+    let (name, uid, state) =
+      match plugin_type with
+      | Vst3 -> parse_vst3_info plugin_info_xml
+      | Vst2 -> parse_vst2_info plugin_info_xml
+      | Auv2 -> parse_au_info plugin_info_xml
     in
 
     { name; uid; plugin_type; state }
@@ -645,7 +755,6 @@ module Max4LiveParam = struct
         modulation = modulation_change;
       }
 end
-
 
 
 (* ================== Group device related modules ================== *)
