@@ -288,24 +288,21 @@ let find_all_seq_0 (path : path_component list) (tree : Xml.t) : (string * Xml.t
           | Some (n, _) -> find_path_in_children rest (Seq.return n)
           | None -> Seq.empty)
       | MultiWildcard attrs ->
-          (* MultiWildcard matches any number of intermediate elements.
-             To do this without consuming memory, we create a fully lazy sequence of all descendants
-             and then continue the search from there. *)
-          let collect_all_descendants nodes_to_scan =
-            let rec aux worklist () =
-              match worklist () with
-              | Seq.Nil -> Seq.Nil
-              | Seq.Cons(hd, tl) ->
-                  let children = children_of hd in
-                  Seq.Cons(hd, aux (Seq.append tl children))
-            in
-            aux nodes_to_scan
-          in
-          let all_descendants = collect_all_descendants nodes in
-          let matched_descendants =
-            Seq.filter (fun sn -> match_component sn.node (MultiWildcard attrs)) all_descendants
-          in
-          find_path_in_children rest matched_descendants
+        (* OPTIMIZATION: Use DFS instead of BFS.
+           BFS with Seq.append causes O(N^2) behavior due to nested appends.
+           DFS preserves Document Order and is O(N). *)
+        let rec descendants sn =
+          Seq.cons sn (Seq.flat_map descendants (children_of sn))
+        in
+
+        (* Get all descendants of the current nodes *)
+        let all_descendants = Seq.flat_map descendants nodes in
+
+        (* Filter them based on the wildcard attributes *)
+        let matched_descendants =
+          Seq.filter (fun sn -> match_component sn.node (MultiWildcard attrs)) all_descendants
+        in
+        find_path_in_children rest matched_descendants
       | CurrentNode ->
           (* Current node matches the current nodes themselves *)
           find_path_in_children rest nodes
