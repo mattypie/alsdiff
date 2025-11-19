@@ -17,7 +17,7 @@ let decompress_als_to_string filename =
   let rec copy_loop () =
     let bytes_read = Gzip.input gz_in chunk 0 (Bytes.length chunk) in
     if bytes_read > 0 then (
-      Bytes.sub chunk 0 bytes_read |> Buffer.add_bytes buffer;
+      Buffer.add_subbytes buffer chunk 0 bytes_read;
       copy_loop ()
     )
   in

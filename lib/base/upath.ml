@@ -397,8 +397,7 @@ let find (path : string) (tree : Xml.t) : string * Xml.t =
 
 
 (** Find a XML element that path matches [path], and return the attribute [attr] value of it.
-    @raise [Invalid_argument] if [path] is invalid, like wildcards path or indexes path.
-*)
+    @raise [Invalid_argument] if [path] is invalid, like wildcards path or indexes path. *)
 let find_attr_opt (path : string) (attr : string) (tree : Xml.t) : (string * string) option =
   let parsed_path = parse_path path in
   let last_component = List.hd @@ List.rev parsed_path in
