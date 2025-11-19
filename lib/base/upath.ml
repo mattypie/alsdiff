@@ -176,11 +176,11 @@ struct
 
 end
 
-(** the search engine *)
 
+(** the search engine *)
 let match_attributes (tree : Xml.t) (pattrs : attribute list) : bool =
   match tree with
-  | Xml.Element { attrs; parent = _; _ } ->
+  | Xml.Element { attrs; _ } ->
     let match_attribute attrs k v =
       try
         let x = List.assoc k attrs in
@@ -202,7 +202,7 @@ let match_name_component tag_name = function
 let match_component tree = function
   | Tag (name_comp, attrs) ->
     (match tree with
-     | Xml.Element { name=tag; parent = _; _ } when match_name_component tag name_comp -> match_attributes tree attrs
+     | Xml.Element { name=tag; _ } when match_name_component tag name_comp -> match_attributes tree attrs
      | _ -> false)
   | SingleWildcard attrs ->
     (match tree with
@@ -220,135 +220,158 @@ let match_component tree = function
 let path_to_string path =
   List.fold_right (fun x acc -> "/" ^ x ^ acc) path ""
 
-
-type search_node = {
-  path_to_parent: string;
-  node: Xml.t;
-}
-
-
-let get_parent_node (search_node : search_node) : search_node option =
-  match search_node.node with
-  | Xml.Element { parent = None; _ } -> None  (* Root node has no parent *)
-  | Xml.Element { parent = Some parent_xml; _ } ->
-      (* Update path_to_parent by removing the last component *)
-      let parent_path =
-        match String.rindex_opt search_node.path_to_parent '/' with
-        | Some last_slash -> String.sub search_node.path_to_parent 0 last_slash
-        | None -> ""
-      in
-      Some { path_to_parent = parent_path; node = parent_xml }
-  | Xml.Data _ -> None  (* Data nodes don't have parents in this model *)
-
-
-module Seq = Stdlib.Seq
-
-
 let parse_path path =
   match Parser.parse_path path with
   | Ok p -> p
   | Error msg -> failwith ("Failed to parse path: " ^ path ^ " with error: " ^ msg)
 
 
-(** Find all XML elements in [tree] that match the [path] as a lazy sequence. *)
+(** Optimized internal traversal state.
+    Replaces 'search_node'. 'path_stack' stores ancestors in reverse order
+    (e.g. ["parent"; "grandparent"; "root"]), avoiding expensive string concatenation
+    during the search. *)
+type traverse_state = {
+  path_stack : string list;
+  node : Xml.t;
+  parent : traverse_state option;
+}
+
+
+(** Find all XML elements in [tree] that match the [path]. *)
 let find_all_seq_0 (path : path_component list) (tree : Xml.t) : (string * Xml.t) Seq.t =
-  let children_of n =
-    match n.node with
-    | Xml.Element {childs; name; parent = _; _} ->
-      let new_path = n.path_to_parent ^ "/" ^ name in
-      Seq.map (fun child -> {path_to_parent=new_path; node=child}) (List.to_seq childs)
+  (* Helper: Efficiently iterate children while maintaining the path stack.
+     Using a list stack is O(1) per level, unlike string concat which is O(Length). *)
+  let children_of_state s =
+    match s.node with
+    | Xml.Element {childs; name; _} ->
+      let new_stack = name :: s.path_stack in
+      List.to_seq childs
+      |> Seq.map (fun child -> { path_stack = new_stack; node = child; parent = Some s; })
     | Xml.Data _ -> Seq.empty
   in
-  (* Recursively finds matches for a path.
-      IMPORTANT: This function has a specific behavior. For each component of the path,
-      it searches within the *children* of the nodes from the previous step.
-      This is why the initial call needs to be handled carefully. *)
-  let rec find_path_in_children (p: path_component list) (nodes: search_node Seq.t) : search_node Seq.t =
+
+  (* Helper: DFS generator for MultiWildcard (**)
+     This avoids the O(N^2) pitfall of BFS with Seq.append. *)
+  let rec get_descendants state =
+    Seq.cons state (
+      match state.node with
+      | Xml.Element {childs; name; _} ->
+        let new_stack = name :: state.path_stack in
+        let child_states =
+          List.to_seq childs
+          |> Seq.map (fun child -> { path_stack = new_stack; node = child; parent = Some state })
+        in
+        Seq.flat_map get_descendants child_states
+      | Xml.Data _ -> Seq.empty
+    )
+  in
+
+  (* Core recursive search function *)
+  let rec find_path_in_children (p: path_component list) (states: traverse_state Seq.t) : traverse_state Seq.t =
     match p with
-    | [] -> nodes
+    | [] -> states
     | c :: rest ->
       match c with
-      | Tag _ | SingleWildcard _ ->
-          let children = Seq.flat_map children_of nodes in
-          let matched_children = Seq.filter (fun sn -> match_component sn.node c) children in
-          find_path_in_children rest matched_children
-      | Index (i, name_comp_opt) ->
-          let children = Seq.flat_map children_of nodes in
-          let filtered_children =
-            match name_comp_opt with
-            | None -> children
-            | Some name_comp ->
-              Seq.filter (fun sn ->
-                  match sn.node with
-                  | Xml.Element { name = t; parent = _; _ } -> match_name_component t name_comp
-                  | _ -> false
-                ) children
-          in
-          (match Seq.drop i filtered_children |> Seq.uncons with
-          | Some (n, _) -> find_path_in_children rest (Seq.return n)
-          | None -> Seq.empty)
-      | MultiWildcard attrs ->
-        (* OPTIMIZATION: Use DFS instead of BFS.
-           BFS with Seq.append causes O(N^2) behavior due to nested appends.
-           DFS preserves Document Order and is O(N). *)
-        let rec descendants sn =
-          Seq.cons sn (Seq.flat_map descendants (children_of sn))
+      | Tag (name_comp, attrs) ->
+        (* OPTIMIZATION: Fuse generation and filtering.
+           Instead of flat_map children -> filter match, we filter strictly inside the loop. *)
+        let matched =
+          states |> Seq.flat_map (fun state ->
+              match state.node with
+              | Xml.Element {childs; name; _} ->
+                (* Push current node's name to stack for the children *)
+                let new_stack = name :: state.path_stack in
+                List.to_seq childs
+                |> Seq.filter_map (fun child ->
+                    (* Check match immediately before allocating a state wrapper *)
+                    match child with
+                    | Xml.Element {name=child_name; _} ->
+                      if match_name_component child_name name_comp && match_attributes child attrs then
+                        Some { path_stack = new_stack; node = child; parent = Some state }
+                      else None
+                    | Xml.Data _ -> None
+                  )
+              | Xml.Data _ -> Seq.empty
+            )
         in
+        find_path_in_children rest matched
 
-        (* Get all descendants of the current nodes *)
-        let all_descendants = Seq.flat_map descendants nodes in
+      | SingleWildcard attrs ->
+        let matched =
+          states |> Seq.flat_map children_of_state
+          |> Seq.filter (fun s -> match_component s.node (SingleWildcard attrs))
+        in
+        find_path_in_children rest matched
 
-        (* Filter them based on the wildcard attributes *)
+      | MultiWildcard attrs ->
+        (* OPTIMIZATION: DFS traversal.
+           We generate all descendants efficiently and then filter. *)
+        let all_descendants = Seq.flat_map get_descendants states in
         let matched_descendants =
-          Seq.filter (fun sn -> match_component sn.node (MultiWildcard attrs)) all_descendants
+          Seq.filter (fun s -> match_component s.node (MultiWildcard attrs)) all_descendants
         in
         find_path_in_children rest matched_descendants
+
+      | Index (i, name_comp_opt) ->
+        let children = Seq.flat_map children_of_state states in
+        let filtered =
+          match name_comp_opt with
+          | None -> children
+          | Some nc ->
+            children |> Seq.filter (fun s ->
+                match s.node with
+                | Xml.Element {name; _} -> match_name_component name nc
+                | _ -> false
+              )
+        in
+        (* Efficiently skip 'i' items and take the next one *)
+        let target = filtered |> Seq.drop i |> Seq.take 1 in
+        find_path_in_children rest target
+
       | CurrentNode ->
-          (* Current node matches the current nodes themselves *)
-          find_path_in_children rest nodes
+        find_path_in_children rest states
+
       | ParentNode ->
-          (* Parent node: get the parent of each current node *)
-          let parent_nodes =
-            Seq.flat_map (fun sn ->
-              match get_parent_node sn with
-              | Some parent -> Seq.return parent
-              | None -> Seq.empty
-            ) nodes
-          in
-          find_path_in_children rest parent_nodes
+        (* OPTIMIZATION: Use XML parent pointer + Stack Pop.
+           No string manipulation required. *)
+        let parents = Seq.filter_map (fun s -> s.parent) states in
+        find_path_in_children rest parents
   in
-  let initial_node = { path_to_parent = ""; node = tree } in
+
+  (* Initial logic to handle the root match case *)
+  let initial_state = { path_stack = []; node = tree; parent = None } in
+
   let result_seq =
     match path with
     | (Tag(name_comp, _) as first) :: rest ->
-        let root_name = match tree with Xml.Element {name=n; parent = _; _} -> n | _ -> "" in
-        if match_name_component root_name name_comp && match_component tree first then
-          (* The first path component matches the root `tree` itself.
-             So, we start searching for the rest of the path within the children of `tree`. *)
-          find_path_in_children rest (Seq.return initial_node)
-        else
-          (* The first path component does not match the root `tree`.
-             Per design, we now search for the *entire* path within the children of `tree`. *)
-          find_path_in_children path (Seq.return initial_node)
+      let root_name = match tree with Xml.Element {name; _} -> name | _ -> "" in
+      if match_name_component root_name name_comp && match_component tree first then
+        (* Match root, search rest in children of root *)
+        find_path_in_children rest (Seq.return initial_state)
+      else
+        (* No match, search entire path in children of root *)
+        find_path_in_children path (Seq.return initial_state)
     | CurrentNode :: rest ->
-        (* Path starts with '.', match the current root node *)
-        find_path_in_children rest (Seq.return initial_node)
+      find_path_in_children rest (Seq.return initial_state)
     | ParentNode :: _ ->
-        (* Path starts with '..', but root node has no parent, so return empty sequence *)
-        Seq.empty
+      Seq.empty
     | _ ->
-        (* The path does not start with a Tag, CurrentNode, or ParentNode.
-           Per design, we search for the *entire* path within the children of `tree`. *)
-        find_path_in_children path (Seq.return initial_node)
+      find_path_in_children path (Seq.return initial_state)
   in
-  result_seq |> Seq.map (fun {path_to_parent; node} ->
-      let final_path = match node with
-        | Xml.Element {name; parent = _; _} -> path_to_parent ^ "/" ^ name
-        | Xml.Data _ -> path_to_parent
+
+  (* Final Step: Reconstruct string paths only for the matching results *)
+  result_seq |> Seq.map (fun s ->
+      (* Reconstruct path from stack: ["child"; "root"] -> "/root/child" *)
+      let path_prefix =
+        if s.path_stack = [] then ""
+        else "/" ^ (String.concat "/" (List.rev s.path_stack))
       in
-      (final_path, node)
+      let final_path = match s.node with
+        | Xml.Element {name; _} -> path_prefix ^ "/" ^ name
+        | Xml.Data _ -> path_prefix
+      in
+      (final_path, s.node)
     )
-  |> Seq.memoize
 
 
 let find_all_seq (path : string) (tree : Xml.t) : (string * Xml.t) Seq.t =

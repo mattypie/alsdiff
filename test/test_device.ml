@@ -11,12 +11,10 @@ let test_device_param_with_missing_values () =
         name = "LomId";
         attrs = [("Value", "0")];
         childs = [];
-        parent = None;
       }
       (* Missing Manual element - should default to 0.0 *)
       (* Missing AutomationTarget element - should default to 0 *)
     ];
-    parent = None;
   } in
 
   (* Create a parameter from the XML *)
@@ -32,7 +30,7 @@ let test_device_param_with_missing_values () =
 
 let test_device_creation_with_invalid_xml () =
   (* Create invalid XML (Data instead of Element) *)
-  let invalid_xml = Data { value = "invalid"; parent = None } in
+  let invalid_xml = Data "invalid" in
 
   (* This should raise an exception *)
   Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating Device")
@@ -40,7 +38,7 @@ let test_device_creation_with_invalid_xml () =
 
 let test_param_creation_with_invalid_xml () =
   (* Create invalid XML (Data instead of Element) *)
-  let invalid_xml = Data { value = "invalid"; parent = None } in
+  let invalid_xml = Data "invalid" in
 
   (* This should raise an exception *)
   Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating DeviceParam")
@@ -56,7 +54,6 @@ let test_device_param_with_continuous_macro_mapping () =
         name = "LomId";
         attrs = [("Value", "0")];
         childs = [];
-        parent = None;
       };
       Element {
         name = "KeyMidi";
@@ -66,52 +63,43 @@ let test_device_param_with_continuous_macro_mapping () =
             name = "PersistentKeyString";
             attrs = [("Value", "")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "IsNote";
             attrs = [("Value", "false")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "Channel";
             attrs = [("Value", "16")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "NoteOrController";
             attrs = [("Value", "3")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "LowerRangeNote";
             attrs = [("Value", "-1")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "UpperRangeNote";
             attrs = [("Value", "-1")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "ControllerMapMode";
             attrs = [("Value", "0")];
             childs = [];
-            parent = None;
           };
         ];
-        parent = None;
       };
       Element {
         name = "Manual";
         attrs = [("Value", "31")];
         childs = [];
-        parent = None;
       };
       Element {
         name = "MidiControllerRange";
@@ -121,16 +109,13 @@ let test_device_param_with_continuous_macro_mapping () =
             name = "Min";
             attrs = [("Value", "0")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "Max";
             attrs = [("Value", "48")];
             childs = [];
-            parent = None;
           };
         ];
-        parent = None;
       };
       Element {
         name = "AutomationTarget";
@@ -140,13 +125,10 @@ let test_device_param_with_continuous_macro_mapping () =
             name = "LockEnvelope";
             attrs = [("Value", "0")];
             childs = [];
-            parent = None;
           }
         ];
-        parent = None;
       }
     ];
-    parent = None;
   } in
 
   (* Create a parameter from the XML *)
@@ -179,7 +161,6 @@ let test_device_param_with_onoff_macro_mapping () =
         name = "LomId";
         attrs = [("Value", "0")];
         childs = [];
-        parent = None;
       };
       Element {
         name = "KeyMidi";
@@ -189,52 +170,43 @@ let test_device_param_with_onoff_macro_mapping () =
             name = "PersistentKeyString";
             attrs = [("Value", "")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "IsNote";
             attrs = [("Value", "false")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "Channel";
             attrs = [("Value", "16")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "NoteOrController";
             attrs = [("Value", "0")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "LowerRangeNote";
             attrs = [("Value", "-1")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "UpperRangeNote";
             attrs = [("Value", "-1")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "ControllerMapMode";
             attrs = [("Value", "0")];
             childs = [];
-            parent = None;
           };
         ];
-        parent = None;
       };
       Element {
         name = "Manual";
         attrs = [("Value", "true")];
         childs = [];
-        parent = None;
       };
       Element {
         name = "MidiCCOnOffThresholds";
@@ -244,16 +216,13 @@ let test_device_param_with_onoff_macro_mapping () =
             name = "Min";
             attrs = [("Value", "64")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "Max";
             attrs = [("Value", "127")];
             childs = [];
-            parent = None;
           };
         ];
-        parent = None;
       };
       Element {
         name = "AutomationTarget";
@@ -263,13 +232,10 @@ let test_device_param_with_onoff_macro_mapping () =
             name = "LockEnvelope";
             attrs = [("Value", "0")];
             childs = [];
-            parent = None;
           }
         ];
-        parent = None;
       }
     ];
-    parent = None;
   } in
 
   (* Create a parameter from the XML *)
@@ -303,7 +269,6 @@ let test_device_param_with_invalid_controller_map_mode () =
         name = "LomId";
         attrs = [("Value", "0")];
         childs = [];
-        parent = None;
       };
       Element {
         name = "KeyMidi";
@@ -313,40 +278,33 @@ let test_device_param_with_invalid_controller_map_mode () =
             name = "PersistentKeyString";
             attrs = [("Value", "")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "IsNote";
             attrs = [("Value", "false")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "Channel";
             attrs = [("Value", "16")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "NoteOrController";
             attrs = [("Value", "1")];
             childs = [];
-            parent = None;
           };
           Element {
             name = "ControllerMapMode";
             attrs = [("Value", "1")]; (* Not 0, so no macro mapping *)
             childs = [];
-            parent = None;
           };
         ];
-        parent = None;
       };
       Element {
         name = "Manual";
         attrs = [("Value", "0.5")];
         childs = [];
-        parent = None;
       };
       Element {
         name = "AutomationTarget";
@@ -356,13 +314,10 @@ let test_device_param_with_invalid_controller_map_mode () =
             name = "LockEnvelope";
             attrs = [("Value", "0")];
             childs = [];
-            parent = None;
           }
         ];
-        parent = None;
       }
     ];
-    parent = None;
   } in
 
   (* Create a parameter from the XML *)

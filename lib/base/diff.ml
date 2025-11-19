@@ -225,7 +225,14 @@ let diff_list (type a) (module Eq : EQUALABLE with type t = a) (old_list : a lis
     old_list new_list
 
 
-(* Internal generic helper for ordered list diffing using an LCS algorithm. *)
+(** Generic ordered list diffing using Longest Common Subsequence (LCS).
+
+    @param compare Function to compare elements for equality
+    @param on_match Function to generate change type for matching elements
+    @param old_list Original list
+    @param new_list Modified list
+    @return List of flat changes representing the minimal edit sequence
+*)
 let diff_ord_generic (type a)
     ~(compare: a -> a -> bool)
     ~(on_match: a -> a -> a flat_change)
@@ -308,12 +315,18 @@ let[@warning "-32"] diff_list_ord_id (type a) (module ID : IDENTIFIABLE with typ
     old_list new_list
 
 
-(** Myers' O(ND) diff algorithm - based on Eugene W. Myers' 1986 paper.
-    Returns a list of changes representing the shortest edit script.
-    Time complexity: O((N+M)D) where D is the size of the edit script.
-    Space complexity: O((N+M)D) for trace storage.
+(** Generic Myers algorithm for ordered list diffing.
+
+    @param compare Function to compare elements for equality
+    @param on_match Function to generate change type for matching elements
+    @param old_list Original list
+    @param new_list Modified list
+    @return List of flat changes representing the minimal edit sequence
 *)
-let diff_list_myers (type a) (module Eq : EQUALABLE with type t = a) (old_list : a list) (new_list : a list) : a flat_change list =
+let diff_myers_generic (type a)
+    ~(compare: a -> a -> bool)
+    ~(on_match: a -> a -> a flat_change)
+    (old_list : a list) (new_list : a list) : a flat_change list =
   let old_arr = Array.of_list old_list in
   let new_arr = Array.of_list new_list in
   let n = Array.length old_arr in
@@ -334,7 +347,7 @@ let diff_list_myers (type a) (module Eq : EQUALABLE with type t = a) (old_list :
 
     (* Follow diagonal (matching elements) as far as possible *)
     let rec follow_snake x y =
-      if x < n && y < m && Eq.equal old_arr.(x) new_arr.(y) then
+      if x < n && y < m && compare old_arr.(x) new_arr.(y) then
         follow_snake (x + 1) (y + 1)
       else (x, y)
     in
@@ -383,7 +396,7 @@ let diff_list_myers (type a) (module Eq : EQUALABLE with type t = a) (old_list :
         (* At edit distance 0, everything is unchanged *)
         let rec add_unchanged i =
           if i >= 0 then (
-            result := `Unchanged :: !result;
+            result := on_match old_arr.(i) new_arr.(i) :: !result;
             add_unchanged (i - 1)
           )
         in
@@ -412,7 +425,7 @@ let diff_list_myers (type a) (module Eq : EQUALABLE with type t = a) (old_list :
         (* Add unchanged elements from the snake *)
         let rec add_snake curr_x curr_y =
           if curr_x > snake_start_x && curr_y > snake_start_y then (
-            result := `Unchanged :: !result;
+            result := on_match old_arr.(curr_x - 1) new_arr.(curr_y - 1) :: !result;
             add_snake (curr_x - 1) (curr_y - 1)
           )
         in
@@ -432,6 +445,19 @@ let diff_list_myers (type a) (module Eq : EQUALABLE with type t = a) (old_list :
 
     backtrack edit_distance n m;
     List.rev !result
+
+
+(** Myers' O(ND) diff algorithm - based on Eugene W. Myers' 1986 paper.
+    Returns a list of changes representing the shortest edit script.
+    Time complexity: O((N+M)D) where D is the size of the edit script.
+    Space complexity: O((N+M)D) for trace storage.
+*)
+let diff_list_myers (type a) (module Eq : EQUALABLE with type t = a) (old_list : a list) (new_list : a list) : a flat_change list =
+  diff_myers_generic
+    ~compare:Eq.equal
+    ~on_match:(fun _ _ -> `Unchanged)
+    old_list new_list
+
 
 
 let diff_list_id (type a) (module ID : IDENTIFIABLE with type t = a)
@@ -461,9 +487,6 @@ let diff_list_ord_id (type a) (module ID : IDENTIFIABLE with type t = a) (old_li
         `Modified { old = old_item; new_ = new_item }
     )
     old_list new_list
-
-
-let identify x = x [@@inline]
 
 
 (* Utility functions *)

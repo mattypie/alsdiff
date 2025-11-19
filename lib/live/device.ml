@@ -470,7 +470,7 @@ module PluginDesc = struct
       let content =
         state_xml
         |> Xml.get_childs
-        |> List.filter_map (function Xml.Data { value; _ } -> Some value | _ -> None)
+        |> List.filter_map (function Xml.Data value -> Some value | _ -> None)
         |> String.concat ""
         |> trim_blob_str
       in
@@ -504,7 +504,7 @@ module PluginDesc = struct
       let content =
         state_xml
         |> Xml.get_childs
-        |> List.filter_map (function Xml.Data { value; _ } -> Some value | _ -> None)
+        |> List.filter_map (function Xml.Data value -> Some value | _ -> None)
         |> String.concat ""
         |> trim_blob_str
       in
@@ -549,7 +549,7 @@ module PluginDesc = struct
       let content =
         buffer_xml
         |> Xml.get_childs
-        |> List.filter_map (function Xml.Data { value; _ } -> Some value | _ -> None)
+        |> List.filter_map (function Xml.Data value -> Some value | _ -> None)
         |> String.concat ""
         |> trim_blob_str
       in
@@ -891,7 +891,7 @@ module Snapshot = struct
 
   let create (xml : Xml.t) : t =
     match xml with
-    | Xml.Element { name = "MacroSnapshot"; attrs = _; childs = _; parent = _ } ->
+    | Xml.Element { name = "MacroSnapshot"; _ } ->
       let id = Xml.get_int_attr "Id" xml in
       let name = Upath.get_attr "/SnapshotName" "Value" xml in
 

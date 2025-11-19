@@ -18,4 +18,15 @@ module type Output = sig
   (** [render_midi_clip patch] renders the details of a patched midi clip,
       including name, timing, loop, signature, and notes changes. *)
   val render_midi_clip : Clip.MidiClip.Patch.t -> t
+
+  (** [render_device patch] renders the details of a patched device,
+      including its parameters and any nested devices. *)
+  val render_device : Device.Patch.t -> t
+
+  (** [render_track patch] renders the details of a patched track,
+      including its clips, devices, and automation. *)
+  val render_track : Track.Patch.t -> t
+
+  (* val render_liveset : Liveset.Patch.t -> t *)
+
 end

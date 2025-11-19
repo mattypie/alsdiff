@@ -11,52 +11,45 @@ let sample_xml =
         name = "a";
         attrs = [("id", "1")];
         childs = [
-          Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None };
-          Element { name = "c"; attrs = [("val", "test")]; childs = []; parent = None };
+          Element { name = "b"; attrs = []; childs = [Data "hello"] };
+          Element { name = "c"; attrs = [("val", "test")]; childs = [] };
         ];
-        parent = None;
       };
       Element {
         name = "a";
         attrs = [("id", "2")];
         childs = [
-          Element { name = "d"; attrs = []; childs = []; parent = None };
+          Element { name = "d"; attrs = []; childs = [] };
           Element {
             name = "b";
             attrs = [("lang", "en")];
-            childs = [Data {value = "world"; parent = None}];
-            parent = None;
+            childs = [Data "world"];
           };
         ];
-        parent = None;
       };
       Element {
         name = "e";
         attrs = [];
         childs = [
-          Element { name = "child"; attrs = [("id", "e-child")]; childs = []; parent = None; };
+          Element { name = "child"; attrs = [("id", "e-child")]; childs = [] };
           Element {
             name = "f";
             attrs = [];
             childs = [
-              Element { name = "b"; attrs = []; childs = []; parent = None }
+              Element { name = "b"; attrs = []; childs = [] }
             ];
-            parent = None;
           }
         ];
-        parent = None;
       };
       Element {
         name = "special";
         attrs = [("type", "magic")];
         childs = [
-          Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None; }
+          Element { name = "child"; attrs = [("id", "s-child")]; childs = [] }
         ];
-        parent = None;
       };
-      Element { name = "child"; attrs = [("type", "magic")]; childs = []; parent = None; };
+      Element { name = "child"; attrs = [("type", "magic")]; childs = [] };
     ];
-    parent = None;
   }
 
 let find_path_testable = Alcotest.(option (pair string xml_testable))
@@ -67,35 +60,35 @@ let test_find_path path_str expected () =
 
 let test_cases =
   [
-    ("/root/a/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None }));
-    ("/root/a[0]/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None }));
-    ("/root/a[1]/b", Some ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None }));
-    ("/root/a@id=\"1\"/c", Some ("/root/a/c", Element { name = "c"; attrs = [("val", "test")]; childs = []; parent = None }));
-    ("/root/a@id=\"2\"/d", Some ("/root/a/d", Element { name = "d"; attrs = []; childs = []; parent = None }));
+    ("/root/a/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  }));
+    ("/root/a[0]/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  }));
+    ("/root/a[1]/b", Some ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] }));
+    ("/root/a@id=\"1\"/c", Some ("/root/a/c", Element { name = "c"; attrs = [("val", "test")]; childs = [];  }));
+    ("/root/a@id=\"2\"/d", Some ("/root/a/d", Element { name = "d"; attrs = []; childs = [];  }));
     ("/root/a@id=\"3\"/d", None);
-    ("/root/*/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None }));
-    ("/root/**/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None }));
-    ("/**/f/b", Some ("/root/e/f/b", Element { name = "b"; attrs = []; childs = []; parent = None }));
-    ("/root/e/**/b", Some ("/root/e/f/b", Element { name = "b"; attrs = []; childs = []; parent = None }));
-    ("/**/d", Some ("/root/a/d", Element { name = "d"; attrs = []; childs = []; parent = None }));
+    ("/root/*/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  }));
+    ("/root/**/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  }));
+    ("/**/f/b", Some ("/root/e/f/b", Element { name = "b"; attrs = []; childs = [];  }));
+    ("/root/e/**/b", Some ("/root/e/f/b", Element { name = "b"; attrs = []; childs = [];  }));
+    ("/**/d", Some ("/root/a/d", Element { name = "d"; attrs = []; childs = [];  }));
     ("/root/a/nonexistent", None);
     ("/root/a[2]/b", None);
-    ("/**/b@lang=\"en\"", Some ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None }));
+    ("/**/b@lang=\"en\"", Some ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] }));
     ("/**/b@lang=\"fr\"", None);
     (* Tests for wildcard with attributes *)
-    ("/*@id", Some ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None; }; Element { name = "c"; attrs = [("val", "test")]; childs = []; parent = None; }]; parent = None; }));
-    ("/*@id=\"2\"", Some ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = []; parent = None; }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data { value = "world"; parent = None; }]; parent = None; }]; parent = None; }));
-    ("/*@type", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None }]; parent = None }));
-    ("/*@type=\"magic\"", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None }]; parent = None }));
+    ("/*@id", Some ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data "hello"]; }; Element { name = "c"; attrs = [("val", "test")]; childs = []; }]; }));
+    ("/*@id=\"2\"", Some ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = []; }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"]; }]; }));
+    ("/*@type", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; }];  }));
+    ("/*@type=\"magic\"", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; }];  }));
     ("/*@type=\"nonexistent\"", None);
     (* Tests for multi wildcard with attributes *)
-    ("/**@id", Some ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None }; Element { name = "c"; attrs = [("val", "test")]; childs = []; parent = None }]; parent = None }));
-    ("/**@id=\"2\"", Some ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = []; parent = None }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None }]; parent = None }));
-    ("/**@type", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None }]; parent = None }));
-    ("/**@type=\"magic\"", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None }]; parent = None }));
+    ("/**@id", Some ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data "hello"];  }; Element { name = "c"; attrs = [("val", "test")]; childs = []; }];  }));
+    ("/**@id=\"2\"", Some ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = [] }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] }]; }));
+    ("/**@type", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; }];  }));
+    ("/**@type=\"magic\"", Some ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; }];  }));
     ("/**@type=\"nonexistent\"", None);
     (* Tests for multi wildcard with attributes followed by more path components *)
-    ("/**@type/child", Some ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None }));
+    ("/**@type/child", Some ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = [];  }));
   ]
 
 let filter_path_testable = Alcotest.(list (pair string xml_testable))
@@ -116,64 +109,64 @@ let filter_test_cases =
   [
     ("/root/a/b",
       [
-        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None });
-        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None });
+        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  });
+        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] });
       ]);
     ("/root/a@id=\"1\"/b",
       [
-        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None });
+        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  });
       ]);
     ("/root/a@id=\"2\"/b",
       [
-        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None });
+        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] });
       ]);
     ("/root/*/b",
       [
-        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None });
-        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None });
+        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  });
+        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] });
       ]);
     ("/root/nonexistent", []);
     ("/root/a/nonexistent", []);
     ("/**/b",
       [
-        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None });
-        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None });
-        ("/root/e/f/b", Element { name = "b"; attrs = []; childs = []; parent = None });
+        ("/root/a/b", Element { name = "b"; attrs = []; childs = [Data "hello"];  });
+        ("/root/a/b", Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] });
+        ("/root/e/f/b", Element { name = "b"; attrs = []; childs = []; });
       ]);
     (* Tests for wildcard with attributes in find_all *)
     ("/*@id",
       [
-        ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None }; Element { name = "c"; attrs = [("val", "test")]; childs = []; parent = None }]; parent = None });
-        ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = []; parent = None }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None }]; parent = None });
+        ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data "hello"];  }; Element { name = "c"; attrs = [("val", "test")]; childs = []; }]; });
+        ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = [];  }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] }]; });
       ]);
     ("/*@type",
       [
-        ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None }]; parent = None });
-        ("/root/child", Element { name = "child"; attrs = [("type", "magic")]; childs = []; parent = None });
+        ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; }]; });
+        ("/root/child", Element { name = "child"; attrs = [("type", "magic")]; childs = []; });
       ]);
     (* Tests for multi wildcard with attributes in find_all *)
     ("/**@id",
       [
-        ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data {value = "hello"; parent = None}]; parent = None }; Element { name = "c"; attrs = [("val", "test")]; childs = []; parent = None }]; parent = None });
-        ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = []; parent = None }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data {value = "world"; parent = None}]; parent = None }]; parent = None });
-        ("/root/e/child", Element { name = "child"; attrs = [("id", "e-child")]; childs = []; parent = None });
-        ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None });
+        ("/root/a", Element { name = "a"; attrs = [("id", "1")]; childs = [Element { name = "b"; attrs = []; childs = [Data "hello"];  }; Element { name = "c"; attrs = [("val", "test")]; childs = []; }]; });
+        ("/root/a", Element { name = "a"; attrs = [("id", "2")]; childs = [Element { name = "d"; attrs = []; childs = [];  }; Element { name = "b"; attrs = [("lang", "en")]; childs = [Data "world"] }]; });
+        ("/root/e/child", Element { name = "child"; attrs = [("id", "e-child")]; childs = []; });
+        ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = []; });
       ]);
     ("/**@type",
       [
-        ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None }]; parent = None });
-        ("/root/child", Element { name = "child"; attrs = [("type", "magic")]; childs = []; parent = None });
+        ("/root/special", Element { name = "special"; attrs = [("type", "magic")]; childs = [Element { name = "child"; attrs = [("id", "s-child")]; childs = []; }]; });
+        ("/root/child", Element { name = "child"; attrs = [("type", "magic")]; childs = []; });
       ]);
     (* Edge cases for multi wildcard with attributes *)
     ("/**@type/child",
       [
-        ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None });
+        ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = []; });
       ]);
     ("/**/child",
       [
-        ("/root/e/child", Element { name = "child"; attrs = [("id", "e-child")]; childs = []; parent = None });
-        ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = []; parent = None });
-        ("/root/child", Element { name = "child"; attrs = [("type", "magic")]; childs = []; parent = None });
+        ("/root/e/child", Element { name = "child"; attrs = [("id", "e-child")]; childs = []; });
+        ("/root/special/child", Element { name = "child"; attrs = [("id", "s-child")]; childs = []; });
+        ("/root/child", Element { name = "child"; attrs = [("type", "magic")]; childs = []; });
       ]);
     ("/**@lang/nonexistent", []);
   ]
@@ -188,11 +181,10 @@ let sample_xml_nested =
         attrs = [("id", "1")];
         childs = [
           Element { name = "b"; attrs = []; childs = [
-            Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None };
-            Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None };
-          ]; parent = None};
+            Element { name = "c"; attrs = [("v", "1")]; childs = [] };
+            Element { name = "c"; attrs = [("v", "2")]; childs = [] };
+          ]; };
         ];
-        parent = None;
       };
       Element {
         name = "a";
@@ -200,14 +192,12 @@ let sample_xml_nested =
         childs = [
           Element { name = "d"; attrs = []; childs = [
             Element { name = "b"; attrs = []; childs = [
-              Element { name = "c"; attrs = [("v", "3")]; childs = []; parent = None }
-            ]; parent = None}
-          ]; parent = None};
+              Element { name = "c"; attrs = [("v", "3")]; childs = [] }
+            ]; }
+          ]; };
         ];
-        parent = None;
       };
     ];
-    parent = None;
   }
 
 let test_find_path_nested path_str expected () =
@@ -216,20 +206,20 @@ let test_find_path_nested path_str expected () =
 
 let nested_test_cases = [
   ("/root/a/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [
-    Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None };
-    Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None };
-  ]; parent = None }));
+    Element { name = "c"; attrs = [("v", "1")]; childs = [];  };
+    Element { name = "c"; attrs = [("v", "2")]; childs = [];  };
+  ];  }));
   ("/root/a/d/b", Some("/root/a/d/b", Element { name = "b"; attrs = []; childs = [
-    Element { name = "c"; attrs = [("v", "3")]; childs = []; parent = None }
-  ]; parent = None }));
+    Element { name = "c"; attrs = [("v", "3")]; childs = [];  }
+  ];  }));
   ("/root/**/b", Some ("/root/a/b", Element { name = "b"; attrs = []; childs = [
-    Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None };
-    Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None };
-  ]; parent = None }));
-  ("/root/a/b/c[1]", Some("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None }));
+    Element { name = "c"; attrs = [("v", "1")]; childs = [];  };
+    Element { name = "c"; attrs = [("v", "2")]; childs = [];  };
+  ];  }));
+  ("/root/a/b/c[1]", Some("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = [];  }));
   ("/root/a[1]/d/b", Some("/root/a/d/b", Element { name = "b"; attrs = []; childs = [
-    Element { name = "c"; attrs = [("v", "3")]; childs = []; parent = None }
-  ]; parent = None }));
+    Element { name = "c"; attrs = [("v", "3")]; childs = [];  }
+  ];  }));
 ]
 
 let test_find_all_nested path_str expected () =
@@ -247,34 +237,34 @@ let test_find_all_nested path_str expected () =
 let nested_filter_test_cases = [
   ("/root/a/b", [
     ("/root/a/b", Element { name = "b"; attrs = []; childs = [
-      Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None };
-      Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None };
-    ]; parent = None });
+      Element { name = "c"; attrs = [("v", "1")]; childs = [];  };
+      Element { name = "c"; attrs = [("v", "2")]; childs = [];  };
+    ]; });
   ]);
   ("/root/**/b", [
     ("/root/a/b", Element { name = "b"; attrs = []; childs = [
-      Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None };
-      Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None };
-    ]; parent = None });
+      Element { name = "c"; attrs = [("v", "1")]; childs = [];  };
+      Element { name = "c"; attrs = [("v", "2")]; childs = [];  };
+    ]; });
     ("/root/a/d/b", Element { name = "b"; attrs = []; childs = [
-      Element { name = "c"; attrs = [("v", "3")]; childs = []; parent = None }
-    ]; parent = None });
+      Element { name = "c"; attrs = [("v", "3")]; childs = [];  }
+    ]; });
   ]);
   ("/root/**/c", [
-    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None });
-    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None });
-    ("/root/a/d/b/c", Element { name = "c"; attrs = [("v", "3")]; childs = []; parent = None });
+    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "1")]; childs = []; });
+    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = []; });
+    ("/root/a/d/b/c", Element { name = "c"; attrs = [("v", "3")]; childs = []; });
   ]);
   ("/root/a/b/c", [
-    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None });
-    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None });
+    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "1")]; childs = []; });
+    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = []; });
   ]);
   ("/root/a[0]/**/c", [
-    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "1")]; childs = []; parent = None });
-    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = []; parent = None });
+    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "1")]; childs = []; });
+    ("/root/a/b/c", Element { name = "c"; attrs = [("v", "2")]; childs = []; });
   ]);
   ("/root/a[1]/**/c", [
-    ("/root/a/d/b/c", Element { name = "c"; attrs = [("v", "3")]; childs = []; parent = None });
+    ("/root/a/d/b/c", Element { name = "c"; attrs = [("v", "3")]; childs = []; });
   ]);
 ]
 

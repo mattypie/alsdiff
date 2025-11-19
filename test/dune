@@ -8,10 +8,6 @@
  (modules test_upath)
  (libraries alsdiff_lib alcotest test_utils))
 
-(test
- (name test_current_parent)
- (modules test_current_parent)
- (libraries alsdiff_lib alcotest test_utils))
 
 (test
  (name test_xml)

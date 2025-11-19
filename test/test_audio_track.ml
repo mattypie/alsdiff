@@ -128,26 +128,25 @@ let test_audio_track_edge_case_empty_clips () =
   (* Create a minimal audio track XML with no clips *)
   let empty_clips_xml = Xml.Element {
     name = "AudioTrack";
-    parent = None;
     attrs = ["Id", "100"];
     childs = [
-      Xml.Element { name = "Name"; parent = None; attrs = [];
-        childs = [Xml.Element { name = "EffectiveName"; parent = None; attrs = ["Value", "Empty Track"]; childs = [] }] };
-      Xml.Element { name = "AutomationEnvelopes"; parent = None; attrs = [];
-        childs = [Xml.Element { name = "Envelopes"; parent = None; attrs = []; childs = [] }] };
-      Xml.Element { name = "DeviceChain"; parent = None; attrs = [];
+      Xml.Element { name = "Name"; attrs = [];
+        childs = [Xml.Element { name = "EffectiveName"; attrs = ["Value", "Empty Track"]; childs = [] }] };
+      Xml.Element { name = "AutomationEnvelopes"; attrs = [];
+        childs = [Xml.Element { name = "Envelopes"; attrs = []; childs = [] }] };
+      Xml.Element { name = "DeviceChain"; attrs = [];
         childs = [
-          Xml.Element { name = "Devices"; parent = None; attrs = []; childs = [] };
-          Xml.Element { name = "Mixer"; parent = None; attrs = [];
+          Xml.Element { name = "Devices"; attrs = []; childs = [] };
+          Xml.Element { name = "Mixer"; attrs = [];
             childs = [
-              Xml.Element { name = "Volume"; parent = None; attrs = [];
-                childs = [Xml.Element { name = "Manual"; parent = None; attrs = ["Value", "0.0"]; childs = [] }] };
-              Xml.Element { name = "Pan"; parent = None; attrs = [];
-                childs = [Xml.Element { name = "Manual"; parent = None; attrs = ["Value", "0.0"]; childs = [] }] };
-              Xml.Element { name = "On"; parent = None; attrs = [];
-                childs = [Xml.Element { name = "Manual"; parent = None; attrs = ["Value", "false"]; childs = [] }] };
-              Xml.Element { name = "SoloSink"; parent = None; attrs = ["Value", "false"]; childs = [] };
-              Xml.Element { name = "Sends"; parent = None; attrs = []; childs = [] }
+              Xml.Element { name = "Volume"; attrs = [];
+                childs = [Xml.Element { name = "Manual"; attrs = ["Value", "0.0"]; childs = [] }] };
+              Xml.Element { name = "Pan"; attrs = [];
+                childs = [Xml.Element { name = "Manual"; attrs = ["Value", "0.0"]; childs = [] }] };
+              Xml.Element { name = "On"; attrs = [];
+                childs = [Xml.Element { name = "Manual"; attrs = ["Value", "false"]; childs = [] }] };
+              Xml.Element { name = "SoloSink"; attrs = ["Value", "false"]; childs = [] };
+              Xml.Element { name = "Sends"; attrs = []; childs = [] }
             ] }
         ] }
     ]

@@ -19,4 +19,7 @@ type t = {
   major_version : string;
   minor_version : string;
   creator : string;
+  tracks : Track.t list;
+  pointees : int IntHashtbl.t;
+
 }

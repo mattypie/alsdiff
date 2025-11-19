@@ -167,7 +167,7 @@ module MidiClip = struct
 
   let create (xml : Xml.t) : t =
     match xml with
-    | Xml.Element { name = "MidiClip"; parent = _; _ } ->
+    | Xml.Element { name = "MidiClip"; _ } ->
       let id = Xml.get_int_attr "Id" xml in
       let name = Upath.get_attr "/Name" "Value" xml in
       let start_time = Upath.get_float_attr "/CurrentStart" "Value" xml in
@@ -315,7 +315,7 @@ module AudioClip = struct
 
   let create (xml : Xml.t) : t =
     match xml with
-    | Xml.Element { name = "AudioClip"; parent = _; _ } ->
+    | Xml.Element { name = "AudioClip"; _ } ->
       let id = Xml.get_int_attr "Id" xml in
       let name = Upath.get_attr "/Name" "Value" xml in
       let start_time = Upath.get_float_attr "/CurrentStart" "Value" xml in
