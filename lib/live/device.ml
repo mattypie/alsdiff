@@ -35,7 +35,7 @@ module DeviceParam = struct
     name : string;
     value : param_value;
     automation : int;
-    (* TODO: add modulation *)
+    modulation : int;
     mapping : macro_mapping option;
   } [@@deriving eq]
 
@@ -109,6 +109,10 @@ module DeviceParam = struct
         Upath.get_int_attr_opt "/AutomationTarget" "Id" xml
         |> Option.value ~default:0
       in
+      let modulation =
+        Upath.get_int_attr_opt "/ModulationTarget" "Id" xml
+        |> Option.value ~default:0
+      in
       let value_str_opt = Upath.get_attr_opt "/Manual" "Value" xml in
       let value =
         match value_str_opt with
@@ -121,7 +125,7 @@ module DeviceParam = struct
           Float 0.0
       in
       let mapping = parse_macro_mapping xml in
-      { name; value; automation; mapping }
+      { name; value; automation; modulation; mapping }
     | _ -> failwith "Invalid XML element for creating DeviceParam"
 
   let create_from_upath_find (path, xml) = create path xml
@@ -130,10 +134,11 @@ module DeviceParam = struct
     type t = {
       value : param_value simple_flat_change;
       automation : int simple_flat_change;
+      modulation : int simple_flat_change;
     }
 
     let is_empty = function
-      | { value = `Unchanged; automation = `Unchanged } -> true
+      | { value = `Unchanged; automation = `Unchanged; modulation = `Unchanged } -> true
       | _ -> false
   end
 
@@ -143,7 +148,8 @@ module DeviceParam = struct
     else
       let value_change = diff_value old_param.value new_param.value in
       let automation_change = diff_value old_param.automation new_param.automation in
-      { value = value_change; automation = automation_change }
+      let modulation_change = diff_value old_param.modulation new_param.modulation in
+      { value = value_change; automation = automation_change; modulation = modulation_change }
 end
 
 

@@ -67,18 +67,21 @@ let test_create_device_from_compressor_xml () =
    | Float v -> Alcotest.(check (float 0.01)) "threshold value" 1.0 v
    | _ -> Alcotest.fail "threshold parameter should be float");
   Alcotest.(check int) "threshold automation id" 153208 threshold_param.automation;
+  Alcotest.(check int) "threshold modulation id" 153209 threshold_param.modulation;
 
   let ratio_param = List.find (fun p -> p.name = "Ratio") regular_device.params in
   (match ratio_param.value with
    | Float v -> Alcotest.(check (float 0.01)) "ratio value" 2.50000024 v
    | _ -> Alcotest.fail "ratio parameter should be float");
   Alcotest.(check int) "ratio automation id" 153210 ratio_param.automation;
+  Alcotest.(check int) "ratio modulation id" 153211 ratio_param.modulation;
 
   let attack_param = List.find (fun p -> p.name = "Attack") regular_device.params in
   (match attack_param.value with
    | Float v -> Alcotest.(check (float 0.01)) "attack value" 0.9641109109 v
    | _ -> Alcotest.fail "attack parameter should be float");
-  Alcotest.(check int) "attack automation id" 153214 attack_param.automation
+  Alcotest.(check int) "attack automation id" 153214 attack_param.automation;
+  Alcotest.(check int) "attack modulation id" 153215 attack_param.modulation
 
 let test_device_param_creation () =
   (* Use Threshold parameter from real compressor device XML *)
@@ -93,7 +96,8 @@ let test_device_param_creation () =
   (match param.value with
    | Float v -> Alcotest.(check (float 0.01)) "param value" 1.0 v (* Threshold value from real XML *)
    | _ -> Alcotest.fail "parameter should be float");
-  Alcotest.(check int) "param automation id" 153208 param.automation
+  Alcotest.(check int) "param automation id" 153208 param.automation;
+  Alcotest.(check int) "param modulation id" 153209 param.modulation
 
 let test_device_param_without_macro_mapping () =
   (* Use Ratio parameter from real compressor device XML - it has no KeyMidi/macro mapping *)
@@ -109,6 +113,7 @@ let test_device_param_without_macro_mapping () =
    | Float v -> Alcotest.(check (float 0.01)) "param value" 2.50000024 v (* Ratio value from real XML *)
    | _ -> Alcotest.fail "parameter should be float");
   Alcotest.(check int) "param automation id" 153210 param.automation;
+  Alcotest.(check int) "param modulation id" 153211 param.modulation;
   (* Verify no macro mapping - Ratio parameter has no KeyMidi element *)
   (match param.mapping with
    | None -> () (* Expected - no macro mapping *)
@@ -156,7 +161,8 @@ let test_create_eq8_device_from_xml () =
   (match regular_device.enabled.value with
    | Bool v -> Alcotest.(check bool) "eq8 device enabled" true v
    | _ -> Alcotest.fail "eq8 enabled parameter should be bool");
-  Alcotest.(check int) "eq8 enabled automation id" 153284 regular_device.enabled.automation
+  Alcotest.(check int) "eq8 enabled automation id" 153284 regular_device.enabled.automation;
+  Alcotest.(check int) "eq8 enabled modulation id" 0 regular_device.enabled.modulation
 
 let test_eq8_global_gain_parameter () =
   (* Extract GlobalGain parameter from EQ8 XML *)
@@ -171,7 +177,8 @@ let test_eq8_global_gain_parameter () =
   (match param.value with
    | Float v -> Alcotest.(check (float 0.01)) "eq8 global gain value" 4.5 v
    | _ -> Alcotest.fail "eq8 global gain parameter should be float");
-  Alcotest.(check int) "eq8 global gain automation id" 153286 param.automation
+  Alcotest.(check int) "eq8 global gain automation id" 153286 param.automation;
+  Alcotest.(check int) "eq8 global gain modulation id" 153287 param.modulation
 
 let test_eq8_scale_parameter () =
   (* Extract Scale parameter from EQ8 XML *)
@@ -186,7 +193,8 @@ let test_eq8_scale_parameter () =
   (match param.value with
    | Float v -> Alcotest.(check (float 0.01)) "eq8 scale value" 1.0 v
    | _ -> Alcotest.fail "eq8 scale parameter should be float");
-  Alcotest.(check int) "eq8 scale automation id" 153288 param.automation
+  Alcotest.(check int) "eq8 scale automation id" 153288 param.automation;
+  Alcotest.(check int) "eq8 scale modulation id" 153289 param.modulation
 
 let test_eq8_band_parameters () =
   (* Extract first band's frequency parameter from EQ8 XML *)
@@ -203,6 +211,7 @@ let test_eq8_band_parameters () =
    | Float v -> Alcotest.(check (float 0.001)) "eq8 band 0 frequency value" 77.237999 v
    | _ -> Alcotest.fail "eq8 frequency parameter should be float");
   Alcotest.(check int) "eq8 band 0 frequency automation id" 153292 freq_param.automation;
+  Alcotest.(check int) "eq8 band 0 frequency modulation id" 153293 freq_param.modulation;
 
   (* Extract first band's gain parameter *)
   let gain_path, gain_param_xml = Upath.find "/Bands.0/ParameterA/Gain" device_xml in
@@ -214,6 +223,7 @@ let test_eq8_band_parameters () =
    | Float v -> Alcotest.(check (float 0.01)) "eq8 band 0 gain value" (-2.85714293) v
    | _ -> Alcotest.fail "eq8 gain parameter should be float");
   Alcotest.(check int) "eq8 band 0 gain automation id" 153294 gain_param.automation;
+  Alcotest.(check int) "eq8 band 0 gain modulation id" 153295 gain_param.modulation;
 
   (* Extract first band's Q parameter *)
   let q_path, q_param_xml = Upath.find "/Bands.0/ParameterA/Q" device_xml in
@@ -224,7 +234,8 @@ let test_eq8_band_parameters () =
   (match q_param.value with
    | Float v -> Alcotest.(check (float 0.001)) "eq8 band 0 Q value" 0.7071067095 v
    | _ -> Alcotest.fail "eq8 Q parameter should be float");
-  Alcotest.(check int) "eq8 band 0 Q automation id" 153296 q_param.automation
+  Alcotest.(check int) "eq8 band 0 Q automation id" 153296 q_param.automation;
+  Alcotest.(check int) "eq8 band 0 Q modulation id" 153297 q_param.modulation
 
 let test_eq8_mode_parameters () =
   (* Extract first band's mode parameter from EQ8 XML *)
@@ -240,7 +251,8 @@ let test_eq8_mode_parameters () =
   (match mode_param.value with
    | Float v -> Alcotest.(check (float 0.01)) "eq8 band 0 mode value" 2.0 v
    | _ -> Alcotest.fail "eq8 mode parameter should be float");
-  Alcotest.(check int) "eq8 band 0 mode automation id" 153291 mode_param.automation
+  Alcotest.(check int) "eq8 band 0 mode automation id" 153291 mode_param.automation;
+  Alcotest.(check int) "eq8 band 0 mode modulation id" 0 mode_param.modulation
 
 let test_eq8_is_on_parameters () =
   (* Extract first band's IsOn parameter from EQ8 XML *)
@@ -257,6 +269,7 @@ let test_eq8_is_on_parameters () =
    | Bool v -> Alcotest.(check bool) "eq8 band 0 IsOn value" true v
    | _ -> Alcotest.fail "eq8 IsOn parameter should be bool");
   Alcotest.(check int) "eq8 band 0 IsOn automation id" 153290 is_on_param.automation;
+  Alcotest.(check int) "eq8 band 0 IsOn modulation id" 0 is_on_param.modulation;
 
   (* Test ParameterB IsOn (should be false) *)
   let is_on_b_path, is_on_b_param_xml = Upath.find "/Bands.0/ParameterB/IsOn" device_xml in
@@ -266,7 +279,8 @@ let test_eq8_is_on_parameters () =
   (match is_on_b_param.value with
    | Bool v -> Alcotest.(check bool) "eq8 band 0 ParameterB IsOn value" false v
    | _ -> Alcotest.fail "eq8 IsOn parameter should be bool");
-  Alcotest.(check int) "eq8 band 0 ParameterB IsOn automation id" 153298 is_on_b_param.automation
+  Alcotest.(check int) "eq8 band 0 ParameterB IsOn automation id" 153298 is_on_b_param.automation;
+  Alcotest.(check int) "eq8 band 0 ParameterB IsOn modulation id" 0 is_on_b_param.modulation
 
 let test_eq8_all_bands_exist () =
   (* Verify that all 8 bands (Bands.0 through Bands.7) exist *)
@@ -313,7 +327,13 @@ let test_eq8_parameter_b_vs_parameter_a_differences () =
   Alcotest.(check int) "eq8 freq A automation id" 153292 freq_a_param.automation;
   Alcotest.(check int) "eq8 freq B automation id" 153300 freq_b_param.automation;
   Alcotest.(check bool) "eq8 automation IDs are different" true
-    (freq_a_param.automation <> freq_b_param.automation)
+    (freq_a_param.automation <> freq_b_param.automation);
+
+  (* Verify they have different modulation IDs *)
+  Alcotest.(check int) "eq8 freq A modulation id" 153293 freq_a_param.modulation;
+  Alcotest.(check int) "eq8 freq B modulation id" 153301 freq_b_param.modulation;
+  Alcotest.(check bool) "eq8 modulation IDs are different" true
+    (freq_a_param.modulation <> freq_b_param.modulation)
 
 let test_eq8_preset_reference_details () =
   (* Test detailed preset reference properties *)
@@ -388,6 +408,7 @@ let test_create_wavetable_device () =
    | Bool v -> Alcotest.(check bool) "wavetable device enabled value" true v
    | _ -> Alcotest.fail "wavetable device enabled parameter should be boolean");
   Alcotest.(check int) "wavetable device enabled automation id" 25825 regular_device.enabled.automation;
+  Alcotest.(check int) "wavetable device enabled modulation id" 0 regular_device.enabled.modulation;
 
   (* Find oscillator 1 on parameter *)
   let osc1_on_param = List.find (fun p -> p.name = "Voice_Oscillator1_On") regular_device.params in
@@ -395,6 +416,7 @@ let test_create_wavetable_device () =
    | Bool v -> Alcotest.(check bool) "wavetable osc1 on value" true v
    | _ -> Alcotest.fail "wavetable osc1 on parameter should be boolean");
   Alcotest.(check int) "wavetable osc1 on automation id" 25827 osc1_on_param.automation;
+  Alcotest.(check int) "wavetable osc1 on modulation id" 0 osc1_on_param.modulation;
 
   (* Find oscillator 1 transpose parameter *)
   let osc1_transpose_param = List.find (fun p -> p.name = "Voice_Oscillator1_Pitch_Transpose") regular_device.params in
@@ -402,6 +424,7 @@ let test_create_wavetable_device () =
    | Float v -> Alcotest.(check (float 0.01)) "wavetable osc1 transpose value" 0.0 v
    | _ -> Alcotest.fail "wavetable osc1 transpose parameter should be float");
   Alcotest.(check int) "wavetable osc1 transpose automation id" 25828 osc1_transpose_param.automation;
+  Alcotest.(check int) "wavetable osc1 transpose modulation id" 25829 osc1_transpose_param.modulation;
 
   (* Test filter parameters *)
   let filter1_freq_param = List.find (fun p -> p.name = "Voice_Filter1_Frequency") regular_device.params in
@@ -413,6 +436,8 @@ let test_create_wavetable_device () =
      else
        Alcotest.(check (float 0.01)) "wavetable filter1 freq value" v v
    | _ -> Alcotest.fail "wavetable filter1 frequency parameter should be float");
+  Alcotest.(check int) "wavetable filter1 freq automation id" 25868 filter1_freq_param.automation;
+  Alcotest.(check int) "wavetable filter1 freq modulation id" 25869 filter1_freq_param.modulation;
 
   (* Test envelope parameters *)
   let amp_env_attack_param = List.find (fun p -> p.name = "Voice_Modulators_AmpEnvelope_Times_Attack") regular_device.params in
@@ -423,7 +448,9 @@ let test_create_wavetable_device () =
        Alcotest.fail "wavetable amp envelope attack should be non-negative"
      else
        Alcotest.(check (float 0.01)) "wavetable amp env attack value" v v
-   | _ -> Alcotest.fail "wavetable amp envelope attack parameter should be float")
+   | _ -> Alcotest.fail "wavetable amp envelope attack parameter should be float");
+  Alcotest.(check int) "wavetable amp env attack automation id" 25889 amp_env_attack_param.automation;
+  Alcotest.(check int) "wavetable amp env attack modulation id" 25890 amp_env_attack_param.modulation
 
 let test_wavetable_parameter_creation () =
   (* Test creating a specific parameter from XML *)
@@ -439,6 +466,7 @@ let test_wavetable_parameter_creation () =
    | Bool v -> Alcotest.(check bool) "wavetable param value" true v
    | _ -> Alcotest.fail "wavetable parameter should be boolean");
   Alcotest.(check int) "wavetable param automation id" 25827 param.automation;
+  Alcotest.(check int) "wavetable param modulation id" 0 param.modulation;
 
   (* Verify no macro mapping for this parameter *)
   (match param.mapping with
@@ -459,7 +487,8 @@ let test_wavetable_float_parameter () =
   (match param.value with
    | Float v -> Alcotest.(check (float 0.001)) "wavetable float param value" 0.0 v
    | _ -> Alcotest.fail "wavetable parameter should be float");
-  Alcotest.(check int) "wavetable float param automation id" 25828 param.automation
+  Alcotest.(check int) "wavetable float param automation id" 25828 param.automation;
+  Alcotest.(check int) "wavetable float param modulation id" 25829 param.modulation
 
 let test_wavetable_preset_creation () =
   (* Test creating PresetRef from the XML *)
@@ -521,7 +550,14 @@ let test_wavetable_parameter_values () =
   List.iter (fun id ->
     if id < 0 then
       Alcotest.fail (Printf.sprintf "wavetable Negative automation ID found: %d" id)
-  ) automation_ids
+  ) automation_ids;
+
+  (* Test that modulation IDs are non-negative *)
+  let modulation_ids = List.map (fun p -> p.modulation) regular_device.params in
+  List.iter (fun id ->
+    if id < 0 then
+      Alcotest.fail (Printf.sprintf "wavetable Negative modulation ID found: %d" id)
+  ) modulation_ids
 
 let () =
   Alcotest.run "RealDevices" [

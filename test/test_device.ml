@@ -26,7 +26,9 @@ let test_device_param_with_missing_values () =
   (match param.value with
    | Float v -> Alcotest.(check (float 0.01)) "param value (default)" 0.0 v
    | _ -> Alcotest.fail "parameter should be float");
-  Alcotest.(check int) "param automation id (default)" 0 param.automation
+
+  Alcotest.(check int) "param automation id (default)" 0 param.automation;
+  Alcotest.(check int) "param modulation id (default)" 0 param.modulation
 
 let test_device_creation_with_invalid_xml () =
   (* Create invalid XML (Data instead of Element) *)
@@ -140,7 +142,9 @@ let test_device_param_with_continuous_macro_mapping () =
   (match param.value with
    | Float v -> Alcotest.(check (float 0.01)) "param value" 31.0 v
    | _ -> Alcotest.fail "parameter should be float");
+
   Alcotest.(check int) "param automation id" 200 param.automation;
+  Alcotest.(check int) "param modulation id" 0 param.modulation;
   (* Verify macro mapping *)
   (match param.mapping with
    | Some mapping -> (
@@ -247,7 +251,9 @@ let test_device_param_with_onoff_macro_mapping () =
   (match param.value with
    | Bool v -> Alcotest.(check bool) "param value" true v
    | _ -> Alcotest.fail "parameter should be bool");
+
   Alcotest.(check int) "param automation id" 201 param.automation;
+  Alcotest.(check int) "param modulation id" 0 param.modulation;
   (* Verify macro mapping *)
   (match param.mapping with
    | Some mapping -> (
@@ -329,7 +335,9 @@ let test_device_param_with_invalid_controller_map_mode () =
   (match param.value with
    | Float v -> Alcotest.(check (float 0.01)) "param value" 0.5 v
    | _ -> Alcotest.fail "parameter should be float");
+
   Alcotest.(check int) "param automation id" 203 param.automation;
+  Alcotest.(check int) "param modulation id" 0 param.modulation;
   (* Verify no macro mapping *)
   (match param.mapping with
    | None -> () (* Expected - no macro mapping *)
