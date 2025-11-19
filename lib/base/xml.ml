@@ -69,8 +69,15 @@ module Parser = struct
 end
 
 let read_file filename =
-  let i = Xmlm.make_input ~strip:true (`Channel (In_channel.open_text filename)) in
-  Xmlm.input_doc_tree ~el:Parser.make_element ~data:Parser.make_data i |> snd
+  let ic = In_channel.open_text filename in
+  try
+    let i = Xmlm.make_input ~strip:true (`Channel ic) in
+    let result = Xmlm.input_doc_tree ~el:Parser.make_element ~data:Parser.make_data i |> snd in
+    In_channel.close ic;
+    result
+  with e ->
+    In_channel.close ic;
+    raise e
 
 let read_string s =
   let i = Xmlm.make_input ~strip:true (`String (0, s)) in
