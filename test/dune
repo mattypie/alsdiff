@@ -8,6 +8,10 @@
  (modules test_upath)
  (libraries alsdiff_lib alcotest test_utils))
 
+(test
+ (name test_upath_error_handling)
+ (modules test_upath_error_handling)
+ (libraries alsdiff_lib alcotest test_utils))
 
 (test
  (name test_xml)
@@ -83,10 +87,10 @@
  (deps compressor_device.xml eq8_device.xml wavetable_device.xml))
 
 (test
-  (name test_group_device)
-  (modules test_group_device)
-  (libraries alsdiff_lib alcotest test_utils)
-  (deps group_device.xml))
+ (name test_group_device)
+ (modules test_group_device)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps group_device.xml))
 
 (test
  (name test_midi_track)
