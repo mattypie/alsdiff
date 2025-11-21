@@ -111,9 +111,11 @@ end
 
 (** Module for rendering structured changes (list items) *)
 module StructuredChangeRenderer = struct
-  (* Helper to convert indent level to spaces *)
+
+(* Helper to convert indent level to spaces *)
   let make_indent n = String.make n ' '
 
+  
   type 'item item_formatter = { format_item : 'item -> string; indent : int }
 
   type 'patch patch_formatter = {
@@ -399,7 +401,9 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
            Some
              (match note_patch.note with
              | `Modified m ->
-                 Printf.sprintf "note: %d->%d" m.Diff.old m.Diff.new_
+                 let old_note_name = Clip.MidiNote.get_note_name_from_int m.Diff.old in
+                 let new_note_name = Clip.MidiNote.get_note_name_from_int m.Diff.new_ in
+                 Printf.sprintf "note: %s->%s" old_note_name new_note_name
              | _ -> "")
          else None);
         (if note_patch.off_velocity <> `Unchanged then
@@ -422,9 +426,10 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
         {
           format_item =
             (fun (note : Clip.MidiNote.t) ->
-              Printf.sprintf "Note: time=%f, duration=%f, velocity=%d, note=%d"
+              let note_name = Clip.MidiNote.get_note_name_from_int note.Clip.MidiNote.note in
+              Printf.sprintf "Note: time=%f, duration=%f, velocity=%d, note=%s"
                 note.Clip.MidiNote.time note.Clip.MidiNote.duration
-                note.Clip.MidiNote.velocity note.Clip.MidiNote.note);
+                note.Clip.MidiNote.velocity note_name);
           indent = 4;
         }
       ~patch_fmt:{ format_patch = render_note_patch; indent = 0 }
@@ -443,6 +448,7 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
     ]
 
 (* Helper functions for Device and Track rendering *)
+
 
 let render_parameter_fields ?(include_name = false) ?(include_index = false)
     (name_line : string option) (index_line : string option)

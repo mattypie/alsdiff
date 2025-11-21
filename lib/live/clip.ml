@@ -98,12 +98,12 @@ module MidiNote = struct
 
   type note_display_style = Sharp | Flat
 
-  let get_note_name ?(style=Sharp) (note : t) : string =
+  let get_note_name_from_int ?(style=Sharp) (note_int : int) : string =
     let note_names_sharp = [| "C"; "C#"; "D"; "D#"; "E"; "F"; "F#"; "G"; "G#"; "A"; "A#"; "B" |] in
     let note_names_flat = [| "C"; "Db"; "D"; "Eb"; "E"; "F"; "Gb"; "G"; "Ab"; "A"; "Bb"; "B" |] in
 
-    let note_class = note.note mod 12 in
-    let octave_num = note.note / 12 - 1 in (* MIDI octave adjustment *)
+    let note_class = note_int mod 12 in
+    let octave_num = note_int / 12 - 1 in (* MIDI octave adjustment *)
 
     let note_name = match style with
       | Sharp -> note_names_sharp.(note_class)
@@ -111,6 +111,9 @@ module MidiNote = struct
     in
 
     Printf.sprintf "%s%d" note_name octave_num
+
+let get_note_name ?(style=Sharp) (note : t) : string =
+  note.note |> get_note_name_from_int ~style
 
 end
 
