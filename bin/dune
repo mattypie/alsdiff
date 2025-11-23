@@ -1,6 +1,6 @@
 (executable
  (public_name alsdiff)
  (name main)
- (modules
-   main)
+ (modules main)
+ (modes byte exe)
  (libraries alsdiff_lib eio_main))

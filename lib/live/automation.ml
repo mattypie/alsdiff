@@ -1,6 +1,8 @@
 open Alsdiff_base
 open Alsdiff_base.Diff
 
+(* TODO: support IntEvent, EnumEvent *)
+
 module EnvelopeEvent = struct
   type t = {
     id : int;

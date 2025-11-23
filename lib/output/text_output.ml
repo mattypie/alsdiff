@@ -3,21 +3,25 @@ open Alsdiff_live
 
 type t = string
 
-(** Helper modules for rendering patches with consistent formatting *)
+(** Indentation configuration **)
+let indent_size = 2  (* Number of spaces per indent level *)
 
-(** Module for rendering individual field changes with typed formatters *)
+(** Helper to calculate indent from level **)
+let indent_of_level level = level * indent_size
+let make_indent_at_level level = String.make (indent_of_level level) ' '
+
+(** Helper modules for rendering patches with consistent formatting **)
+
+(** Module for rendering individual field changes with typed formatters **)
 module FieldRenderer = struct
   type 'a formatter = {
     format_value : 'a -> string;
     field_name : string;
-    indent : int;
+    indent_level : int;
   }
 
-  (* Helper to convert indent level to spaces *)
-  let make_indent n = String.make n ' '
-
   let render_simple_change formatter change =
-    let prefix = make_indent formatter.indent in
+    let prefix = make_indent_at_level formatter.indent_level in
     match change with
     | `Unchanged -> ""
     | `Added v ->
@@ -33,36 +37,36 @@ module FieldRenderer = struct
           (formatter.format_value m.Diff.new_)
 
   (* Specialized renderers *)
-  let float_formatter ?(indent = 2) ?(precision = 4) name =
+  let float_formatter ?(indent_level = 1) ?(precision = 4) name =
     {
       format_value = Printf.sprintf "%.*f" precision;
       field_name = name;
-      indent;
+      indent_level;
     }
 
-  let bool_formatter ?(indent = 2) name =
-    { format_value = string_of_bool; field_name = name; indent }
+  let bool_formatter ?(indent_level = 1) name =
+    { format_value = string_of_bool; field_name = name; indent_level }
 
-  let string_formatter ?(indent = 2) name =
-    { format_value = (fun s -> s); field_name = name; indent }
+  let string_formatter ?(indent_level = 1) name =
+    { format_value = (fun s -> s); field_name = name; indent_level }
 
-  let int64_formatter ?(indent = 2) name =
-    { format_value = Int64.to_string; field_name = name; indent }
+  let int64_formatter ?(indent_level = 1) name =
+    { format_value = Int64.to_string; field_name = name; indent_level }
 
-  let int_formatter ?(indent = 2) name =
-    { format_value = string_of_int; field_name = name; indent }
+  let int_formatter ?(indent_level = 1) name =
+    { format_value = string_of_int; field_name = name; indent_level }
 
-  let signature_formatter ?(indent = 2) name =
+  let signature_formatter ?(indent_level = 1) name =
     {
       format_value =
         (fun s ->
           Printf.sprintf "%d/%d" s.Clip.TimeSignature.numer
             s.Clip.TimeSignature.denom);
       field_name = name;
-      indent;
+      indent_level;
     }
 
-  let device_value_formatter ?(indent = 2) field_name =
+  let device_value_formatter ?(indent_level = 1) field_name =
     {
       format_value = (fun v ->
         match v with
@@ -71,56 +75,48 @@ module FieldRenderer = struct
         | Device.Bool b -> string_of_bool b
         | Device.Enum (i, _) -> string_of_int i);
       field_name;
-      indent;
+      indent_level;
     }
 end
 
 (** Module for section rendering with consistent indentation *)
 module SectionRenderer = struct
-  (* Helper to convert indent level to spaces *)
-  let make_indent n = String.make n ' '
-
   (* Join lines, filtering out empty strings *)
   let join_non_empty lines =
     let non_empty = List.filter (fun s -> s <> "") lines in
     String.concat "\n" non_empty
 
   (* Indent each line by the given number of spaces *)
-  let indent_lines indent lines =
-    let indent_str = make_indent indent in
+  let indent_lines indent_level lines =
+    let indent_str = make_indent_at_level indent_level in
     List.map (fun line -> if line = "" then "" else indent_str ^ line) lines
 
   (* Render a nested section with a header *)
-  let render_section ~header ~indent content =
+  let render_section ~header ~indent_level content =
     if content = "" then ""
-    else header ^ "\n" ^ String.concat "\n" (indent_lines indent [ content ])
+    else header ^ "\n" ^ String.concat "\n" (indent_lines indent_level [ content ])
 
   (* Render a section from a list of lines *)
-  let render_section_from_lines ~header ~indent lines =
+  let render_section_from_lines ~header ~indent_level lines =
     let content = join_non_empty lines in
-    render_section ~header ~indent content
+    render_section ~header ~indent_level content
 
   (* Render a patch field as a section *)
-  let render_patch_section ~header ~indent ~renderer patch_field =
+  let render_patch_section ~header ~indent_level ~renderer patch_field =
     match patch_field with
     | `Unchanged -> ""
     | `Patched patch ->
         let content = renderer patch in
-        render_section ~header ~indent content
+        render_section ~header ~indent_level content
 end
 
 (** Module for rendering structured changes (list items) *)
 module StructuredChangeRenderer = struct
-
-(* Helper to convert indent level to spaces *)
-  let make_indent n = String.make n ' '
-
-  
-  type 'item item_formatter = { format_item : 'item -> string; indent : int }
+  type 'item item_formatter = { format_item : 'item -> string; indent_level : int }
 
   type 'patch patch_formatter = {
     format_patch : 'patch -> string;
-    indent : int;
+    indent_level : int;
   }
 
   let render_change (type item patch) (item_fmt : item item_formatter)
@@ -129,12 +125,20 @@ module StructuredChangeRenderer = struct
     match change with
     | `Unchanged -> ""
     | `Added item ->
-        let indent_str = make_indent item_fmt.indent in
+        let indent_str = make_indent_at_level item_fmt.indent_level in
         Printf.sprintf "%s+ %s" indent_str (item_fmt.format_item item)
     | `Removed item ->
-        let indent_str = make_indent item_fmt.indent in
+        let indent_str = make_indent_at_level item_fmt.indent_level in
         Printf.sprintf "%s- %s" indent_str (item_fmt.format_item item)
-    | `Patched patch -> patch_fmt.format_patch patch
+    | `Patched patch ->
+        let patch_output = patch_fmt.format_patch patch in
+        if patch_fmt.indent_level = 0 then
+          patch_output
+        else
+          let indent_str = make_indent_at_level patch_fmt.indent_level in
+          let lines = String.split_on_char '\n' patch_output in
+          String.concat "\n" (List.map (fun line ->
+            if line = "" then "" else indent_str ^ line) lines)
 
   (* Render a list of changes into a section *)
   let render_changes_section ~header ~item_fmt ~patch_fmt changes =
@@ -229,9 +233,9 @@ let render_mixer (patch : Mixer.Patch.t) =
             (fun s ->
               Printf.sprintf "Send to track %d with amount %.4f"
                 s.Mixer.Send.target s.Mixer.Send.amount);
-          indent = 4;
+          indent_level = 2;
         }
-      ~patch_fmt:{ format_patch = render_send_patch; indent = 0 }
+      ~patch_fmt:{ format_patch = render_send_patch; indent_level = 0 }
       patch.sends
   in
 
@@ -243,16 +247,16 @@ let render_loop_section_patch (patch : Clip.Loop.Patch.t) =
   let open SectionRenderer in
   let start_line =
     render_simple_change
-      (float_formatter ~indent:4 ~precision:2 "Loop start")
+      (float_formatter ~indent_level:2 ~precision:2 "Loop start")
       patch.start_time
   in
   let end_line =
     render_simple_change
-      (float_formatter ~indent:4 ~precision:2 "Loop end")
+      (float_formatter ~indent_level:2 ~precision:2 "Loop end")
       patch.end_time
   in
   let on_line =
-    render_simple_change (bool_formatter ~indent:4 "Loop enabled") patch.on
+    render_simple_change (bool_formatter ~indent_level:2 "Loop enabled") patch.on
   in
 
   join_non_empty [ start_line; end_line; on_line ]
@@ -262,15 +266,15 @@ let render_sample_ref_patch (patch : Clip.SampleRef.Patch.t) =
   let open SectionRenderer in
   let file_path_line =
     render_simple_change
-      (string_formatter ~indent:4 "File path")
+      (string_formatter ~indent_level:2 "File path")
       patch.file_path
   in
   let crc_line =
-    render_simple_change (string_formatter ~indent:4 "CRC") patch.crc
+    render_simple_change (string_formatter ~indent_level:2 "CRC") patch.crc
   in
   let last_modified_line =
     render_simple_change
-      (int64_formatter ~indent:4 "Last modified")
+      (int64_formatter ~indent_level:2 "Last modified")
       patch.last_modified_date
   in
 
@@ -430,9 +434,9 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
               Printf.sprintf "Note: time=%f, duration=%f, velocity=%d, note=%s"
                 note.Clip.MidiNote.time note.Clip.MidiNote.duration
                 note.Clip.MidiNote.velocity note_name);
-          indent = 4;
+          indent_level = 2;
         }
-      ~patch_fmt:{ format_patch = render_note_patch; indent = 0 }
+      ~patch_fmt:{ format_patch = render_note_patch; indent_level = 1 }
       patch.notes
   in
 
@@ -552,9 +556,9 @@ let render_automation_patch (patch : Automation.Patch.t) =
             (fun (event : Automation.EnvelopeEvent.t) ->
               Printf.sprintf "Event: time=%.2f, value=%.2f" event.time
                 event.value);
-          indent = 4;
+          indent_level = 2;
         }
-      ~patch_fmt:{ format_patch = render_event_patch; indent = 0 }
+      ~patch_fmt:{ format_patch = render_event_patch; indent_level = 1 }
       patch.events
   in
   join_non_empty [id_line; events_section]
@@ -598,11 +602,11 @@ let render_device_params_section ~header ~param_formatter ~patch_formatter param
     ~header
     ~item_fmt:{
       format_item = param_formatter;
-      indent = 4;
+      indent_level = 2;
     }
     ~patch_fmt:{
       format_patch = patch_formatter;
-      indent = 0;
+      indent_level = 0;
     }
     params
 
@@ -676,7 +680,7 @@ let rec render_device (patch : Device.Patch.t) : string =
               | Max4Live m -> m.display_name
               | Group g -> g.display_name
             );
-            indent = 6;
+            indent_level = 3;
           }
           ~patch_fmt:{
             format_patch = (fun dp -> render_device (
@@ -686,7 +690,7 @@ let rec render_device (patch : Device.Patch.t) : string =
               | Device.Max4LivePatch p -> Device.Patch.Max4LivePatch p
               | Device.GroupPatch p -> Device.Patch.GroupPatch p
             ));
-            indent = 0;
+            indent_level = 2;
           }
           branch_patch.devices
       in
@@ -704,11 +708,11 @@ let rec render_device (patch : Device.Patch.t) : string =
         ~header:"  Branches Changes:"
         ~item_fmt:{
           format_item = (fun (b : Device.branch) -> Printf.sprintf "Branch %d" b.id);
-          indent = 4;
+          indent_level = 2;
         }
         ~patch_fmt:{
           format_patch = render_branch_patch;
-          indent = 0;
+          indent_level = 0;
         }
         patch.branches
     in
@@ -719,11 +723,11 @@ let rec render_device (patch : Device.Patch.t) : string =
         ~header:"  Macros Changes:"
         ~item_fmt:{
           format_item = (fun (m : Device.Macro.t) -> m.name);
-          indent = 4;
+          indent_level = 2;
         }
         ~patch_fmt:{
           format_patch = render_macro_patch;
-          indent = 0;
+          indent_level = 0;
         }
         patch.macros
     in
@@ -734,11 +738,11 @@ let rec render_device (patch : Device.Patch.t) : string =
         ~header:"  Snapshots Changes:"
         ~item_fmt:{
           format_item = (fun (s : Device.Snapshot.t) -> s.name);
-          indent = 4;
+          indent_level = 2;
         }
         ~patch_fmt:{
           format_patch = render_snapshot_patch;
-          indent = 0;
+          indent_level = 0;
         }
         patch.snapshots
     in
@@ -759,11 +763,11 @@ let render_track_automations_section automations =
     ~header:"  Automations Changes:"
     ~item_fmt:{
       format_item = (fun (a : Automation.t) -> Printf.sprintf "Automation %d" a.id);
-      indent = 4;
+      indent_level = 2;
     }
     ~patch_fmt:{
       format_patch = render_automation_patch;
-      indent = 0;
+      indent_level = 2;
     }
     automations
 
@@ -779,11 +783,11 @@ let render_track_devices_section devices =
         | Max4Live m -> m.display_name
         | Group g -> g.display_name
       );
-      indent = 4;
+      indent_level = 2;
     }
     ~patch_fmt:{
       format_patch = render_device;
-      indent = 0;
+      indent_level = 2;
     }
     devices
 
@@ -814,11 +818,11 @@ let render_track (patch : Track.Patch.t) : string =
           ~header:"  Clips Changes:"
           ~item_fmt:{
             format_item = (fun (c : Clip.MidiClip.t) -> c.name);
-            indent = 4;
+            indent_level = 2;
           }
           ~patch_fmt:{
             format_patch = render_midi_clip;
-            indent = 0;
+            indent_level = 2;
           }
           patch.clips)
       ~automations:patch.automations
@@ -836,11 +840,11 @@ let render_track (patch : Track.Patch.t) : string =
           ~header:"  Clips Changes:"
           ~item_fmt:{
             format_item = (fun (c : Clip.AudioClip.t) -> c.name);
-            indent = 4;
+            indent_level = 2;
           }
           ~patch_fmt:{
             format_patch = render_audio_clip;
-            indent = 0;
+            indent_level = 2;
           }
           patch.clips)
       ~automations:patch.automations

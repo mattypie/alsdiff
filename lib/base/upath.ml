@@ -43,7 +43,7 @@ type attribute_value =
 type attribute = {
   name : string;
   value : attribute_value;
-} [@@deriving eq]
+}
 
 type name_component =
   | Raw of string               (* for raw string matching *)

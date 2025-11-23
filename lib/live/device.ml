@@ -330,9 +330,10 @@ module PatchRef = struct
   end
 
   let diff (old_patch : t) (new_patch : t) : Patch.t =
-    if old_patch.id <> new_patch.id then
-      failwith "cannot diff two PatchRefs with different Ids"
-    else
+    (* FIXME: temporary suppress for debugging *)
+    (* if old_patch.id <> new_patch.id then *)
+    (*   failwith "cannot diff two PatchRefs with different Ids" *)
+    (* else *)
       let relative_path_change = diff_value old_patch.relative_path new_patch.relative_path in
       let path_change = diff_value old_patch.path new_patch.path in
       let pack_name_change = diff_value old_patch.pack_name new_patch.pack_name in
@@ -596,7 +597,7 @@ module PluginDesc = struct
   let create (xml : Xml.t) : t =
     (* Extract plugin type based on the element name *)
     let plugin_info_xml = Xml.get_childs xml |> List.hd in
-    Printf.printf "Creating PluginDesc from XML element: %s\n" (Xml.get_name plugin_info_xml);
+
     let plugin_type =
       match Xml.get_name plugin_info_xml with
       | "Vst3PluginInfo" -> Vst3
