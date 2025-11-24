@@ -115,8 +115,7 @@ module StructuredChangeRenderer = struct
   type 'item item_formatter = { format_item : 'item -> string; indent_level : int }
 
   type 'patch patch_formatter = {
-    format_patch : 'patch -> string;
-    indent_level : int;
+    format_patch : int -> 'patch -> string;  (* First param is indent_level *)
   }
 
   let render_change (type item patch) (item_fmt : item item_formatter)
@@ -126,19 +125,17 @@ module StructuredChangeRenderer = struct
     | `Unchanged -> ""
     | `Added item ->
         let indent_str = make_indent_at_level item_fmt.indent_level in
-        Printf.sprintf "%s+ %s" indent_str (item_fmt.format_item item)
+        let item_name = item_fmt.format_item item in
+        let display_name = if item_name = "" then "(unnamed)" else item_name in
+        Printf.sprintf "%s+ %s" indent_str display_name
     | `Removed item ->
         let indent_str = make_indent_at_level item_fmt.indent_level in
-        Printf.sprintf "%s- %s" indent_str (item_fmt.format_item item)
+        let item_name = item_fmt.format_item item in
+        let display_name = if item_name = "" then "(unnamed)" else item_name in
+        Printf.sprintf "%s- %s" indent_str display_name
     | `Patched patch ->
-        let patch_output = patch_fmt.format_patch patch in
-        if patch_fmt.indent_level = 0 then
-          patch_output
-        else
-          let indent_str = make_indent_at_level patch_fmt.indent_level in
-          let lines = String.split_on_char '\n' patch_output in
-          String.concat "\n" (List.map (fun line ->
-            if line = "" then "" else indent_str ^ line) lines)
+        (* Pass the same indent level as items to the patch formatter *)
+        patch_fmt.format_patch item_fmt.indent_level patch
 
   (* Render a list of changes into a section *)
   let render_changes_section ~header ~item_fmt ~patch_fmt changes =
@@ -187,21 +184,21 @@ let render_envelope_op op =
   | `Patched patch -> render_envelope_patch patch
 
 
-let render_mixer (patch : Mixer.Patch.t) =
+let render_mixer ?(indent_level = 0) (patch : Mixer.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
   let open StructuredChangeRenderer in
-  let header = "Mixer Patch:" in
+  let header = make_indent_at_level indent_level ^ "Mixer Patch:" in
 
   let volume_line =
-    render_simple_change (float_formatter "Volume") patch.volume
+    render_simple_change (float_formatter ~indent_level:(indent_level + 1) "Volume") patch.volume
   in
-  let pan_line = render_simple_change (float_formatter "Pan") patch.pan in
-  let mute_line = render_simple_change (bool_formatter "Mute") patch.mute in
-  let solo_line = render_simple_change (bool_formatter "Solo") patch.solo in
+  let pan_line = render_simple_change (float_formatter ~indent_level:(indent_level + 1) "Pan") patch.pan in
+  let mute_line = render_simple_change (bool_formatter ~indent_level:(indent_level + 1) "Mute") patch.mute in
+  let solo_line = render_simple_change (bool_formatter ~indent_level:(indent_level + 1) "Solo") patch.solo in
 
   (* Helper to render send patch *)
-  let render_send_patch (send_patch : Mixer.Send.Patch.t) =
+  let render_send_patch indent_level (send_patch : Mixer.Send.Patch.t) =
     let target_part =
       match send_patch.target with
       | `Unchanged -> None
@@ -222,78 +219,79 @@ let render_mixer (patch : Mixer.Patch.t) =
     match parts with
     | [] -> ""
     | parts ->
-        Printf.sprintf "      ~ Send modified (%s)" (String.concat ", " parts)
+        let indent_str = make_indent_at_level indent_level in
+        Printf.sprintf "%s~ Send modified (%s)" indent_str (String.concat ", " parts)
   in
 
   let send_section =
-    render_changes_section ~header:"  Send Changes:"
+    render_changes_section ~header:(make_indent_at_level (indent_level + 1) ^ "Send Changes:")
       ~item_fmt:
         {
           format_item =
             (fun s ->
               Printf.sprintf "Send to track %d with amount %.4f"
                 s.Mixer.Send.target s.Mixer.Send.amount);
-          indent_level = 2;
+          indent_level = indent_level + 2;
         }
-      ~patch_fmt:{ format_patch = render_send_patch; indent_level = 0 }
+      ~patch_fmt:{ format_patch = render_send_patch }
       patch.sends
   in
 
   join_non_empty
     [ header; volume_line; pan_line; mute_line; solo_line; send_section ]
 
-let render_loop_section_patch (patch : Clip.Loop.Patch.t) =
+let render_loop_section_patch ?(indent_level = 0) (patch : Clip.Loop.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
   let start_line =
     render_simple_change
-      (float_formatter ~indent_level:2 ~precision:2 "Loop start")
+      (float_formatter ~indent_level ~precision:2 "Loop start")
       patch.start_time
   in
   let end_line =
     render_simple_change
-      (float_formatter ~indent_level:2 ~precision:2 "Loop end")
+      (float_formatter ~indent_level ~precision:2 "Loop end")
       patch.end_time
   in
   let on_line =
-    render_simple_change (bool_formatter ~indent_level:2 "Loop enabled") patch.on
+    render_simple_change (bool_formatter ~indent_level "Loop enabled") patch.on
   in
 
   join_non_empty [ start_line; end_line; on_line ]
 
-let render_sample_ref_patch (patch : Clip.SampleRef.Patch.t) =
+let render_sample_ref_patch ?(indent_level = 0) (patch : Clip.SampleRef.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
   let file_path_line =
     render_simple_change
-      (string_formatter ~indent_level:2 "File path")
+      (string_formatter ~indent_level "File path")
       patch.file_path
   in
   let crc_line =
-    render_simple_change (string_formatter ~indent_level:2 "CRC") patch.crc
+    render_simple_change (string_formatter ~indent_level "CRC") patch.crc
   in
   let last_modified_line =
     render_simple_change
-      (int64_formatter ~indent_level:2 "Last modified")
+      (int64_formatter ~indent_level "Last modified")
       patch.last_modified_date
   in
 
   join_non_empty [ file_path_line; crc_line; last_modified_line ]
 
-let render_audio_clip (patch : Clip.AudioClip.Patch.t) =
+let render_audio_clip ?(indent_level = 0) (patch : Clip.AudioClip.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
-  let header = "Audio Clip Patch:" in
+  let header = make_indent_at_level indent_level ^ "Audio Clip Patch:" in
 
-  let name_line = render_simple_change (string_formatter "Name") patch.name in
+  let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name in
   let start_time_line =
     render_simple_change
-      (float_formatter ~precision:2 "Start time")
+      (float_formatter ~indent_level:(indent_level + 1) ~precision:2 "Start time")
       patch.start_time
   in
   let end_time_line =
     render_simple_change
-      (float_formatter ~precision:2 "End time")
+      (float_formatter ~indent_level:(indent_level + 1) ~precision:2 "End time")
       patch.end_time
   in
 
@@ -301,7 +299,8 @@ let render_audio_clip (patch : Clip.AudioClip.Patch.t) =
     match patch.signature with
     | `Unchanged -> ""
     | `Modified m ->
-        Printf.sprintf "  ~ Time signature changed from %d/%d to %d/%d"
+        let indent_str = make_indent_at_level (indent_level + 1) in
+        Printf.sprintf "%s~ Time signature changed from %d/%d to %d/%d" indent_str
           m.Diff.old.numer m.Diff.old.denom m.Diff.new_.numer m.Diff.new_.denom
   in
 
@@ -309,23 +308,22 @@ let render_audio_clip (patch : Clip.AudioClip.Patch.t) =
     match patch.loop with
     | `Unchanged -> ""
     | `Patched loop_patch ->
-        let loop_content = render_loop_section_patch loop_patch in
+        let loop_content = render_loop_section_patch ~indent_level:(indent_level + 3) loop_patch in
         if loop_content = "" then ""
         else
-          "  Loop Changes:\n"
-          ^ String.concat "\n" (List.map (fun s -> "  " ^ s) [ loop_content ])
+          let header_indent = make_indent_at_level (indent_level + 1) in
+          header_indent ^ "Loop Changes:\n" ^ loop_content
   in
 
   let sample_ref_section =
     match patch.sample_ref with
     | `Unchanged -> ""
     | `Patched sample_ref_patch ->
-        let sample_ref_content = render_sample_ref_patch sample_ref_patch in
+        let sample_ref_content = render_sample_ref_patch ~indent_level:(indent_level + 3) sample_ref_patch in
         if sample_ref_content = "" then ""
         else
-          "  Sample Reference Changes:\n"
-          ^ String.concat "\n"
-              (List.map (fun s -> "  " ^ s) [ sample_ref_content ])
+          let header_indent = make_indent_at_level (indent_level + 1) in
+          header_indent ^ "Sample Reference Changes:\n" ^ sample_ref_content
   in
 
   join_non_empty
@@ -339,21 +337,21 @@ let render_audio_clip (patch : Clip.AudioClip.Patch.t) =
       sample_ref_section;
     ]
 
-let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
+let render_midi_clip ?(indent_level = 0) (patch : Clip.MidiClip.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
   let open StructuredChangeRenderer in
-  let header = "Midi Clip Patch:" in
+  let header = make_indent_at_level indent_level ^ "Midi Clip Patch:" in
 
-  let name_line = render_simple_change (string_formatter "Name") patch.name in
+  let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name in
   let start_time_line =
     render_simple_change
-      (float_formatter ~precision:2 "Start time")
+      (float_formatter ~indent_level:(indent_level + 1) ~precision:2 "Start time")
       patch.start_time
   in
   let end_time_line =
     render_simple_change
-      (float_formatter ~precision:2 "End time")
+      (float_formatter ~indent_level:(indent_level + 1) ~precision:2 "End time")
       patch.end_time
   in
 
@@ -361,7 +359,8 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
     match patch.signature with
     | `Unchanged -> ""
     | `Modified m ->
-        Printf.sprintf "  ~ Time signature changed from %d/%d to %d/%d"
+        let indent_str = make_indent_at_level (indent_level + 1) in
+        Printf.sprintf "%s~ Time signature changed from %d/%d to %d/%d" indent_str
           m.Diff.old.numer m.Diff.old.denom m.Diff.new_.numer m.Diff.new_.denom
   in
 
@@ -369,15 +368,15 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
     match patch.loop with
     | `Unchanged -> ""
     | `Patched loop_patch ->
-        let loop_content = render_loop_section_patch loop_patch in
+        let loop_content = render_loop_section_patch ~indent_level:(indent_level + 3) loop_patch in
         if loop_content = "" then ""
         else
-          "  Loop Changes:\n"
-          ^ String.concat "\n" (List.map (fun s -> "  " ^ s) [ loop_content ])
+          let header_indent = make_indent_at_level (indent_level + 1) in
+          header_indent ^ "Loop Changes:\n" ^ loop_content
   in
 
   (* Helper to render note patch *)
-  let render_note_patch (note_patch : Clip.MidiNote.Patch.t) =
+  let render_note_patch indent_level (note_patch : Clip.MidiNote.Patch.t) =
     let changes =
       [
         (if note_patch.time <> `Unchanged then
@@ -421,11 +420,12 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
     in
     let changes = List.filter_map (fun x -> x) changes in
     let changes_str = String.concat ", " changes in
-    Printf.sprintf "    ~ Note changed (%s)" changes_str
+    let indent_str = make_indent_at_level indent_level in
+    Printf.sprintf "%s~ Note changed (%s)" indent_str changes_str
   in
 
   let notes_section =
-    render_changes_section ~header:"  Notes Changes:"
+    render_changes_section ~header:(make_indent_at_level (indent_level + 1) ^ "Notes Changes:")
       ~item_fmt:
         {
           format_item =
@@ -434,9 +434,9 @@ let render_midi_clip (patch : Clip.MidiClip.Patch.t) =
               Printf.sprintf "Note: time=%f, duration=%f, velocity=%d, note=%s"
                 note.Clip.MidiNote.time note.Clip.MidiNote.duration
                 note.Clip.MidiNote.velocity note_name);
-          indent_level = 2;
+          indent_level = indent_level + 2;
         }
-      ~patch_fmt:{ format_patch = render_note_patch; indent_level = 1 }
+      ~patch_fmt:{ format_patch = render_note_patch }
       patch.notes
   in
 
@@ -468,102 +468,130 @@ let render_parameter_fields ?(include_name = false) ?(include_index = false)
     else "" in
   join_non_empty [ final_name_line; final_index_line; value_line; auto_line; mod_line ]
 
-let render_device_param_patch (patch : Device.DeviceParam.Patch.t) =
+let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
-  let val_fmt = device_value_formatter "Value" in
-  let value_line = render_simple_change val_fmt patch.value in
-  let auto_line = render_simple_change (int_formatter "Automation") patch.automation in
-  let mod_line = render_simple_change (int_formatter "Modulation") patch.modulation in
+  let value_line =
+    render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Value") patch.value
+  in
+  let auto_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
+  in
+  let mod_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
+  in
   join_non_empty [ value_line; auto_line; mod_line ]
 
-let render_plugin_param_patch (patch : Device.PluginParam.Patch.t) =
+let render_plugin_param_patch ?(indent_level = 0) (patch : Device.PluginParam.Patch.t) =
   let open FieldRenderer in
-  let val_fmt = device_value_formatter "Value" in
-  let name_line = Some (render_simple_change (string_formatter "Name") patch.name) in
-  let index_line = Some (render_simple_change (int_formatter "Index") patch.index) in
-  let value_line = render_simple_change val_fmt patch.value in
-  let auto_line = render_simple_change (int_formatter "Automation") patch.automation in
-  let mod_line = render_simple_change (int_formatter "Modulation") patch.modulation in
-  render_parameter_fields ~include_name:true ~include_index:true
-    name_line index_line value_line auto_line mod_line
+  let name_line =
+    Some (render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name)
+  in
+  let index_line =
+    Some (render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Index") patch.index)
+  in
+  let value_line =
+    render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Value") patch.value
+  in
+  let auto_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
+  in
+  let mod_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
+  in
+  render_parameter_fields ~include_name:true ~include_index:true name_line index_line value_line
+    auto_line mod_line
 
-let render_max4live_param_patch (patch : Device.Max4LiveParam.Patch.t) =
+let render_max4live_param_patch ?(indent_level = 0) (patch : Device.Max4LiveParam.Patch.t) =
   let open FieldRenderer in
-  let val_fmt = device_value_formatter "Value" in
-  let name_line = Some (render_simple_change (string_formatter "Name") patch.name) in
-  let index_line = Some (render_simple_change (int_formatter "Index") patch.index) in
-  let value_line = render_simple_change val_fmt patch.value in
-  let auto_line = render_simple_change (int_formatter "Automation") patch.automation in
-  let mod_line = render_simple_change (int_formatter "Modulation") patch.modulation in
-  render_parameter_fields ~include_name:true ~include_index:true
-    name_line index_line value_line auto_line mod_line
+  let name_line =
+    Some (render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name)
+  in
+  let index_line =
+    Some (render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Index") patch.index)
+  in
+  let value_line =
+    render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Value") patch.value
+  in
+  let auto_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
+  in
+  let mod_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
+  in
+  render_parameter_fields ~include_name:true ~include_index:true name_line index_line value_line
+    auto_line mod_line
 
-let render_preset_ref_patch (patch : Device.PresetRef.Patch.t) =
+let render_preset_ref_patch ?(indent_level = 0) (patch : Device.PresetRef.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
-  let path_line = render_simple_change (string_formatter "Path") patch.path in
+  let path_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Path") patch.path in
   let pack_name_line =
-    render_simple_change (string_formatter "Pack Name") patch.pack_name
+    render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Pack Name") patch.pack_name
   in
   join_non_empty [ path_line; pack_name_line ]
 
-let render_macro_patch (patch : Device.Macro.Patch.t) =
+let render_macro_patch ?(indent_level = 0) (patch : Device.Macro.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
-  let name_line = render_simple_change (string_formatter "Name") patch.name in
+  let name_line =
+    render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name
+  in
   let manual_line =
-    render_simple_change (float_formatter "Manual") patch.manual
+    render_simple_change (float_formatter ~indent_level:(indent_level + 1) "Manual") patch.manual
   in
   let auto_line =
-    render_simple_change (int_formatter "Automation") patch.automation
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
   in
   let mod_line =
-    render_simple_change (int_formatter "Modulation") patch.modulation
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
   in
   join_non_empty [ name_line; manual_line; auto_line; mod_line ]
 
-let render_snapshot_patch (patch : Device.Snapshot.Patch.t) =
+let render_snapshot_patch ?(indent_level = 0) (patch : Device.Snapshot.Patch.t) =
   let open FieldRenderer in
+  let open SectionRenderer in
+  let name_line =
+    render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name
+  in
+  join_non_empty [ name_line ]
 
-  let name_line = render_simple_change (string_formatter "Name") patch.name in
-  name_line
-
-let render_automation_patch (patch : Automation.Patch.t) =
+let render_automation_patch ?(indent_level = 0) (patch : Automation.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
   let open StructuredChangeRenderer in
   let id_line =
-    Printf.sprintf "  Automation Envelope (Id: %d, Target: %d)" patch.id
+    let indent_str = make_indent_at_level indent_level in
+    Printf.sprintf "%sAutomation Envelope (Id: %d, Target: %d)" indent_str patch.id
       patch.target
   in
 
-  let render_event_patch (event_patch : Automation.EnvelopeEvent.Patch.t) =
+  let render_event_patch indent_level (event_patch : Automation.EnvelopeEvent.Patch.t) =
     let time_line =
-      render_simple_change (float_formatter "Time") event_patch.time
+      render_simple_change (float_formatter ~indent_level "Time") event_patch.time
     in
     let value_line =
-      render_simple_change (float_formatter "Value") event_patch.value
+      render_simple_change (float_formatter ~indent_level "Value") event_patch.value
     in
     join_non_empty [ time_line; value_line ]
   in
 
   let events_section =
-    render_changes_section ~header:"  Events Changes:"
+    render_changes_section ~header:(make_indent_at_level (indent_level + 1) ^ "Events Changes:")
       ~item_fmt:
         {
           format_item =
             (fun (event : Automation.EnvelopeEvent.t) ->
               Printf.sprintf "Event: time=%.2f, value=%.2f" event.time
                 event.value);
-          indent_level = 2;
+          indent_level = indent_level + 2;
         }
-      ~patch_fmt:{ format_patch = render_event_patch; indent_level = 1 }
+      ~patch_fmt:{ format_patch = render_event_patch }
       patch.events
   in
   join_non_empty [id_line; events_section]
 
-let render_mixer_device_patch (patch : Device.MixerDevice.Patch.t) =
+let render_mixer_device_patch ?(_indent_level = 0) (patch : Device.MixerDevice.Patch.t) =
 
   let open SectionRenderer in
   let on_line =
@@ -589,89 +617,89 @@ let render_mixer_device_patch (patch : Device.MixerDevice.Patch.t) =
   join_non_empty [on_line; speaker_line; volume_line; pan_line]
 
 (* Helper functions for device rendering *)
-let render_device_preset_section preset =
+let render_device_preset_section ~indent_level preset =
   match preset with
   | `Unchanged -> ""
-  | `Added p -> Printf.sprintf "  + Preset: %s" p.Device.PresetRef.name
-  | `Removed p -> Printf.sprintf "  - Preset: %s" p.Device.PresetRef.name
-  | `Patched p -> render_preset_ref_patch p
+  | `Added p -> Printf.sprintf "%s+ Preset: %s" (make_indent_at_level (indent_level + 1)) p.Device.PresetRef.name
+  | `Removed p -> Printf.sprintf "%s- Preset: %s" (make_indent_at_level (indent_level + 1)) p.Device.PresetRef.name
+  | `Patched p -> render_preset_ref_patch ~indent_level p
 
-let render_device_params_section ~header ~param_formatter ~patch_formatter params =
+let render_device_params_section ~indent_level ~header ~param_formatter ~patch_formatter params =
   let open StructuredChangeRenderer in
   render_changes_section
     ~header
     ~item_fmt:{
       format_item = param_formatter;
-      indent_level = 2;
+      indent_level = indent_level + 2;
     }
-    ~patch_fmt:{
-      format_patch = patch_formatter;
-      indent_level = 0;
-    }
+    ~patch_fmt:{ format_patch = fun level patch -> patch_formatter ~indent_level:level patch }
     params
 
 (* Recursive render_device function *)
-let rec render_device (patch : Device.Patch.t) : string =
+let rec render_device ?(indent_level = 0) (patch : Device.Patch.t) : string =
   let open FieldRenderer in
   let open SectionRenderer in
 
-  let render_regular_device (patch : Device.regular_device_patch) =
-    let header = "Regular Device Patch:" in
-    let name_line = render_simple_change (string_formatter "Display Name") patch.display_name in
+  let render_regular_device indent_level (patch : Device.regular_device_patch) =
+    let header = make_indent_at_level indent_level ^ "Regular Device Patch:" in
+    let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Display Name") patch.display_name in
 
     let params_section =
       render_device_params_section
-        ~header:"  Parameters Changes:"
+        ~indent_level
+        ~header:(make_indent_at_level (indent_level + 1) ^ "Parameters Changes:")
         ~param_formatter:(fun (p : Device.DeviceParam.t) -> p.name)
-        ~patch_formatter:render_device_param_patch
+        ~patch_formatter:(fun ~indent_level patch -> render_device_param_patch ~indent_level:indent_level patch)
         patch.params
     in
 
-    let preset_section = render_device_preset_section patch.preset in
+    let preset_section = render_device_preset_section ~indent_level patch.preset in
     join_non_empty [header; name_line; params_section; preset_section]
   in
 
-  let render_plugin_device (patch : Device.plugin_device_patch) =
-    let header = "Plugin Device Patch:" in
-    let name_line = render_simple_change (string_formatter "Display Name") patch.display_name in
+  let render_plugin_device indent_level (patch : Device.plugin_device_patch) =
+    let header = make_indent_at_level indent_level ^ "Plugin Device Patch:" in
+    let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Display Name") patch.display_name in
 
     let params_section =
       render_device_params_section
-        ~header:"  Parameters Changes:"
+        ~indent_level
+        ~header:(make_indent_at_level (indent_level + 1) ^ "Parameters Changes:")
         ~param_formatter:(fun (p : Device.PluginParam.t) -> Printf.sprintf "%s (Index: %d)" p.name p.index)
-        ~patch_formatter:render_plugin_param_patch
+        ~patch_formatter:(fun ~indent_level patch -> render_plugin_param_patch ~indent_level:indent_level patch)
         patch.params
     in
 
-    let preset_section = render_device_preset_section patch.preset in
+    let preset_section = render_device_preset_section ~indent_level patch.preset in
     join_non_empty [header; name_line; params_section; preset_section]
   in
 
-  let render_max4live_device (patch : Device.max4live_device_patch) =
-    let header = "Max4Live Device Patch:" in
-    let name_line = render_simple_change (string_formatter "Display Name") patch.display_name in
+  let render_max4live_device indent_level (patch : Device.max4live_device_patch) =
+    let header = make_indent_at_level indent_level ^ "Max4Live Device Patch:" in
+    let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Display Name") patch.display_name in
 
     let params_section =
       render_device_params_section
-        ~header:"  Parameters Changes:"
+        ~indent_level
+        ~header:(make_indent_at_level (indent_level + 1) ^ "Parameters Changes:")
         ~param_formatter:(fun (p : Device.Max4LiveParam.t) -> Printf.sprintf "%s (Index: %d)" p.name p.index)
-        ~patch_formatter:render_max4live_param_patch
+        ~patch_formatter:(fun ~indent_level patch -> render_max4live_param_patch ~indent_level:indent_level patch)
         patch.params
     in
 
-    let preset_section = render_device_preset_section patch.preset in
+    let preset_section = render_device_preset_section ~indent_level patch.preset in
     join_non_empty [header; name_line; params_section; preset_section]
   in
 
-  let render_group_device (patch : Device.group_device_patch) =
-    let header = "Group Device Patch:" in
-    let name_line = render_simple_change (string_formatter "Display Name") patch.display_name in
+  let render_group_device indent_level (patch : Device.group_device_patch) =
+    let header = make_indent_at_level indent_level ^ "Group Device Patch:" in
+    let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Display Name") patch.display_name in
 
-    let render_branch_patch (branch_patch : Device.branch_patch) =
+    let render_branch_patch branch_indent_level (branch_patch : Device.branch_patch) =
       let open StructuredChangeRenderer in
       let devices_section =
         render_changes_section
-          ~header:"    Devices Changes:"
+          ~header:(make_indent_at_level branch_indent_level ^ "Devices Changes:")
           ~item_fmt:{
             format_item = (fun (d : Device.t) ->
               match d with
@@ -680,17 +708,16 @@ let rec render_device (patch : Device.Patch.t) : string =
               | Max4Live m -> m.display_name
               | Group g -> g.display_name
             );
-            indent_level = 3;
+            indent_level = branch_indent_level + 1;
           }
           ~patch_fmt:{
-            format_patch = (fun dp -> render_device (
+            format_patch = (fun level dp -> render_device ~indent_level:level (
               match dp with
               | Device.RegularPatch p -> Device.Patch.RegularPatch p
               | Device.PluginPatch p -> Device.Patch.PluginPatch p
               | Device.Max4LivePatch p -> Device.Patch.Max4LivePatch p
               | Device.GroupPatch p -> Device.Patch.GroupPatch p
             ));
-            indent_level = 2;
           }
           branch_patch.devices
       in
@@ -705,45 +732,36 @@ let rec render_device (patch : Device.Patch.t) : string =
     let branches_section =
       let open StructuredChangeRenderer in
       render_changes_section
-        ~header:"  Branches Changes:"
+        ~header:(make_indent_at_level (indent_level + 1) ^ "Branches Changes:")
         ~item_fmt:{
           format_item = (fun (b : Device.branch) -> Printf.sprintf "Branch %d" b.id);
-          indent_level = 2;
+          indent_level = indent_level + 2;
         }
-        ~patch_fmt:{
-          format_patch = render_branch_patch;
-          indent_level = 0;
-        }
+        ~patch_fmt:{ format_patch = render_branch_patch }
         patch.branches
     in
 
     let macros_section =
       let open StructuredChangeRenderer in
       render_changes_section
-        ~header:"  Macros Changes:"
+        ~header:(make_indent_at_level (indent_level + 1) ^ "Macros Changes:")
         ~item_fmt:{
           format_item = (fun (m : Device.Macro.t) -> m.name);
-          indent_level = 2;
+          indent_level = indent_level + 2;
         }
-        ~patch_fmt:{
-          format_patch = render_macro_patch;
-          indent_level = 0;
-        }
+        ~patch_fmt:{ format_patch = fun level patch -> render_macro_patch ~indent_level:level patch }
         patch.macros
     in
 
     let snapshots_section =
       let open StructuredChangeRenderer in
       render_changes_section
-        ~header:"  Snapshots Changes:"
+        ~header:(make_indent_at_level (indent_level + 1) ^ "Snapshots Changes:")
         ~item_fmt:{
           format_item = (fun (s : Device.Snapshot.t) -> s.name);
-          indent_level = 2;
+          indent_level = indent_level + 2;
         }
-        ~patch_fmt:{
-          format_patch = render_snapshot_patch;
-          indent_level = 0;
-        }
+        ~patch_fmt:{ format_patch = fun level patch -> render_snapshot_patch ~indent_level:level patch }
         patch.snapshots
     in
 
@@ -751,30 +769,27 @@ let rec render_device (patch : Device.Patch.t) : string =
   in
 
   match patch with
-  | Device.Patch.RegularPatch p -> render_regular_device p
-  | Device.Patch.PluginPatch p -> render_plugin_device p
-  | Device.Patch.Max4LivePatch p -> render_max4live_device p
-  | Device.Patch.GroupPatch p -> render_group_device p
+  | Device.Patch.RegularPatch p -> render_regular_device indent_level p
+  | Device.Patch.PluginPatch p -> render_plugin_device indent_level p
+  | Device.Patch.Max4LivePatch p -> render_max4live_device indent_level p
+  | Device.Patch.GroupPatch p -> render_group_device indent_level p
 
 (* Helper functions for track rendering *)
-let render_track_automations_section automations =
+let render_track_automations_section ~indent_level automations =
   let open StructuredChangeRenderer in
   render_changes_section
-    ~header:"  Automations Changes:"
+    ~header:(make_indent_at_level (indent_level + 1) ^ "Automations Changes:")
     ~item_fmt:{
       format_item = (fun (a : Automation.t) -> Printf.sprintf "Automation %d" a.id);
-      indent_level = 2;
+      indent_level = indent_level + 2;
     }
-    ~patch_fmt:{
-      format_patch = render_automation_patch;
-      indent_level = 2;
-    }
+    ~patch_fmt:{ format_patch = fun level patch -> render_automation_patch ~indent_level:level patch }
     automations
 
-let render_track_devices_section devices =
+let render_track_devices_section ~indent_level devices =
   let open StructuredChangeRenderer in
   render_changes_section
-    ~header:"  Devices Changes:"
+    ~header:(make_indent_at_level (indent_level + 1) ^ "Devices Changes:")
     ~item_fmt:{
       format_item = (fun (d : Device.t) ->
         match d with
@@ -783,47 +798,41 @@ let render_track_devices_section devices =
         | Max4Live m -> m.display_name
         | Group g -> g.display_name
       );
-      indent_level = 2;
+      indent_level = indent_level + 2;
     }
-    ~patch_fmt:{
-      format_patch = render_device;
-      indent_level = 2;
-    }
+    ~patch_fmt:{ format_patch = fun level patch -> render_device ~indent_level:level patch }
     devices
 
-let render_track (patch : Track.Patch.t) : string =
+let render_track ?(indent_level = 0) (patch : Track.Patch.t) : string =
   let open FieldRenderer in
   let open SectionRenderer in
 
-  let render_track_common ~header ~name ~clips ~automations ~devices ~mixer =
-    let name_line = render_simple_change (string_formatter "Name") name in
+  let render_track_common track_indent_level ~header ~name ~clips ~automations ~devices ~mixer =
+    let name_line = render_simple_change (string_formatter ~indent_level:(track_indent_level + 1) "Name") name in
     let clips_section = clips () in
-    let automations_section = render_track_automations_section automations in
-    let devices_section = render_track_devices_section devices in
+    let automations_section = render_track_automations_section ~indent_level:track_indent_level automations in
+    let devices_section = render_track_devices_section ~indent_level:track_indent_level devices in
     let mixer_section =
       match mixer with
       | `Unchanged -> ""
-      | `Patched m -> render_mixer m
+      | `Patched m -> render_mixer ~indent_level:(track_indent_level + 1) m
     in
     join_non_empty [header; name_line; clips_section; automations_section; devices_section; mixer_section]
   in
 
   let render_midi_track (patch : Track.MidiTrack.Patch.t) =
     let open StructuredChangeRenderer in
-    render_track_common
-      ~header:"Midi Track Patch:"
+    render_track_common indent_level
+      ~header:(make_indent_at_level indent_level ^ "Midi Track Patch:")
       ~name:patch.name
       ~clips:(fun () ->
         render_changes_section
-          ~header:"  Clips Changes:"
+          ~header:(make_indent_at_level (indent_level + 1) ^ "Clips Changes:")
           ~item_fmt:{
             format_item = (fun (c : Clip.MidiClip.t) -> c.name);
-            indent_level = 2;
+            indent_level = indent_level + 2;
           }
-          ~patch_fmt:{
-            format_patch = render_midi_clip;
-            indent_level = 2;
-          }
+          ~patch_fmt:{ format_patch = fun level patch -> render_midi_clip ~indent_level:level patch }
           patch.clips)
       ~automations:patch.automations
       ~devices:patch.devices
@@ -832,20 +841,17 @@ let render_track (patch : Track.Patch.t) : string =
 
   let render_audio_track (patch : Track.AudioTrack.Patch.t) =
     let open StructuredChangeRenderer in
-    render_track_common
-      ~header:"Audio Track Patch:"
+    render_track_common indent_level
+      ~header:(make_indent_at_level indent_level ^ "Audio Track Patch:")
       ~name:patch.name
       ~clips:(fun () ->
         render_changes_section
-          ~header:"  Clips Changes:"
+          ~header:(make_indent_at_level (indent_level + 1) ^ "Clips Changes:")
           ~item_fmt:{
             format_item = (fun (c : Clip.AudioClip.t) -> c.name);
-            indent_level = 2;
+            indent_level = indent_level + 2;
           }
-          ~patch_fmt:{
-            format_patch = render_audio_clip;
-            indent_level = 2;
-          }
+          ~patch_fmt:{ format_patch = fun level patch -> render_audio_clip ~indent_level:level patch }
           patch.clips)
       ~automations:patch.automations
       ~devices:patch.devices

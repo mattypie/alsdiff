@@ -37,7 +37,7 @@ let test_regular_device_diff () =
   let patch = Device.diff old_device new_device in
   let output = Text_output.render_device patch in
 
-  let expected = "Regular Device Patch:\n  Parameters Changes:\n  ~ Value changed from 0.50 to 0.80" in
+  let expected = "Regular Device Patch:\n  Parameters Changes:\n      ~ Value changed from 0.50 to 0.80" in
   Alcotest.(check string) "Regular device diff output" expected output
 
 let test_plugin_device_diff () =
@@ -89,7 +89,7 @@ let test_plugin_device_diff () =
   let patch = Device.diff old_plugin new_plugin in
   let output = Text_output.render_device patch in
 
-  let expected = "Plugin Device Patch:\n  Parameters Changes:\n  ~ Value changed from 0.50 to 0.70" in
+  let expected = "Plugin Device Patch:\n  Parameters Changes:\n      ~ Value changed from 0.50 to 0.70" in
   Alcotest.(check string) "Plugin device diff output" expected output
 
 let () =

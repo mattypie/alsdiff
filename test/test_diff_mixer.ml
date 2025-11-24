@@ -19,7 +19,7 @@ let test_mixer_diff () =
 
   (* Expected output - adjust based on actual behavior *)
   (* The actual output seems to show one modification instead of additions/removals *)
-  let expected = "Mixer Patch:\n  ~ Volume changed from 0.7000 to 0.5012\n  ~ Pan changed from -0.3000 to 0.4700\n  ~ Mute changed from false to true\n  ~ Solo changed from true to false\n  Send Changes:\n      ~ Send modified (amount: 0.5000->0.0003)\n    - Send to track 1 with amount 0.2500" in
+  let expected = "Mixer Patch:\n  ~ Volume changed from 0.7000 to 0.5012\n  ~ Pan changed from -0.3000 to 0.4700\n  ~ Mute changed from false to true\n  ~ Solo changed from true to false\n  Send Changes:\n    ~ Send modified (amount: 0.5000->0.0003)\n    - Send to track 1 with amount 0.2500" in
 
   (* Check that the output matches expected *)
   Alcotest.(check string) "Mixer diff output" expected output

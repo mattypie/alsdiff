@@ -36,7 +36,7 @@ let test_midi_track_diff () =
   let patch = Track.diff old_track new_track in
   let output = Text_output.render_track patch in
 
-  let expected = "Midi Track Patch:\n  ~ Name changed from Midi Track to Midi Track Renamed\nMixer Patch:\n  ~ Volume changed from 0.8000 to 0.5000" in
+  let expected = "Midi Track Patch:\n  ~ Name changed from Midi Track to Midi Track Renamed\n  Mixer Patch:\n    ~ Volume changed from 0.8000 to 0.5000" in
   Alcotest.(check string) "Midi track diff output" expected output
 
 let () =

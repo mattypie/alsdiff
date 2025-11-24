@@ -109,9 +109,9 @@ let test_text_output () =
     "  ~ End time changed from 95.00 to 100.00";
     "  ~ Time signature changed from 3/4 to 4/4";
     "  Loop Changes:";
-    "    ~ Loop start changed from 85.00 to 92.00";
-    "    ~ Loop end changed from 105.00 to 112.00";
-    "    ~ Loop enabled changed from true to false";
+    "      ~ Loop start changed from 85.00 to 92.00";
+    "      ~ Loop end changed from 105.00 to 112.00";
+    "      ~ Loop enabled changed from true to false";
   ] in
 
   (* 5. Assert that the generated text contains the expected text.

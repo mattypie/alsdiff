@@ -117,12 +117,12 @@ let test_text_output () =
     "  ~ Time signature changed from 3/8 to 4/4";
     "  Loop Changes:";
     "      ~ Loop start changed from 30.00 to 26.13";
-    "    ~ Loop end changed from 50.00 to 46.63";
-    "    ~ Loop enabled changed from true to false";
+    "      ~ Loop end changed from 50.00 to 46.63";
+    "      ~ Loop enabled changed from true to false";
     "  Sample Reference Changes:";
     "      ~ File path changed from /Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet_old.wav to /Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet [2022-04-27 164454].wav";
-    "    ~ CRC changed from 12345 to 48320";
-    "    ~ Last modified changed from 1742403846 to 1742403845";
+    "      ~ CRC changed from 12345 to 48320";
+    "      ~ Last modified changed from 1742403846 to 1742403845";
   ] in
   let expected_output = String.concat "\n" expected_lines in
 
