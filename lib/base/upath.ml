@@ -1,40 +1,61 @@
-(** μpath: A tiny expression language for querying in XML documents, with a XPath-like syntax.
+(** μpath: A tiny expression language for querying in XML document, with a XPath-like syntax.
 
-    Supports:
-    - Tag names with optional attributes (e.g., `tag`, `tag@attr="value"`, `tag@attr=*`)
-    - Regex tag name matching with single quotes (e.g., `'MacroControls\.[0-9]+'`, `'prefix.*suffix$'`)
-    - Indexing with optional Tag name (e.g., `[0]`, `[1]`, `tag[3]`)
-    - Single wildcard (`*`) for single level matching
-    - Multi wildcard (`**`) for multiple levels matching, like XPath's '//'
-    - Wildcards with optional attributes (e.g., `*@attr="value"`, `**@attr`)
-    - Current node navigation (`.`) for selecting the current node
-    - Parent node navigation (`..`) for selecting the parent node
-    - Paths separated by `/` (e.g., `/tag1/tag2@attr="value"/*/tag3/**/tag4`)
-    - Combined navigation (e.g., `/a/b/c/.`, `/a/b/c/..`, `/a/b/c/../..`)
+    Supported features:
 
-    Does not support:
-    - Functions
-    - Complex predicates
-    - Namespaces
-    - Other XPath features
+    {ul
+    {- Tag names with optional attributes
+        (e.g. [tag], [tag@attr="value"], [tag@attr=*])}
+    {- Regex tag name matching with single quotes
+        (e.g. ['MacroControls\.[0-9]+'], ['prefix.*suffix$'])}
+    {- Indexing with optional Tag name
+        (e.g. [[0]], [[1]], [tag[3]])}
+    {- Single wildcard ([*]) for single level matching}
+    {- Multi wildcard ([**]) for multiple levels matching, like XPath's '//'}
+    {- Wildcards with optional attributes
+        (e.g. *@attr="value", **@attr)}
+    {- Current node navigation (.) for selecting the current node}
+    {- Parent node navigation (..) for selecting the parent node}
+    {- Paths separated by /
+        (e.g. [/tag1/tag2@attr="value"/*/tag3/**/tag4])}
+    {- Combined navigation
+        (e.g. /a/b/c/., /a/b/c/.., /a/b/c/../..)}}
 
-    Regex Syntax:
-    - Regex patterns are enclosed in single quotes to distinguish from raw string matching
-    - Supports full PCRE regex syntax including quantifiers ( *, +, ? ), character classes ([0-9]), etc.
-    - Examples:
-      - `'MacroControls\.[0-3]+'` - matches MacroControls.0, MacroControls.1, MacroControls.2, MacroControls.3
-      - `'prefix.*suffix$'` - matches tags starting with "prefix" and ending with "suffix"
-      - `'element-[0-9]{2}'` - matches element-01, element-02, etc.
-    - Use `$` anchor to match complete tag names and avoid partial matches
+    Not supported:
 
-    Example usage:
-    let result = parse_path "/bookstore/book@category=\"cooking\"/title"
-    let wildcard_with_attr = parse_path "/*@type=\"magic\""
-    let regex_match = parse_path "/**/'MacroControls\.[0-9]'"  (* matches all MacroControls with single digits *)
-    let regex_range = parse_path "/**/'MacroControls\.[1-5]'"  (* matches MacroControls.1 through MacroControls.5 *)
-    let current_node = parse_path "/a/b/c/."  (* returns 'c' node *)
-    let parent_node = parse_path "/a/b/c/.."  (* returns 'b' node *)
+    {ul
+    {- Functions}
+    {- Complex predicates}
+    {- Namespaces}
+    {- Other XPath features}}
+
+    {b Regex Syntax:}
+
+    {ul
+    {- Regex patterns are enclosed in single quotes to distinguish from raw string matching}
+    {- Supports full PCRE regex syntax including quantifiers ( *, +, ? ), character classes ([0-9]), etc.}
+    {- Use [$] anchor to match complete tag names and avoid partial matches}}
+
+    {b Regex Examples:}
+    {ul
+    {- ['MacroControls\.[0-3]+'] - matches MacroControls.0, MacroControls.1, MacroControls.2, MacroControls.3 }
+    {- ['prefix.*suffix$'] - matches tags starting with "prefix" and ending with "suffix" }
+    {- ['element-[0-9][0-2]'] - matches element-01, element-02, etc. }}
+
+
+    {b Example usage:}
+    {ul
+    {- [/bookstore/book@category="cooking"/title] - Find title elements under book elements with category attribute "cooking"}
+    {- [/*@type="magic"] - Find any element with type attribute "magic" at child level}
+    {- [/**/'MacroControls\.[0-9]'] - Find any MacroControls with single digits (0-9) anywhere in the document}
+    {- [/**/'MacroControls\.[1-5]'] - Find MacroControls.1 through MacroControls.5 anywhere in the document}
+    {- [/a/b/c/.] - Select the current node 'c' at the specified path}
+    {- [/a/b/c/..] - Select the parent node 'b' from the current node 'c'}
+    {- [/Tracks/AudioTrack[0]/DeviceChain/*@type="AudioEffect"] - Find first audio track's audio effects}
+    {- [/**/'PluginDevice\.[VSTVST3AU]'] - Find any plugin device matching VST, VST3, or AU patterns}
+    {- [/LiveSet/Tracks/**@name="Drums"] - Find any track named "Drums" at any level under tracks}
+    {- [/LiveSet/MasterTrack/DeviceChain/Device[2]] - Find the third device in the master track}}
 *)
+
 
 type attribute_value =
   | Exact of string
@@ -373,7 +394,7 @@ let find_all_seq_0 (path : path_component list) (tree : Xml.t) : (string * Xml.t
       (final_path, s.node)
     )
 
-
+(** find all XML elements in [tree] that match the [path] *)
 let find_all_seq (path : string) (tree : Xml.t) : (string * Xml.t) Seq.t =
   find_all_seq_0 (parse_path path) tree
 
@@ -383,21 +404,21 @@ let find_all (path : string) (tree : Xml.t) : (string * Xml.t) list =
   find_all_seq path tree |> List.of_seq
 
 
-(** Find the first XML element in [tree] that matches the [path]. *)
+(** Find the first XML element in [tree] that match the [path]. *)
 let find_opt (path : string) (tree : Xml.t) : (string * Xml.t) option =
   find_all_seq path tree |> Seq.uncons |> Option.map fst
 
 
-(** Find the first XML element in [tree] that matches the [path].
-    @raise [Not_found] when no XML element found *)
+(** Find the first XML element in [tree] that match the [path].
+    @raise Not_found when no XML element found *)
 let find (path : string) (tree : Xml.t) : string * Xml.t =
   match find_opt path tree with
   | Some result -> result
   | _ -> raise Not_found
 
 
-(** Find a XML element that path matches [path], and return the attribute [attr] value of it.
-    @raise [Invalid_argument] if [path] is invalid, like wildcards path or indexes path. *)
+(** Find a XML element that path match [path], and return the attribute [attr] value of it.
+    @raise Invalid_argument if [path] is invalid, like wildcards path or indexes path. *)
 let find_attr_opt (path : string) (attr : string) (tree : Xml.t) : (string * string) option =
   let parsed_path = parse_path path in
   let last_component = List.hd @@ List.rev parsed_path in
@@ -432,7 +453,9 @@ let find_attr_opt (path : string) (attr : string) (tree : Xml.t) : (string * str
       ) matched_element
   | _ -> raise (Invalid_argument "Invalid path for find_attr, the last component must matches a tag")
 
-
+(** Find a XML element that path match [path], and return the attribute [attr] value of it.
+    @raise Invalid_argument if [path] is invalid, like wildcards path or indexes path.
+    @raise Not_found when no XML element found *)
 let find_attr (path : string) (attr : string) (tree : Xml.t) : string * string =
   match find_attr_opt path attr tree with
   | Some result -> result
