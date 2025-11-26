@@ -444,7 +444,7 @@ let diff_myers_generic (type a)
     in
 
     backtrack edit_distance n m;
-    List.rev !result
+    !result
 
 
 (** Myers' O(ND) diff algorithm - based on Eugene W. Myers' 1986 paper.
@@ -488,6 +488,17 @@ let diff_list_ord_id (type a) (module ID : IDENTIFIABLE with type t = a) (old_li
     )
     old_list new_list
 
+
+let diff_list_myers_id (type a) (module ID : IDENTIFIABLE with type t = a) (old_list : a list) (new_list : a list) : a flat_change list =
+  diff_myers_generic
+    ~compare:ID.has_same_id
+    ~on_match:(fun old_item new_item ->
+      if old_item = new_item then
+        `Unchanged
+      else
+        `Modified { old = old_item; new_ = new_item }
+    )
+    old_list new_list
 
 (* Utility functions *)
 let simple_structured_change_of_patch (type a) (module P : PATCH with type t = a)
