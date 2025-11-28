@@ -125,8 +125,16 @@ let  test_midi_track_Mixer_properties () =
   let midi_track = MidiTrack.create xml in
 
   (* Check main Device.Mixer properties *)
-  Alcotest.(check (float 0.001)) "Device.Mixer volume" 1.0 midi_track.mixer.volume;
-  Alcotest.(check (float 0.001)) "Device.Mixer pan" 0.0 midi_track.mixer.pan
+  let volume = match midi_track.mixer.volume.value with
+    | Device.Float f -> f
+    | _ -> 0.0
+  in
+  let pan = match midi_track.mixer.pan.value with
+    | Device.Float f -> f
+    | _ -> 0.0
+  in
+  Alcotest.(check (float 0.001)) "Device.Mixer volume" 1.0 volume;
+  Alcotest.(check (float 0.001)) "Device.Mixer pan" 0.0 pan
 
 
 let () =

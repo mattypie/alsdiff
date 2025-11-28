@@ -91,8 +91,14 @@ let test_audio_track_mixer () =
   Alcotest.(check int) "sends count" 1 sends_count;
 
   (* Basic mixer property checks against actual XML values *)
-  let volume = audio_track.mixer.volume in
-  let pan = audio_track.mixer.pan in
+  let volume = match audio_track.mixer.volume.value with
+    | Float f -> f
+    | _ -> 0.0
+  in
+  let pan = match audio_track.mixer.pan.value with
+    | Float f -> f
+    | _ -> 0.0
+  in
   Alcotest.(check (float 0.001)) "volume value" 0.6309573054 volume;
   Alcotest.(check (float 0.001)) "pan value" 0.0 pan;
 

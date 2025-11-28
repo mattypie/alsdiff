@@ -382,18 +382,36 @@ end
 
 module Mixer = struct
   type t = {
-    volume : float;
-    pan : float;
-    mute : bool;
-    solo : bool;
+    volume : DeviceParam.t;
+    pan : DeviceParam.t;
+    mute : DeviceParam.t;
+    solo : DeviceParam.t;
     sends : Send.t list;
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
-    let volume = Upath.get_float_attr "/Volume/Manual" "Value" xml in
-    let pan = Upath.get_float_attr "/Pan/Manual" "Value" xml in
-    let mute = Upath.get_bool_attr "/On/Manual" "Value" xml in
-    let solo = Upath.get_bool_attr "/SoloSink" "Value" xml in
+    let volume = Upath.find "/Volume" xml |> snd |> DeviceParam.create "Volume" in
+    let pan = Upath.find "/Pan" xml |> snd |> DeviceParam.create "Pan" in
+    let mute = Upath.find "/On" xml |> snd |> DeviceParam.create "On" in
+
+    (* SoloSink has a different structure - it's just <SoloSink Value="..."/> without Manual element *)
+    (* We need to wrap it to make it compatible with DeviceParam.create *)
+    let solo =
+      let solo_value = Upath.get_bool_attr "/SoloSink" "Value" xml in
+      let wrapped_element = Xml.Element {
+        name = "SoloSink";
+        attrs = [];
+        childs = [
+          Xml.Element {
+            name = "Manual";
+            attrs = ["Value", string_of_bool solo_value];
+            childs = []
+          }
+        ]
+      } in
+      DeviceParam.create "SoloSink" wrapped_element
+    in
+
     let sends = xml
       |> Upath.find_all "/Sends/TrackSendHolder"
       |> List.map (fun (_, xml) -> Send.create xml)
@@ -407,24 +425,26 @@ module Mixer = struct
 
   module Patch = struct
     type t = {
-      volume : float flat_change;
-      pan : float flat_change;
-      mute : bool flat_change;
-      solo : bool flat_change;
+      volume : DeviceParam.Patch.t;
+      pan : DeviceParam.Patch.t;
+      mute : DeviceParam.Patch.t;
+      solo : DeviceParam.Patch.t;
       sends : (Send.t, Send.Patch.t) structured_change list;
     }
 
-    let is_empty = function
-      | { volume = `Unchanged; pan = `Unchanged; mute = `Unchanged; solo = `Unchanged; sends } ->
-        List.for_all (function `Unchanged -> true | _ -> false) sends
-      | _ -> false
+    let is_empty patch =
+      DeviceParam.Patch.is_empty patch.volume &&
+      DeviceParam.Patch.is_empty patch.pan &&
+      DeviceParam.Patch.is_empty patch.mute &&
+      DeviceParam.Patch.is_empty patch.solo &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.sends
   end
 
   let diff (old_mixer : t) (new_mixer : t) : Patch.t =
-    let volume_change = diff_value old_mixer.volume new_mixer.volume in
-    let pan_change = diff_value old_mixer.pan new_mixer.pan in
-    let mute_change = diff_value old_mixer.mute new_mixer.mute in
-    let solo_change = diff_value old_mixer.solo new_mixer.solo in
+    let volume_change = DeviceParam.diff old_mixer.volume new_mixer.volume in
+    let pan_change = DeviceParam.diff old_mixer.pan new_mixer.pan in
+    let mute_change = DeviceParam.diff old_mixer.mute new_mixer.mute in
+    let solo_change = DeviceParam.diff old_mixer.solo new_mixer.solo in
 
     let send_changes = diff_list_myers_id (module Send) old_mixer.sends new_mixer.sends
                      |> List.map @@ structured_change_of_flat (module Send)

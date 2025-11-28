@@ -184,33 +184,43 @@ let render_envelope_op op =
         env.Automation.target
   | `Patched patch -> render_envelope_patch patch
 
+(* Helper function for rendering device parameter patches *)
+let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Patch.t) =
+  let open FieldRenderer in
+  let open SectionRenderer in
+  let value_line =
+    render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Value") patch.value
+  in
+  let auto_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
+  in
+  let mod_line =
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
+  in
+  join_non_empty [ value_line; auto_line; mod_line ]
 
 let render_mixer ?(indent_level = 0) (patch : Device.Mixer.Patch.t) =
-  let open FieldRenderer in
   let open SectionRenderer in
   let open StructuredChangeRenderer in
   let header = make_indent_at_level indent_level ^ "Mixer Patch:" in
 
-  let volume_line =
-    render_simple_change (float_formatter ~indent_level:(indent_level + 1) "Volume") patch.volume
+  (* Helper to render device param patch prefixed with field name *)
+  let render_param_field field_name (param_patch : Device.DeviceParam.Patch.t) =
+    let content = render_device_param_patch ~indent_level:(indent_level + 2) param_patch in
+    if content = "" then ""
+    else
+      let indent_str = make_indent_at_level (indent_level + 1) in
+      indent_str ^ field_name ^ ":\n" ^ content
   in
-  let pan_line = render_simple_change (float_formatter ~indent_level:(indent_level + 1) "Pan") patch.pan in
-  let mute_line = render_simple_change (bool_formatter ~indent_level:(indent_level + 1) "Mute") patch.mute in
-  let solo_line = render_simple_change (bool_formatter ~indent_level:(indent_level + 1) "Solo") patch.solo in
+
+  let volume_line = render_param_field "Volume" patch.volume in
+  let pan_line = render_param_field "Pan" patch.pan in
+  let mute_line = render_param_field "Mute" patch.mute in
+  let solo_line = render_param_field "Solo" patch.solo in
 
   (* Helper to render send patch *)
   let render_send_patch indent_level (send_patch : Device.DeviceParam.Patch.t) =
-    let open FieldRenderer in
-    let value_line =
-      render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Amount") send_patch.value
-    in
-    let auto_line =
-      render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") send_patch.automation
-    in
-    let mod_line =
-      render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") send_patch.modulation
-    in
-    join_non_empty [ value_line; auto_line; mod_line ]
+    render_device_param_patch ~indent_level:(indent_level + 1) send_patch
   in
 
   let send_section =
@@ -463,20 +473,6 @@ let render_parameter_fields ?(include_name = false) ?(include_index = false)
       match index_line with None -> "" | Some s -> s
     else "" in
   join_non_empty [ final_name_line; final_index_line; value_line; auto_line; mod_line ]
-
-let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Patch.t) =
-  let open FieldRenderer in
-  let open SectionRenderer in
-  let value_line =
-    render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Value") patch.value
-  in
-  let auto_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
-  in
-  let mod_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
-  in
-  join_non_empty [ value_line; auto_line; mod_line ]
 
 let render_plugin_param_patch ?(indent_level = 0) (patch : Device.PluginParam.Patch.t) =
   let open FieldRenderer in

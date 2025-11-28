@@ -5,13 +5,23 @@ open Alsdiff_live.Track
 
 
 
+(* Helper to create a dummy Device.DeviceParam.t *)
+let make_device_param name value =
+  {
+    Device.DeviceParam.name = name;
+    value = value;
+    automation = 0;
+    modulation = 0;
+    mapping = None;
+  }
+
 (* Helper to create a dummy Device.Device.Mixer *)
 let make_mixer volume pan =
   {
-    Device.Mixer.volume = volume;
-    Device.Mixer.pan = pan;
-    mute = false;
-    solo = false;
+    Device.Mixer.volume = make_device_param "Volume" (Device.Float volume);
+    Device.Mixer.pan = make_device_param "Pan" (Device.Float pan);
+    mute = make_device_param "On" (Device.Bool false);
+    solo = make_device_param "SoloSink" (Device.Bool false);
     sends = [];
   }
 
@@ -36,7 +46,7 @@ let test_midi_track_diff () =
   let patch = Track.diff old_track new_track in
   let output = Text_output.render_track patch in
 
-  let expected = "Midi Track Patch:\n  ~ Name changed from Midi Track to Midi Track Renamed\n  Mixer Patch:\n    ~ Volume changed from 0.8000 to 0.5000" in
+  let expected = "Midi Track Patch:\n  ~ Name changed from Midi Track to Midi Track Renamed\n  Mixer Patch:\n    Volume:\n        ~ Value changed from 0.80 to 0.50" in
   Alcotest.(check string) "Midi track diff output" expected output
 
 let () =
