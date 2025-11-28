@@ -1,5 +1,6 @@
 open Alsdiff_base
 open Alsdiff_live
+open Alsdiff_live.Device
 
 type t = string
 
@@ -184,7 +185,7 @@ let render_envelope_op op =
   | `Patched patch -> render_envelope_patch patch
 
 
-let render_mixer ?(indent_level = 0) (patch : Mixer.Patch.t) =
+let render_mixer ?(indent_level = 0) (patch : Device.Mixer.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
   let open StructuredChangeRenderer in
@@ -198,29 +199,18 @@ let render_mixer ?(indent_level = 0) (patch : Mixer.Patch.t) =
   let solo_line = render_simple_change (bool_formatter ~indent_level:(indent_level + 1) "Solo") patch.solo in
 
   (* Helper to render send patch *)
-  let render_send_patch indent_level (send_patch : Mixer.Send.Patch.t) =
-    let target_part =
-      match send_patch.target with
-      | `Unchanged -> None
-      | `Modified m ->
-          Some (Printf.sprintf "target: %d->%d" m.Diff.old m.Diff.new_)
-      | `Added t -> Some (Printf.sprintf "target: ->%d" t)
-      | `Removed t -> Some (Printf.sprintf "target: %d->" t)
+  let render_send_patch indent_level (send_patch : Device.DeviceParam.Patch.t) =
+    let open FieldRenderer in
+    let value_line =
+      render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Amount") send_patch.value
     in
-    let amount_part =
-      match send_patch.amount with
-      | `Unchanged -> None
-      | `Modified m ->
-          Some (Printf.sprintf "amount: %.4f->%.4f" m.Diff.old m.Diff.new_)
-      | `Added v -> Some (Printf.sprintf "amount: ->%.4f" v)
-      | `Removed v -> Some (Printf.sprintf "amount: %.4f->" v)
+    let auto_line =
+      render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") send_patch.automation
     in
-    let parts = List.filter_map (fun x -> x) [ target_part; amount_part ] in
-    match parts with
-    | [] -> ""
-    | parts ->
-        let indent_str = make_indent_at_level indent_level in
-        Printf.sprintf "%s~ Send modified (%s)" indent_str (String.concat ", " parts)
+    let mod_line =
+      render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") send_patch.modulation
+    in
+    join_non_empty [ value_line; auto_line; mod_line ]
   in
 
   let send_section =
@@ -228,9 +218,15 @@ let render_mixer ?(indent_level = 0) (patch : Mixer.Patch.t) =
       ~item_fmt:
         {
           format_item =
-            (fun s ->
-              Printf.sprintf "Send to track %d with amount %.4f"
-                s.Mixer.Send.target s.Mixer.Send.amount);
+            (fun (s : Device.Send.t) ->
+              let amount_str =
+                match s.Device.Send.device_param.Device.DeviceParam.value with
+                | Device.Float f -> Printf.sprintf "%.4f" f
+                | Device.Int i -> string_of_int i
+                | Device.Bool b -> string_of_bool b
+                | Device.Enum (i, _) -> string_of_int i
+              in
+              Printf.sprintf "Send %d with amount %s" s.Device.Send.id amount_str);
           indent_level = indent_level + 2;
         }
       ~patch_fmt:{ format_patch = render_send_patch }

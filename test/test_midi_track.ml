@@ -117,16 +117,16 @@ let test_midi_track_devices_order () =
 
 
 
-let  test_midi_track_mixer_properties () =
+let  test_midi_track_Mixer_properties () =
   (* Load midi track XML file *)
   let xml = read_file test_midi_track_xml_path in
 
   (* Create midi track from XML *)
   let midi_track = MidiTrack.create xml in
 
-  (* Check main mixer properties *)
-  Alcotest.(check (float 0.001)) "mixer volume" 1.0 midi_track.mixer.Mixer.volume;
-  Alcotest.(check (float 0.001)) "mixer pan" 0.0 midi_track.mixer.pan
+  (* Check main Device.Mixer properties *)
+  Alcotest.(check (float 0.001)) "Device.Mixer volume" 1.0 midi_track.mixer.volume;
+  Alcotest.(check (float 0.001)) "Device.Mixer pan" 0.0 midi_track.mixer.pan
 
 
 let () =
@@ -135,6 +135,6 @@ let () =
       Alcotest.test_case "parse basic MidiTrack properties" `Quick test_midi_track_basic_properties;
       Alcotest.test_case "parse MidiTrack clips and notes" `Quick test_midi_track_clips_and_notes;
       Alcotest.test_case "parse MidiTrack devices order" `Quick test_midi_track_devices_order;
-      Alcotest.test_case "parse MidiTrack mixer properties" `Quick test_midi_track_mixer_properties
+      Alcotest.test_case "parse MidiTrack Device.Mixer properties" `Quick test_midi_track_Mixer_properties
     ]
   ]

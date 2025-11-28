@@ -9,7 +9,7 @@ module MidiTrack = struct
     clips : Clip.MidiClip.t list;
     automations : Automation.t list;
     devices : Device.t list;
-    mixer : Mixer.t;
+    mixer : Device.Mixer.t;
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
@@ -27,7 +27,7 @@ module MidiTrack = struct
       |> Seq.concat_map (fun devs ->
           Xml.get_childs devs |> List.to_seq |> Seq.map Device.create)
       |> List.of_seq in
-    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Mixer.create in
+    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Device.Mixer.create in
 
     { id; name; clips; automations; devices; mixer }
 
@@ -40,7 +40,7 @@ module MidiTrack = struct
       clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
       devices : (Device.t, Device.Patch.t) structured_change list;
-      mixer : Mixer.Patch.t simple_structured_change;
+      mixer : Device.Mixer.Patch.t simple_structured_change;
     }
 
     let is_empty patch =
@@ -68,7 +68,7 @@ module MidiTrack = struct
         diff_list_id (module Device) old_track.devices new_track.devices
         |> List.map @@ structured_change_of_flat (module Device)
       in
-      let mixer_change = diff_structured_value (module Mixer) old_track.mixer new_track.mixer in
+      let mixer_change = diff_structured_value (module Device.Mixer) old_track.mixer new_track.mixer in
       {
         Patch.name = name_change;
         clips = clips_changes;
@@ -85,7 +85,7 @@ module AudioTrack = struct
     clips : Clip.AudioClip.t list;
     automations : Automation.t list;
     devices : Device.t list;
-    mixer : Mixer.t;
+    mixer : Device.Mixer.t;
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
@@ -103,7 +103,7 @@ module AudioTrack = struct
       |> Seq.concat_map (fun devs ->
           Xml.get_childs devs |> List.to_seq |> Seq.map Device.create)
       |> List.of_seq in
-    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Mixer.create in
+    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Device.Mixer.create in
 
     { id; name; clips; automations; devices; mixer }
 
@@ -116,7 +116,7 @@ module AudioTrack = struct
       clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
       devices : (Device.t, Device.Patch.t) structured_change list;
-      mixer : Mixer.Patch.t simple_structured_change;
+      mixer : Device.Mixer.Patch.t simple_structured_change;
     }
 
     let is_empty patch =
@@ -144,7 +144,7 @@ module AudioTrack = struct
         diff_list_id (module Device) old_track.devices new_track.devices
         |> List.map @@ structured_change_of_flat (module Device)
       in
-      let mixer_change = diff_structured_value (module Mixer) old_track.mixer new_track.mixer in
+      let mixer_change = diff_structured_value (module Device.Mixer) old_track.mixer new_track.mixer in
       {
         Patch.name = name_change;
         clips = clips_changes;

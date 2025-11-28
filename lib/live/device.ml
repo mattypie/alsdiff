@@ -353,6 +353,91 @@ module PatchRef = struct
 end
 
 
+(* ================== Mixer module ================== *)
+module Send = struct
+  type t = {
+    id : int;
+    device_param : DeviceParam.t;
+  } [@@deriving eq]
+
+  (** Create [Send.t] from XML element.
+      @param xml XML element [<TrackHolder Id="N">...</TrackHolder>] *)
+  let create (xml : Xml.t) : t =
+    let id = Xml.get_int_attr "Id" xml in
+    let device_param = Upath.find "/Send" xml |> snd |> DeviceParam.create "Send" in
+    { id; device_param }
+
+  let has_same_id a b = a.id = b.id
+  let id_hash t = Hashtbl.hash t
+
+  module Patch = DeviceParam.Patch
+
+  let diff old_send new_send =
+    if old_send.id <> new_send.id then
+      failwith (Printf.sprintf "You can't compare two Send with different IDs: old = %d, new = %d" old_send.id new_send.id)
+    else
+      DeviceParam.diff old_send.device_param new_send.device_param
+
+end
+
+module Mixer = struct
+  type t = {
+    volume : float;
+    pan : float;
+    mute : bool;
+    solo : bool;
+    sends : Send.t list;
+  } [@@deriving eq]
+
+  let create (xml : Xml.t) : t =
+    let volume = Upath.get_float_attr "/Volume/Manual" "Value" xml in
+    let pan = Upath.get_float_attr "/Pan/Manual" "Value" xml in
+    let mute = Upath.get_bool_attr "/On/Manual" "Value" xml in
+    let solo = Upath.get_bool_attr "/SoloSink" "Value" xml in
+    let sends = xml
+      |> Upath.find_all "/Sends/TrackSendHolder"
+      |> List.map (fun (_, xml) -> Send.create xml)
+    in
+    { volume; pan; mute; solo; sends }
+
+  (* Mixer doesn't have a natural ID, so use placeholder interface *)
+  (* TODO: is this necessary? *)
+  let has_same_id _ _ = true
+  let id_hash _ = Hashtbl.hash 0
+
+  module Patch = struct
+    type t = {
+      volume : float flat_change;
+      pan : float flat_change;
+      mute : bool flat_change;
+      solo : bool flat_change;
+      sends : (Send.t, Send.Patch.t) structured_change list;
+    }
+
+    let is_empty = function
+      | { volume = `Unchanged; pan = `Unchanged; mute = `Unchanged; solo = `Unchanged; sends } ->
+        List.for_all (function `Unchanged -> true | _ -> false) sends
+      | _ -> false
+  end
+
+  let diff (old_mixer : t) (new_mixer : t) : Patch.t =
+    let volume_change = diff_value old_mixer.volume new_mixer.volume in
+    let pan_change = diff_value old_mixer.pan new_mixer.pan in
+    let mute_change = diff_value old_mixer.mute new_mixer.mute in
+    let solo_change = diff_value old_mixer.solo new_mixer.solo in
+
+    let send_changes = diff_list_myers_id (module Send) old_mixer.sends new_mixer.sends
+                     |> List.map @@ structured_change_of_flat (module Send)
+    in
+    { volume = volume_change;
+      pan = pan_change;
+      mute = mute_change;
+      solo = solo_change;
+      sends = send_changes;
+    }
+end
+
+
 (* ================== Plugin related modules ================== *)
 module PluginParam = struct
   type t = {

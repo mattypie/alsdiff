@@ -5,11 +5,11 @@ open Alsdiff_live.Track
 
 
 
-(* Helper to create a dummy Mixer *)
+(* Helper to create a dummy Device.Device.Mixer *)
 let make_mixer volume pan =
   {
-    Mixer.volume = volume;
-    Mixer.pan = pan;
+    Device.Mixer.volume = volume;
+    Device.Mixer.pan = pan;
     mute = false;
     solo = false;
     sends = [];
