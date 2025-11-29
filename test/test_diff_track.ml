@@ -25,6 +25,23 @@ let make_mixer volume pan =
     sends = [];
   }
 
+(* Helper to create a dummy RoutingSet.t *)
+let make_empty_routing_set () =
+  let make_routing route_type =
+    {
+      Track.Routing.route_type;
+      target = "";
+      upper_string = "";
+      lower_string = "";
+    }
+  in
+  {
+    Track.RoutingSet.audio_in = make_routing Track.Routing.AudioIn;
+    audio_out = make_routing Track.Routing.AudioOut;
+    midi_in = make_routing Track.Routing.MidiIn;
+    midi_out = make_routing Track.Routing.MidiOut;
+  }
+
 (* Helper to create a dummy Midi Track *)
 let make_midi_track id name mixer =
   Midi {
@@ -34,6 +51,7 @@ let make_midi_track id name mixer =
     automations = [];
     devices = [];
     mixer = mixer;
+    routings = make_empty_routing_set ();
   }
 
 let test_midi_track_diff () =

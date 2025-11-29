@@ -157,7 +157,27 @@ let test_audio_track_edge_case_empty_clips () =
                 childs = [Xml.Element { name = "Manual"; attrs = ["Value", "false"]; childs = [] }] };
               Xml.Element { name = "SoloSink"; attrs = ["Value", "false"]; childs = [] };
               Xml.Element { name = "Sends"; attrs = []; childs = [] }
-            ] }
+            ] };
+          Xml.Element { name = "AudioInputRouting"; attrs = []; childs = [
+              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+          ] };
+          Xml.Element { name = "AudioOutputRouting"; attrs = []; childs = [
+              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+          ] };
+          Xml.Element { name = "MidiInputRouting"; attrs = []; childs = [
+              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+          ] };
+          Xml.Element { name = "MidiOutputRouting"; attrs = []; childs = [
+              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+          ] }
         ] }
     ]
   } in
