@@ -28,8 +28,8 @@ module Locator = struct
 
   module Patch = struct
     type t = {
-      name : string flat_change;
-      time : float flat_change;
+      name : string atomic_update;
+      time : float atomic_update;
     }
 
     let is_empty = function
@@ -45,8 +45,8 @@ module Locator = struct
     if old_id <> new_id then
       failwith "cannot diff two locators with different Id"
     else
-      let name_change = diff_value old_name new_name in
-      let time_change = diff_value old_time new_time in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_name new_name in
+      let time_change = diff_atomic_value (module Equality.FloatEq) old_time new_time in
       { name = name_change; time = time_change }
 end
 

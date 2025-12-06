@@ -19,7 +19,7 @@ let get_track_info (track : Track.t) =
   | Audio a -> a.name, a.id
 
 let diff_tracks (old_tracks : Track.t list) (new_tracks : Track.t list) =
-  Diff.diff_list_myers_id (module Track) old_tracks new_tracks
+  Diff.diff_list_id (module Track) old_tracks new_tracks
 
 let main ~domain_mgr =
   if Array.length Sys.argv <> 3 then (
@@ -41,11 +41,8 @@ let main ~domain_mgr =
 
   List.iter (fun change ->
       match change with
-      | `Modified { Diff.old = old_track; new_ = new_track } ->
-        let name, id = get_track_info new_track in
-        let patch = Track.diff old_track new_track in
-        if not (Track.Patch.is_empty patch) then
-          Printf.printf "Track '%s' (ID: %d) changed:\n%s\n" name id (Text_output.render_track patch)
+      | `Modified patch ->
+        Printf.printf "Track modified:\n%s\n" (Text_output.render_track patch)
       | `Added track ->
         let name, id = get_track_info track in
         Printf.printf "Track '%s' (ID: %d) added.\n" name id

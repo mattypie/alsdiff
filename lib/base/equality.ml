@@ -14,6 +14,7 @@ module FloatEq = MakeDefaultEq(struct type t = float end)
 module BoolEq = MakeDefaultEq(struct type t = bool end)
 module CharEq = MakeDefaultEq(struct type t = char end)
 module StringEq = MakeDefaultEq(struct type t = string end)
+module Int64Eq = MakeDefaultEq(struct type t = int64 end)
 
 
 module type IDENTIFIABLE = sig

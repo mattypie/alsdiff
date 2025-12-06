@@ -35,65 +35,70 @@ let test_diff_logic () =
   (* Check start time change *)
   (match patch.start_time with
   | `Modified m ->
-      check (float 0.001) "old start time" 80.0 m.old;
-      check (float 0.001) "new start time" 79.5 m.new_
+      check (float 0.001) "old start time" 80.0 m.oldval;
+      check (float 0.001) "new start time" 79.5 m.newval
   | _ -> fail "Expected start time to be modified");
 
   (* Check end time change *)
   (match patch.end_time with
   | `Modified m ->
-      check (float 0.001) "old end time" 101.0 m.old;
-      check (float 0.001) "new end time" 100.0 m.new_
+      check (float 0.001) "old end time" 101.0 m.oldval;
+      check (float 0.001) "new end time" 100.0 m.newval
   | _ -> fail "Expected end time to be modified");
 
   (* Check signature change *)
   (match patch.signature with
-  | `Modified m ->
-      check string "old signature" "3/8" (Printf.sprintf "%d/%d" m.old.TimeSignature.numer m.old.TimeSignature.denom);
-      check string "new signature" "4/4" (Printf.sprintf "%d/%d" m.new_.TimeSignature.numer m.new_.TimeSignature.denom)
+  | `Modified sig_patch ->
+      (* sig_patch is TimeSignature.Patch.t with numer and denom atomic_update fields *)
+      let old_numer = match sig_patch.numer with `Modified m -> m.oldval | _ -> 3 in
+      let old_denom = match sig_patch.denom with `Modified m -> m.oldval | _ -> 8 in
+      let new_numer = match sig_patch.numer with `Modified m -> m.newval | _ -> 4 in
+      let new_denom = match sig_patch.denom with `Modified m -> m.newval | _ -> 4 in
+      check string "old signature" "3/8" (Printf.sprintf "%d/%d" old_numer old_denom);
+      check string "new signature" "4/4" (Printf.sprintf "%d/%d" new_numer new_denom)
   | _ -> fail "Expected signature to be modified");
 
   (* Check loop changes *)
   (match patch.loop with
-  | `Patched loop_patch ->
+  | `Modified loop_patch ->
       (match loop_patch.start_time with
       | `Modified m ->
-          check (float 0.001) "old loop start" 30.0 m.old;
-          check (float 0.001) "new loop start" 26.13179997086247 m.new_
+          check (float 0.001) "old loop start" 30.0 m.oldval;
+          check (float 0.001) "new loop start" 26.13179997086247 m.newval
       | _ -> fail "Expected loop start to be modified");
 
       (match loop_patch.end_time with
       | `Modified m ->
-          check (float 0.001) "old loop end" 50.0 m.old;
-          check (float 0.001) "new loop end" 46.631799970862474 m.new_
+          check (float 0.001) "old loop end" 50.0 m.oldval;
+          check (float 0.001) "new loop end" 46.631799970862474 m.newval
       | _ -> fail "Expected loop end to be modified");
 
       (match loop_patch.on with
       | `Modified m ->
-          check bool "old loop on" true m.old;
-          check bool "new loop on" false m.new_
+          check bool "old loop on" true m.oldval;
+          check bool "new loop on" false m.newval
       | _ -> fail "Expected loop on to be modified")
   | `Unchanged -> fail "Expected loop to be modified");
 
   (* Check sample reference changes *)
   (match patch.sample_ref with
-  | `Patched sample_ref_patch ->
+  | `Modified sample_ref_patch ->
       (match sample_ref_patch.file_path with
       | `Modified m ->
-          check string "old file path" "/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet_old.wav" m.old;
-          check string "new file path" "/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet [2022-04-27 164454].wav" m.new_
+          check string "old file path" "/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet_old.wav" m.oldval;
+          check string "new file path" "/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet [2022-04-27 164454].wav" m.newval
       | _ -> fail "Expected file path to be modified");
 
       (match sample_ref_patch.crc with
       | `Modified m ->
-          check string "old crc" "12345" m.old;
-          check string "new crc" "48320" m.new_
+          check string "old crc" "12345" m.oldval;
+          check string "new crc" "48320" m.newval
       | _ -> fail "Expected crc to be modified");
 
       (match sample_ref_patch.last_modified_date with
       | `Modified m ->
-          check int64 "old last modified" 1742403846L m.old;
-          check int64 "new last modified" 1742403845L m.new_
+          check int64 "old last modified" 1742403846L m.oldval;
+          check int64 "new last modified" 1742403845L m.newval
       | _ -> fail "Expected last modified date to be modified")
   | `Unchanged -> fail "Expected sample reference to be modified")
 

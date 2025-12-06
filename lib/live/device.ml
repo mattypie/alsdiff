@@ -1,6 +1,5 @@
 open Alsdiff_base
 open Alsdiff_base.Diff
-open Alsdiff_base.Equality
 
 
 exception Not_implemented of string
@@ -17,6 +16,11 @@ type param_value =
   | Bool of bool
   | Enum of int * enum_desc
 [@@deriving eq]
+
+(* Equality modules for custom types *)
+module ParamValueEq = Equality.MakeDefaultEq(struct type t = param_value end)
+module EnumDescEq = Equality.MakeDefaultEq(struct type t = enum_desc end)
+
 
 
 (* ================== Common modules ================== *)
@@ -132,9 +136,9 @@ module DeviceParam = struct
 
   module Patch = struct
     type t = {
-      value : param_value simple_flat_change;
-      automation : int simple_flat_change;
-      modulation : int simple_flat_change;
+      value : param_value atomic_update;
+      automation : int atomic_update;
+      modulation : int atomic_update;
     }
 
     let is_empty = function
@@ -146,9 +150,9 @@ module DeviceParam = struct
     if old_param.name <> new_param.name then
       failwith "cannot diff two DeviceParams with different names"
     else
-      let value_change = diff_value old_param.value new_param.value in
-      let automation_change = diff_value old_param.automation new_param.automation in
-      let modulation_change = diff_value old_param.modulation new_param.modulation in
+      let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
+      let automation_change = diff_atomic_value (module Equality.IntEq) old_param.automation new_param.automation in
+      let modulation_change = diff_atomic_value (module Equality.IntEq) old_param.modulation new_param.modulation in
       { value = value_change; automation = automation_change; modulation = modulation_change }
 end
 
@@ -217,12 +221,12 @@ module PresetRef = struct
   module Patch = struct
     type t = {
       (* TODO: add the [name] field *)
-      relative_path : string simple_flat_change;
-      path : string simple_flat_change;
-      pack_name : string simple_flat_change;
-      pack_id : int simple_flat_change;
-      file_size : int simple_flat_change;
-      crc : int simple_flat_change;
+      relative_path : string atomic_update;
+      path : string atomic_update;
+      pack_name : string atomic_update;
+      pack_id : int atomic_update;
+      file_size : int atomic_update;
+      crc : int atomic_update;
     }
 
     let is_empty patch =
@@ -238,12 +242,12 @@ module PresetRef = struct
     if old_preset.id <> new_preset.id then
       failwith "cannot diff two PresetRefs with different Ids"
     else
-      let relative_path_change = diff_value old_preset.relative_path new_preset.relative_path in
-      let path_change = diff_value old_preset.path new_preset.path in
-      let pack_name_change = diff_value old_preset.pack_name new_preset.pack_name in
-      let pack_id_change = diff_value old_preset.pack_id new_preset.pack_id in
-      let file_size_change = diff_value old_preset.file_size new_preset.file_size in
-      let crc_change = diff_value old_preset.crc new_preset.crc in
+      let relative_path_change = diff_atomic_value (module Equality.StringEq) old_preset.relative_path new_preset.relative_path in
+      let path_change = diff_atomic_value (module Equality.StringEq) old_preset.path new_preset.path in
+      let pack_name_change = diff_atomic_value (module Equality.StringEq) old_preset.pack_name new_preset.pack_name in
+      let pack_id_change = diff_atomic_value (module Equality.IntEq) old_preset.pack_id new_preset.pack_id in
+      let file_size_change = diff_atomic_value (module Equality.IntEq) old_preset.file_size new_preset.file_size in
+      let crc_change = diff_atomic_value (module Equality.IntEq) old_preset.crc new_preset.crc in
       {
         relative_path = relative_path_change;
         path = path_change;
@@ -310,13 +314,13 @@ module PatchRef = struct
 
   module Patch = struct
     type t = {
-      relative_path : string simple_flat_change;
-      path : string simple_flat_change;
-      pack_name : string simple_flat_change;
-      pack_id : int simple_flat_change;
-      file_size : int simple_flat_change;
-      crc : int simple_flat_change;
-      last_mod_date : int64 simple_flat_change;
+      relative_path : string atomic_update;
+      path : string atomic_update;
+      pack_name : string atomic_update;
+      pack_id : int atomic_update;
+      file_size : int atomic_update;
+      crc : int atomic_update;
+      last_mod_date : int64 atomic_update;
     }
 
     let is_empty patch =
@@ -334,13 +338,13 @@ module PatchRef = struct
     (* if old_patch.id <> new_patch.id then *)
     (*   failwith "cannot diff two PatchRefs with different Ids" *)
     (* else *)
-      let relative_path_change = diff_value old_patch.relative_path new_patch.relative_path in
-      let path_change = diff_value old_patch.path new_patch.path in
-      let pack_name_change = diff_value old_patch.pack_name new_patch.pack_name in
-      let pack_id_change = diff_value old_patch.pack_id new_patch.pack_id in
-      let file_size_change = diff_value old_patch.file_size new_patch.file_size in
-      let crc_change = diff_value old_patch.crc new_patch.crc in
-      let last_mod_date_change = diff_value old_patch.last_mod_date new_patch.last_mod_date in
+      let relative_path_change = diff_atomic_value (module Equality.StringEq) old_patch.relative_path new_patch.relative_path in
+      let path_change = diff_atomic_value (module Equality.StringEq) old_patch.path new_patch.path in
+      let pack_name_change = diff_atomic_value (module Equality.StringEq) old_patch.pack_name new_patch.pack_name in
+      let pack_id_change = diff_atomic_value (module Equality.IntEq) old_patch.pack_id new_patch.pack_id in
+      let file_size_change = diff_atomic_value (module Equality.IntEq) old_patch.file_size new_patch.file_size in
+      let crc_change = diff_atomic_value (module Equality.IntEq) old_patch.crc new_patch.crc in
+      let last_mod_date_change = diff_atomic_value (module Equality.Int64Eq) old_patch.last_mod_date new_patch.last_mod_date in
       {
         relative_path = relative_path_change;
         path = path_change;
@@ -429,7 +433,7 @@ module Mixer = struct
       pan : DeviceParam.Patch.t;
       mute : DeviceParam.Patch.t;
       solo : DeviceParam.Patch.t;
-      sends : (Send.t, Send.Patch.t) structured_change list;
+      sends : (Send.t, Send.Patch.t) change list;
     }
 
     let is_empty patch =
@@ -446,8 +450,7 @@ module Mixer = struct
     let mute_change = DeviceParam.diff old_mixer.mute new_mixer.mute in
     let solo_change = DeviceParam.diff old_mixer.solo new_mixer.solo in
 
-    let send_changes = diff_list_myers_id (module Send) old_mixer.sends new_mixer.sends
-                     |> List.map @@ structured_change_of_flat (module Send)
+    let send_changes = diff_list_id (module Send) old_mixer.sends new_mixer.sends
     in
     { volume = volume_change;
       pan = pan_change;
@@ -497,11 +500,11 @@ module PluginParam = struct
 
   module Patch = struct
     type t = {
-      name : string simple_flat_change;
-      index : int simple_flat_change;
-      value : param_value simple_flat_change;
-      automation : int simple_flat_change;
-      modulation : int simple_flat_change;
+      name : string atomic_update;
+      index : int atomic_update;
+      value : param_value atomic_update;
+      automation : int atomic_update;
+      modulation : int atomic_update;
     }
 
     let is_empty patch =
@@ -520,11 +523,11 @@ module PluginParam = struct
     if old_param.id <> new_param.id then
       failwith "cannot diff two PluginParams with different Ids"
     else
-      let name_change = diff_value old_param.name new_param.name in
-      let index_change = diff_value old_param.index new_param.index in
-      let value_change = diff_value old_param.value new_param.value in
-      let automation_change = diff_value old_param.automation new_param.automation in
-      let modulation_change = diff_value old_param.modulation new_param.modulation in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_param.name new_param.name in
+      let index_change = diff_atomic_value (module Equality.IntEq) old_param.index new_param.index in
+      let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
+      let automation_change = diff_atomic_value (module Equality.IntEq) old_param.automation new_param.automation in
+      let modulation_change = diff_atomic_value (module Equality.IntEq) old_param.modulation new_param.modulation in
 
       {
         Patch.name = name_change;
@@ -538,6 +541,8 @@ end
 
 module PluginDesc = struct
   type plugin_type = Vst2 | Vst3 | Auv2 [@@deriving eq]
+
+  module PluginTypeEq = Equality.MakeDefaultEq(struct type t = plugin_type end)
 
   type t = {
     name : string;
@@ -722,10 +727,10 @@ module PluginDesc = struct
 
   module Patch = struct
     type t = {
-      name : string simple_flat_change;
-      uid : string simple_flat_change;
-      plugin_type : plugin_type simple_flat_change;
-      state : string simple_flat_change;
+      name : string atomic_update;
+      uid : string atomic_update;
+      plugin_type : plugin_type atomic_update;
+      state : string atomic_update;
     }
 
     let is_empty patch =
@@ -739,10 +744,10 @@ module PluginDesc = struct
     if old_desc.uid <> new_desc.uid then
       failwith "cannot diff two PluginDesc with different UIDs"
     else
-      let name_change = diff_value old_desc.name new_desc.name in
-      let uid_change = diff_value old_desc.uid new_desc.uid in
-      let plugin_type_change = diff_value old_desc.plugin_type new_desc.plugin_type in
-      let state_change = diff_value old_desc.state new_desc.state in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_desc.name new_desc.name in
+      let uid_change = diff_atomic_value (module Equality.StringEq) old_desc.uid new_desc.uid in
+      let plugin_type_change = diff_atomic_value (module PluginTypeEq) old_desc.plugin_type new_desc.plugin_type in
+      let state_change = diff_atomic_value (module Equality.StringEq) old_desc.state new_desc.state in
 
       {
         Patch.name = name_change;
@@ -830,11 +835,11 @@ module Max4LiveParam = struct
 
   module Patch = struct
     type t = {
-      name : string simple_flat_change;
-      index : int simple_flat_change;
-      value : param_value simple_flat_change;
-      automation : int simple_flat_change;
-      modulation : int simple_flat_change;
+      name : string atomic_update;
+      index : int atomic_update;
+      value : param_value atomic_update;
+      automation : int atomic_update;
+      modulation : int atomic_update;
     }
 
     let is_empty patch =
@@ -853,11 +858,11 @@ module Max4LiveParam = struct
     if old_param.id <> new_param.id then
       failwith "cannot diff two Max4LiveParams with different Ids"
     else
-      let name_change = diff_value old_param.name new_param.name in
-      let index_change = diff_value old_param.index new_param.index in
-      let value_change = diff_value old_param.value new_param.value in
-      let automation_change = diff_value old_param.automation new_param.automation in
-      let modulation_change = diff_value old_param.modulation new_param.modulation in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_param.name new_param.name in
+      let index_change = diff_atomic_value (module Equality.IntEq) old_param.index new_param.index in
+      let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
+      let automation_change = diff_atomic_value (module Equality.IntEq) old_param.automation new_param.automation in
+      let modulation_change = diff_atomic_value (module Equality.IntEq) old_param.modulation new_param.modulation in
 
       {
         Patch.name = name_change;
@@ -892,10 +897,10 @@ module MixerDevice = struct
 
   module Patch = struct
     type t = {
-      on : DeviceParam.Patch.t simple_structured_change;
-      speaker : DeviceParam.Patch.t simple_structured_change;
-      volume : DeviceParam.Patch.t simple_structured_change;
-      pan : DeviceParam.Patch.t simple_structured_change;
+      on : DeviceParam.Patch.t update;
+      speaker : DeviceParam.Patch.t update;
+      volume : DeviceParam.Patch.t update;
+      pan : DeviceParam.Patch.t update;
     }
 
     let is_empty patch =
@@ -905,11 +910,15 @@ module MixerDevice = struct
       patch.pan = `Unchanged
   end
 
+  (* MixerDevice doesn't have a natural ID, so use placeholder interface *)
+  let has_same_id _ _ = true
+  let id_hash _ = Hashtbl.hash 0
+
   let diff (old_mixer : t) (new_mixer : t) : Patch.t =
-    let on_change = diff_structured_value (module DeviceParam) old_mixer.on new_mixer.on in
-    let speaker_change = diff_structured_value (module DeviceParam) old_mixer.speaker new_mixer.speaker in
-    let volume_change = diff_structured_value (module DeviceParam) old_mixer.volume new_mixer.volume in
-    let pan_change = diff_structured_value (module DeviceParam) old_mixer.pan new_mixer.pan in
+    let on_change = diff_complex_value (module DeviceParam) old_mixer.on new_mixer.on in
+    let speaker_change = diff_complex_value (module DeviceParam) old_mixer.speaker new_mixer.speaker in
+    let volume_change = diff_complex_value (module DeviceParam) old_mixer.volume new_mixer.volume in
+    let pan_change = diff_complex_value (module DeviceParam) old_mixer.pan new_mixer.pan in
     {
       Patch.on = on_change;
       speaker = speaker_change;
@@ -927,6 +936,15 @@ let extract_index_from_name (element_name : string) : int =
   match List.rev parts with
   | index :: _ -> int_of_string index
   | [] -> failwith ("Invalid element name: " ^ element_name)
+
+(* Helper function for diffing lists of atomic values *)
+let diff_atomic_list (old_list : float list) (new_list : float list) : float atomic_change list =
+  if List.length old_list <> List.length new_list then
+    failwith "diff_atomic_list requires lists of same length"
+  else
+    List.map2 (fun old_elem new_elem ->
+      (diff_atomic_value (module Equality.FloatEq) old_elem new_elem :> float atomic_change)
+    ) old_list new_list
 
 
 module Macro = struct
@@ -960,10 +978,10 @@ module Macro = struct
 
   module Patch = struct
     type t = {
-      name : string simple_flat_change;
-      manual : float simple_flat_change;
-      automation : int simple_flat_change;
-      modulation : int simple_flat_change;
+      name : string atomic_update;
+      manual : float atomic_update;
+      automation : int atomic_update;
+      modulation : int atomic_update;
     }
 
     let is_empty patch =
@@ -977,10 +995,10 @@ module Macro = struct
     if old_macro.id <> new_macro.id then
       failwith "cannot diff two Macros with different Ids"
     else
-      let name_change = diff_value old_macro.name new_macro.name in
-      let manual_change = diff_value old_macro.manual new_macro.manual in
-      let automation_change = diff_value old_macro.automation new_macro.automation in
-      let modulation_change = diff_value old_macro.modulation new_macro.modulation in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_macro.name new_macro.name in
+      let manual_change = diff_atomic_value (module Equality.FloatEq) old_macro.manual new_macro.manual in
+      let automation_change = diff_atomic_value (module Equality.IntEq) old_macro.automation new_macro.automation in
+      let modulation_change = diff_atomic_value (module Equality.IntEq) old_macro.modulation new_macro.modulation in
       {
         Patch.name = name_change;
         manual = manual_change;
@@ -1030,8 +1048,8 @@ module Snapshot = struct
 
   module Patch = struct
     type t = {
-      name : string simple_flat_change;
-      values : float flat_change list;
+      name : string atomic_update;
+      values : float atomic_change list;
     }
 
     let is_empty patch =
@@ -1043,8 +1061,8 @@ module Snapshot = struct
     if old_snapshot.id <> new_snapshot.id then
       failwith "cannot diff two Snapshots with different Ids"
     else
-      let name_change = diff_value old_snapshot.name new_snapshot.name in
-      let values_changes = diff_list_ord (module FloatEq) old_snapshot.values new_snapshot.values in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_snapshot.name new_snapshot.name in
+      let values_changes = diff_atomic_list old_snapshot.values new_snapshot.values in
 
       {
         name = name_change;
@@ -1118,46 +1136,46 @@ type device_patch =
   | GroupPatch of group_device_patch
 
 and regular_device_patch = {
-  display_name : string simple_flat_change;
+  display_name : string atomic_update;
 
   (* parameters can be added or removed due to Ableton updates on their built-in devices,
-     so structured_change is more semantically correct than simple_structured_change *)
-  params : (DeviceParam.t, DeviceParam.Patch.t) structured_change list;
+     so change is more semantically correct than update *)
+  params : (DeviceParam.t, DeviceParam.Patch.t) change list;
 
-  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
+  preset : (PresetRef.t, PresetRef.Patch.t) change;
 }
 
 and plugin_device_patch = {
-  display_name : string simple_flat_change;
-  enabled : DeviceParam.Patch.t simple_structured_change;
-  desc : PluginDesc.Patch.t simple_structured_change;
-  params : (PluginParam.t, PluginParam.Patch.t) structured_change list;
-  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
+  display_name : string atomic_update;
+  enabled : DeviceParam.Patch.t update;
+  desc : PluginDesc.Patch.t update;
+  params : (PluginParam.t, PluginParam.Patch.t) change list;
+  preset : (PresetRef.t, PresetRef.Patch.t) change;
 }
 
 and max4live_device_patch = {
-  display_name : string simple_flat_change;
-  enabled : DeviceParam.Patch.t simple_structured_change;
-  patch_ref : (PatchRef.t, PatchRef.Patch.t) structured_change;
-  params : (Max4LiveParam.t, Max4LiveParam.Patch.t) structured_change list;
-  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
+  display_name : string atomic_update;
+  enabled : DeviceParam.Patch.t update;
+  patch_ref : (PatchRef.t, PatchRef.Patch.t) change;
+  params : (Max4LiveParam.t, Max4LiveParam.Patch.t) change list;
+  preset : (PresetRef.t, PresetRef.Patch.t) change;
 }
 
 and branch_patch = {
-  id : int simple_flat_change;
-  devices : (device, device_patch) structured_change list;
-  mixer : MixerDevice.Patch.t simple_structured_change;
+  id : int atomic_update;
+  devices : (device, device_patch) change list;
+  mixer : MixerDevice.Patch.t update;
 }
 and group_device_patch = {
-  display_name : string simple_flat_change;
-  enabled : DeviceParam.Patch.t simple_structured_change;
+  display_name : string atomic_update;
+  enabled : DeviceParam.Patch.t update;
 
   (* devices always have preset, its either user-defined one or the defualt one,
-     so only Unchanged/Patched cases *)
-  branches : (branch, branch_patch) structured_change list;
-  macros : (Macro.t, Macro.Patch.t) structured_change list;
-  snapshots : (Snapshot.t, Snapshot.Patch.t) structured_change list;
-  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
+     so only Unchanged/Modified cases *)
+  branches : (branch, branch_patch) change list;
+  macros : (Macro.t, Macro.Patch.t) change list;
+  snapshots : (Snapshot.t, Snapshot.Patch.t) change list;
+  preset : (PresetRef.t, PresetRef.Patch.t) change;
 }
 
 
@@ -1166,11 +1184,10 @@ let rec regular_device_diff (old_device : regular_device) (new_device : regular_
   if old_device.id <> new_device.id && old_device.device_name <> new_device.device_name  then
     failwith "cannot diff two RegularDevices with different Ids & Device names"
   else
-    let display_name_change = diff_value old_device.display_name new_device.display_name in
-    let preset_change = diff_optional_structured_value (module PresetRef) old_device.preset new_device.preset in
+    let display_name_change = diff_atomic_value (module Equality.StringEq) old_device.display_name new_device.display_name in
+    let preset_change = diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset in
     let params_changes =
       diff_list_id (module DeviceParam) old_device.params new_device.params
-      |> List.map @@ structured_change_of_flat (module DeviceParam)
     in
     {
       display_name = display_name_change;
@@ -1183,23 +1200,22 @@ and plugin_device_diff (old_device : plugin_device) (new_device : plugin_device)
     failwith "cannot diff two PluginDevices with different IDs"
   else
     let display_name_change =
-      diff_value old_device.display_name new_device.display_name
+      diff_atomic_value (module Equality.StringEq) old_device.display_name new_device.display_name
     in
     let enabled_change =
-      diff_structured_value (module DeviceParam) old_device.enabled new_device.enabled
+      diff_complex_value (module DeviceParam) old_device.enabled new_device.enabled
     in
 
     let desc_change =
-      diff_structured_value (module PluginDesc) old_device.desc new_device.desc
+      diff_complex_value (module PluginDesc) old_device.desc new_device.desc
     in
 
     let params_change =
       diff_list_id (module PluginParam) old_device.params new_device.params
-      |> List.map @@ structured_change_of_flat (module PluginParam)
     in
 
     let preset_change =
-      diff_optional_structured_value (module PresetRef) old_device.preset new_device.preset
+      diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset
     in
 
     {
@@ -1216,21 +1232,19 @@ and max4live_device_diff (old_device : max4live_device) (new_device : max4live_d
     failwith "cannot diff two Max4LiveDevices with different IDs"
   else
     let display_name_change =
-      diff_value old_device.display_name new_device.display_name
+      diff_atomic_value (module Equality.StringEq) old_device.display_name new_device.display_name
     in
     let enabled_change =
-      diff_structured_value (module DeviceParam) old_device.enabled new_device.enabled
+      diff_complex_value (module DeviceParam) old_device.enabled new_device.enabled
     in
     let patch_ref_change =
-      let patch = PatchRef.diff old_device.patch_ref new_device.patch_ref in
-      `Patched patch
+      (diff_complex_value_id (module PatchRef) old_device.patch_ref new_device.patch_ref :> (PatchRef.t, PatchRef.Patch.t) change)
     in
     let params_change =
       diff_list_id (module Max4LiveParam) old_device.params new_device.params
-      |> List.map @@ structured_change_of_flat (module Max4LiveParam)
     in
     let preset_change =
-      diff_optional_structured_value (module PresetRef) old_device.preset new_device.preset
+      diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset
     in
     {
       display_name = display_name_change;
@@ -1246,86 +1260,85 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
     failwith "cannot diff two Branches with different Ids"
   else
     let id_change = `Unchanged in (* IDs must be the same *)
+    (* Minimal delegation module to avoid circular dependencies *)
     let module DeviceId = struct
       type t = device
       let equal = (=)
-      let has_same_id old_device new_device =
-        match old_device, new_device with
-        | Regular old_reg, Regular new_reg -> old_reg.id = new_reg.id
-        | Plugin old_plug, Plugin new_plug -> old_plug.id = new_plug.id
-        | Group old_group, Group new_group -> old_group.id = new_group.id
-        | Max4Live old_m4l, Max4Live new_m4l -> old_m4l.id = new_m4l.id
+      let has_same_id a b =
+        match a, b with
+        | Regular ra, Regular rb -> ra.id = rb.id
+        | Plugin pa, Plugin pb -> pa.id = pb.id
+        | Group ga, Group gb -> ga.id = gb.id
+        | Max4Live ma, Max4Live mb -> ma.id = mb.id
         | _ -> false
       let id_hash = function
-        | Regular reg -> Hashtbl.hash reg.id
-        | Plugin plug -> Hashtbl.hash plug.id
-        | Group grp -> Hashtbl.hash grp.id
-        | Max4Live m4l -> Hashtbl.hash m4l.id
+        | Regular r -> Hashtbl.hash r.id
+        | Plugin p -> Hashtbl.hash p.id
+        | Group g -> Hashtbl.hash g.id
+        | Max4Live m -> Hashtbl.hash m.id
+
+      module Patch = struct
+        type t = device_patch
+        let is_empty = function
+          | RegularPatch rp -> rp.display_name = `Unchanged && rp.preset = `Unchanged &&
+                            List.for_all (function `Unchanged -> true | _ -> false) rp.params
+          | PluginPatch pp -> pp.display_name = `Unchanged && pp.enabled = `Unchanged &&
+                            pp.desc = `Unchanged && pp.preset = `Unchanged &&
+                            List.for_all (function `Unchanged -> true | _ -> false) pp.params
+          | Max4LivePatch mp -> mp.display_name = `Unchanged && mp.enabled = `Unchanged &&
+                             mp.patch_ref = `Unchanged && mp.preset = `Unchanged &&
+                             List.for_all (function `Unchanged -> true | _ -> false) mp.params
+          | GroupPatch gp -> gp.display_name = `Unchanged && gp.enabled = `Unchanged &&
+                             gp.preset = `Unchanged &&
+                             List.for_all (function `Unchanged -> true | _ -> false) gp.branches &&
+                             List.for_all (function `Unchanged -> true | _ -> false) gp.macros &&
+                             List.for_all (function `Unchanged -> true | _ -> false) gp.snapshots
+      end
+
+      let diff old_dev new_dev =
+        match old_dev, new_dev with
+        | Regular ro, Regular rn -> RegularPatch (regular_device_diff ro rn)
+        | Plugin po, Plugin pn -> PluginPatch (plugin_device_diff po pn)
+        | Group go, Group gn -> GroupPatch (group_device_diff go gn)
+        | Max4Live mo, Max4Live mn -> Max4LivePatch (max4live_device_diff mo mn)
+        | _ -> failwith "cannot diff devices of different types"
     end in
-    let devices_changes =
-      diff_list_id (module DeviceId) old_branch.devices new_branch.devices
-      |> List.map (function
-          | `Unchanged -> `Unchanged
-          | `Added device -> `Added device
-          | `Removed device -> `Removed device
-          | `Modified { old = old_device; new_ = new_device } ->
-             (* TODO: figure out if device id is UNIQUE across different file versions *)
-              match old_device, new_device with
-              | Regular old_reg, Regular new_reg ->
-                let patch = regular_device_diff old_reg new_reg in
-                `Patched (RegularPatch patch)
-              | Plugin old_plug, Plugin new_plug ->
-                let patch = plugin_device_diff old_plug new_plug in
-                `Patched (PluginPatch patch)
-              | Group old_group, Group new_group ->
-                let patch = group_device_diff old_group new_group in
-                `Patched (GroupPatch patch)
-              | Max4Live old_m4l, Max4Live new_m4l ->
-                let patch = max4live_device_diff old_m4l new_m4l in
-                `Patched (Max4LivePatch patch)
-              | _ -> failwith "Cannot diff devices of different types")
-    in
-    let mixer_change =
-      diff_structured_value_eq (module MixerDevice) old_branch.mixer new_branch.mixer
-    in
+    let devices_changes = diff_list_id (module DeviceId) old_branch.devices new_branch.devices in
+    let mixer_change = diff_complex_value_id (module MixerDevice) old_branch.mixer new_branch.mixer in
     {
       id = id_change;
       devices = devices_changes;
       mixer = mixer_change;
     }
-and is_branch_patch_empty (patch : branch_patch) =
-  patch.id = `Unchanged &&
-  patch.mixer = `Unchanged &&
-  List.for_all (function `Unchanged -> true | _ -> false) patch.devices
 and group_device_diff (old_group : group_device) (new_group : group_device) =
   if old_group.id <> new_group.id then
     failwith "cannot diff two GroupDevices with different Ids"
   else
-    let display_name_change = diff_value old_group.display_name new_group.display_name in
-    let enabled_change = diff_structured_value (module DeviceParam) old_group.enabled new_group.enabled in
-    let preset_change = diff_optional_structured_value (module PresetRef) old_group.preset new_group.preset in
+    let display_name_change = diff_atomic_value (module Equality.StringEq) old_group.display_name new_group.display_name in
+    let enabled_change = diff_complex_value (module DeviceParam) old_group.enabled new_group.enabled in
+    let preset_change = diff_complex_value_opt (module PresetRef) old_group.preset new_group.preset in
     let branches_changes =
       let module BranchId = struct
         type t = branch
         let equal = (=)
-        let has_same_id (old_branch : t) (new_branch : t) = old_branch.id = new_branch.id
-        let id_hash (branch : t) = Hashtbl.hash branch.id
+        let has_same_id (a : t) (b : t) = a.id = b.id
+        let id_hash (t : t) = Hashtbl.hash t.id
         module Patch = struct
           type t = branch_patch
-          let is_empty = is_branch_patch_empty
+          let is_empty patch =
+            patch.id = `Unchanged &&
+            patch.mixer = `Unchanged &&
+            List.for_all (function `Unchanged -> true | _ -> false) patch.devices
         end
         let diff = branch_diff
       end in
       diff_list_id (module BranchId) old_group.branches new_group.branches
-      |> List.map @@ structured_change_of_flat (module BranchId)
     in
     let macros_changes =
       diff_list_id (module Macro) old_group.macros new_group.macros
-      |> List.map @@ structured_change_of_flat (module Macro)
     in
     let snapshots_changes =
       diff_list_id (module Snapshot) old_group.snapshots new_group.snapshots
-      |> List.map @@ structured_change_of_flat (module Snapshot)
     in
     {
       display_name = display_name_change;
@@ -1467,7 +1480,10 @@ module Branch = struct
 
   module Patch = struct
     type t = branch_patch
-    let is_empty = is_branch_patch_empty
+    let is_empty patch =
+      patch.id = `Unchanged &&
+      patch.mixer = `Unchanged &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
   end
 
   let diff = branch_diff

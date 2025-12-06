@@ -14,8 +14,8 @@ module TimeSignature = struct
 
   module Patch = struct
     type t = {
-      numer : int flat_change;
-      denom : int flat_change;
+      numer : int atomic_update;
+      denom : int atomic_update;
     }
 
     let is_empty = function
@@ -27,8 +27,8 @@ module TimeSignature = struct
   let diff (old_sig : t) (new_sig : t) : Patch.t =
     let { numer = old_numer; denom = old_denom } = old_sig in
     let { numer = new_numer; denom = new_denom } = new_sig in
-    let numer = diff_value old_numer new_numer in
-    let denom = diff_value old_denom new_denom in
+    let numer = diff_atomic_value (module Equality.IntEq) old_numer new_numer in
+    let denom = diff_atomic_value (module Equality.IntEq) old_denom new_denom in
     { numer; denom }
 end
 
@@ -61,11 +61,11 @@ module MidiNote = struct
 
   module Patch = struct
     type t = {
-      time : float flat_change;
-      duration : float flat_change;
-      velocity : int flat_change;
-      off_velocity : int flat_change;
-      note : int flat_change;
+      time : float atomic_update;
+      duration : float atomic_update;
+      velocity : int atomic_update;
+      off_velocity : int atomic_update;
+      note : int atomic_update;
     }
 
     let is_empty = function
@@ -83,11 +83,11 @@ module MidiNote = struct
     let  { id = _; time = old_time; duration = old_duration; velocity = old_velocity; off_velocity = old_off_velocity; note = old_note } : t = old_note in
     let { id = _; time = new_time; duration = new_duration; velocity = new_velocity; off_velocity = new_off_velocity; note = new_note } : t = new_note in
 
-    let time_change = diff_value old_time new_time in
-    let duration_change = diff_value old_duration new_duration in
-    let velocity_change = diff_value old_velocity new_velocity in
-    let off_velocity_change = diff_value old_off_velocity new_off_velocity in
-    let note_change = diff_value old_note new_note in
+    let time_change = diff_atomic_value (module Equality.FloatEq) old_time new_time in
+    let duration_change = diff_atomic_value (module Equality.FloatEq) old_duration new_duration in
+    let velocity_change = diff_atomic_value (module Equality.IntEq) old_velocity new_velocity in
+    let off_velocity_change = diff_atomic_value (module Equality.IntEq) old_off_velocity new_off_velocity in
+    let note_change = diff_atomic_value (module Equality.IntEq) old_note new_note in
     {
       time = time_change;
       duration = duration_change;
@@ -137,9 +137,9 @@ module Loop = struct
 
   module Patch = struct
     type t = {
-      start_time : float flat_change;
-      end_time : float flat_change;
-      on : bool flat_change;
+      start_time : float atomic_update;
+      end_time : float atomic_update;
+      on : bool atomic_update;
     }
 
     let is_empty = function
@@ -150,9 +150,9 @@ module Loop = struct
 
 
   let diff (old_loop : t) (new_loop : t) : Patch.t =
-      let start_time_change = diff_value old_loop.start_time new_loop.start_time in
-      let end_time_change = diff_value old_loop.end_time new_loop.end_time in
-      let on_change = diff_value old_loop.on new_loop.on in
+      let start_time_change = diff_atomic_value (module Equality.FloatEq) old_loop.start_time new_loop.start_time in
+      let end_time_change = diff_atomic_value (module Equality.FloatEq) old_loop.end_time new_loop.end_time in
+      let on_change = diff_atomic_value (module Equality.BoolEq) old_loop.on new_loop.on in
       { start_time = start_time_change; end_time = end_time_change; on = on_change }
 end
 
@@ -203,14 +203,14 @@ module MidiClip = struct
 
 
   module Patch = struct
-    type note_change = (MidiNote.t, MidiNote.Patch.t) structured_change
+    type note_change = (MidiNote.t, MidiNote.Patch.t) change
 
     type t = {
-      name : string simple_flat_change;
-      start_time : float simple_flat_change;
-      end_time : float simple_flat_change;
-      loop : Loop.Patch.t simple_structured_change;
-      signature : TimeSignature.t simple_flat_change;
+      name : string atomic_update;
+      start_time : float atomic_update;
+      end_time : float atomic_update;
+      loop : Loop.Patch.t update;
+      signature : TimeSignature.Patch.t update;
       notes : note_change list;
     }
 
@@ -237,23 +237,22 @@ module MidiClip = struct
     if old_id <> new_id then
       failwith "cannot diff two clips with different Id"
     else
-      let name_change = diff_value old_name new_name in
-      let start_time_change = diff_value old_start new_start in
-      let end_time_change = diff_value old_end new_end in
-      let loop_patch = Loop.diff old_loop new_loop in
-      let signature_change = diff_value old_sig new_sig in
-
-    (* Use diff_list_ord for notes - cleaner and more consistent *)
+      let name_change = diff_atomic_value (module Equality.StringEq) old_name new_name in
+      let start_time_change = diff_atomic_value (module Equality.FloatEq) old_start new_start in
+      let end_time_change = diff_atomic_value (module Equality.FloatEq) old_end new_end in
+      let signature_change =
+        diff_complex_value (module TimeSignature) old_sig new_sig in
+    (* Use diff_list for notes - cleaner and more consistent *)
     let notes_change =
-      diff_list_ord_id (module MidiNote) old_notes new_notes
-      |> List.map @@ structured_change_of_flat (module MidiNote)
+      diff_list_id (module MidiNote) old_notes new_notes
     in
+    let loop_change = diff_complex_value (module Loop) old_loop new_loop in
 
     {
       name = name_change;
       start_time = start_time_change;
       end_time = end_time_change;
-      loop = `Patched loop_patch;
+      loop = loop_change;
       signature = signature_change;
       notes = notes_change;
     }
@@ -269,9 +268,9 @@ module SampleRef = struct
 
   module Patch = struct
     type t = {
-      file_path : string flat_change;
-      crc : string flat_change;
-      last_modified_date : int64 flat_change;
+      file_path : string atomic_update;
+      crc : string atomic_update;
+      last_modified_date : int64 atomic_update;
     }
 
     let is_empty = function
@@ -293,9 +292,9 @@ module SampleRef = struct
     let { file_path = old_file_path; crc = old_crc; last_modified_date = old_date } = old_sample_ref in
     let { file_path = new_file_path; crc = new_crc; last_modified_date = new_date } = new_sample_ref in
 
-    let file_path_change = diff_value old_file_path new_file_path in
-    let crc_change = diff_value old_crc new_crc in
-    let last_modified_date_change = diff_value old_date new_date in
+    let file_path_change = diff_atomic_value (module Equality.StringEq) old_file_path new_file_path in
+    let crc_change = diff_atomic_value (module Equality.StringEq) old_crc new_crc in
+    let last_modified_date_change = diff_atomic_value (module Equality.Int64Eq) old_date new_date in
     { file_path = file_path_change; crc = crc_change; last_modified_date = last_modified_date_change }
 
 end
@@ -341,12 +340,12 @@ module AudioClip = struct
 
   module Patch = struct
     type t = {
-      name : string simple_flat_change;
-      start_time : float simple_flat_change;
-      end_time : float simple_flat_change;
-      loop : Loop.Patch.t simple_structured_change;
-      signature : TimeSignature.t simple_flat_change;
-      sample_ref : SampleRef.Patch.t simple_structured_change;
+      name : string atomic_update;
+      start_time : float atomic_update;
+      end_time : float atomic_update;
+      loop : Loop.Patch.t update;
+      signature : TimeSignature.Patch.t update;
+      sample_ref : SampleRef.Patch.t update;
     }
 
     let is_empty patch =
@@ -367,21 +366,17 @@ module AudioClip = struct
     if old_id <> new_id then
       failwith "cannot diff two clips with different Id"
     else
-      let name_change = diff_value old_name new_name in
-      let start_time_change = diff_value old_start new_start in
-      let end_time_change = diff_value old_end new_end in
-      let loop_patch =
-        if Loop.equal old_loop new_loop then `Unchanged
-        else `Patched (Loop.diff old_loop new_loop)
-      in
-      let signature_change = diff_value old_sig new_sig in
-      let sample_ref_patch = SampleRef.diff old_sample new_sample in
-      let sample_ref_change = Diff.simple_structured_change_of_patch (module SampleRef.Patch) sample_ref_patch in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_name new_name in
+      let start_time_change = diff_atomic_value (module Equality.FloatEq) old_start new_start in
+      let end_time_change = diff_atomic_value (module Equality.FloatEq) old_end new_end in
+      let loop_change = diff_complex_value (module Loop) old_loop new_loop in
+      let signature_change = diff_complex_value (module TimeSignature) old_sig new_sig in
+      let sample_ref_change = diff_complex_value (module SampleRef) old_sample new_sample in
       {
         name = name_change;
         start_time = start_time_change;
         end_time = end_time_change;
-        loop = loop_patch;
+        loop = loop_change;
         signature = signature_change;
         sample_ref = sample_ref_change;
       }

@@ -14,11 +14,11 @@ let test_identical_clips () =
   let patch = AudioClip.diff clip1 clip2 in
 
   (* Check that the patch is empty by checking individual fields *)
-  let is_empty = 
+  let is_empty =
     match patch with
-    | { name = `Unchanged; start_time = `Unchanged; end_time = `Unchanged; 
+    | { name = `Unchanged; start_time = `Unchanged; end_time = `Unchanged;
         loop = `Unchanged; signature = `Unchanged; sample_ref = `Unchanged } -> true
-    | _ -> false 
+    | _ -> false
   in
   Alcotest.(check bool) "patch is empty" true is_empty
 
@@ -39,9 +39,9 @@ let test_modified_start_time () =
 
   (* Check that start_time was modified *)
   match patch.start_time with
-  | `Modified { old; new_ } ->
-      Alcotest.(check (float 0.001)) "old start_time" clip1.start_time old;
-      Alcotest.(check (float 0.001)) "new start_time" modified_clip2.start_time new_
+  | `Modified { oldval; newval } ->
+      Alcotest.(check (float 0.001)) "old start_time" clip1.start_time oldval;
+      Alcotest.(check (float 0.001)) "new start_time" modified_clip2.start_time newval
   | _ -> Alcotest.fail "Expected start_time to be Modified"
 
 let test_modified_name () =
@@ -61,9 +61,9 @@ let test_modified_name () =
 
   (* Check that name was modified *)
   match patch.name with
-  | `Modified { old; new_ } ->
-      Alcotest.(check string) "old name" clip1.name old;
-      Alcotest.(check string) "new name" modified_clip2.name new_
+  | `Modified { oldval; newval } ->
+      Alcotest.(check string) "old name" clip1.name oldval;
+      Alcotest.(check string) "new name" modified_clip2.name newval
   | _ -> Alcotest.fail "Expected name to be Modified"
 
 let () =

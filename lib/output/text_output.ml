@@ -1,4 +1,4 @@
-open Alsdiff_base
+open Alsdiff_base.Diff
 open Alsdiff_live
 open Alsdiff_live.Device
 
@@ -25,17 +25,11 @@ module FieldRenderer = struct
     let prefix = make_indent_at_level formatter.indent_level in
     match change with
     | `Unchanged -> ""
-    | `Added v ->
-        Printf.sprintf "%s+ %s: %s" prefix formatter.field_name
-          (formatter.format_value v)
-    | `Removed v ->
-        Printf.sprintf "%s- %s: %s" prefix formatter.field_name
-          (formatter.format_value v)
     | `Modified m ->
         Printf.sprintf "%s~ %s changed from %s to %s" prefix
           formatter.field_name
-          (formatter.format_value m.Diff.old)
-          (formatter.format_value m.Diff.new_)
+          (formatter.format_value m.oldval)
+          (formatter.format_value m.newval)
 
   (* Specialized renderers *)
   let float_formatter ?(indent_level = 1) ?(precision = 4) name =
@@ -106,7 +100,7 @@ module SectionRenderer = struct
   let render_patch_section ~header ~indent_level ~renderer patch_field =
     match patch_field with
     | `Unchanged -> ""
-    | `Patched patch ->
+    | `Modified patch ->
         let content = renderer patch in
         render_section ~header ~indent_level content
 end
@@ -121,7 +115,7 @@ module StructuredChangeRenderer = struct
 
   let render_change (type item patch) (item_fmt : item item_formatter)
       (patch_fmt : patch patch_formatter)
-      (change : (item, patch) Diff.structured_change) =
+      (change : (item, patch) change) =
     match change with
     | `Unchanged -> ""
     | `Added item ->
@@ -134,7 +128,7 @@ module StructuredChangeRenderer = struct
         let item_name = item_fmt.format_item item in
         let display_name = if item_name = "" then "(unnamed)" else item_name in
         Printf.sprintf "%s- %s" indent_str display_name
-    | `Patched patch ->
+    | `Modified patch ->
         (* Pass the same indent level as items to the patch formatter *)
         patch_fmt.format_patch item_fmt.indent_level patch
 
@@ -151,7 +145,7 @@ let render_event_change
     (change :
       ( Automation.EnvelopeEvent.t,
         Automation.EnvelopeEvent.Patch.t )
-      Diff.structured_change) =
+      change) =
   match change with
   | `Unchanged -> ""
   | `Added event ->
@@ -160,7 +154,7 @@ let render_event_change
   | `Removed event ->
       Printf.sprintf "    - Event at time %.2f with value %.4f"
         event.Automation.EnvelopeEvent.time event.Automation.EnvelopeEvent.value
-  | `Patched _patch ->
+  | `Modified _patch ->
       (* For now, just show that the event was patched without details *)
       Printf.sprintf "    ~ Event patched (details available)"
 
@@ -182,7 +176,7 @@ let render_envelope_op op =
   | `Removed env ->
       Printf.sprintf "- Removed Envelope (Id: %d, Target: %d)" env.Automation.id
         env.Automation.target
-  | `Patched patch -> render_envelope_patch patch
+  | `Modified patch -> render_envelope_patch patch
 
 (* Helper function for rendering device parameter patches *)
 let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Patch.t) =
@@ -304,16 +298,27 @@ let render_audio_clip ?(indent_level = 0) (patch : Clip.AudioClip.Patch.t) =
   let signature_line =
     match patch.signature with
     | `Unchanged -> ""
-    | `Modified m ->
+    | `Modified sig_patch ->
+        (* sig_patch is TimeSignature.Patch.t with numer and denom atomic_updates *)
+        (* Extract old and new values for both numerator and denominator *)
+        let old_numer, new_numer = match sig_patch.numer with
+          | `Modified m -> (m.oldval, m.newval)
+          | `Unchanged -> (4, 4) (* default, shouldn't happen if signature is modified *)
+        in
+        let old_denom, new_denom = match sig_patch.denom with
+          | `Modified m -> (m.oldval, m.newval)
+          | `Unchanged -> (4, 4) (* default, shouldn't happen if signature is modified *)
+        in
+        (* Format as "from X/Y to A/B" *)
         let indent_str = make_indent_at_level (indent_level + 1) in
-        Printf.sprintf "%s~ Time signature changed from %d/%d to %d/%d" indent_str
-          m.Diff.old.numer m.Diff.old.denom m.Diff.new_.numer m.Diff.new_.denom
+        Printf.sprintf "%s~ Time signature changed from %d/%d to %d/%d"
+          indent_str old_numer old_denom new_numer new_denom
   in
 
   let loop_section =
     match patch.loop with
     | `Unchanged -> ""
-    | `Patched loop_patch ->
+    | `Modified loop_patch ->
         let loop_content = render_loop_section_patch ~indent_level:(indent_level + 3) loop_patch in
         if loop_content = "" then ""
         else
@@ -324,7 +329,7 @@ let render_audio_clip ?(indent_level = 0) (patch : Clip.AudioClip.Patch.t) =
   let sample_ref_section =
     match patch.sample_ref with
     | `Unchanged -> ""
-    | `Patched sample_ref_patch ->
+    | `Modified sample_ref_patch ->
         let sample_ref_content = render_sample_ref_patch ~indent_level:(indent_level + 3) sample_ref_patch in
         if sample_ref_content = "" then ""
         else
@@ -364,16 +369,27 @@ let render_midi_clip ?(indent_level = 0) (patch : Clip.MidiClip.Patch.t) =
   let signature_line =
     match patch.signature with
     | `Unchanged -> ""
-    | `Modified m ->
+    | `Modified sig_patch ->
+        (* sig_patch is TimeSignature.Patch.t with numer and denom atomic_updates *)
+        (* Extract old and new values for both numerator and denominator *)
+        let old_numer, new_numer = match sig_patch.numer with
+          | `Modified m -> (m.oldval, m.newval)
+          | `Unchanged -> (4, 4) (* default, shouldn't happen if signature is modified *)
+        in
+        let old_denom, new_denom = match sig_patch.denom with
+          | `Modified m -> (m.oldval, m.newval)
+          | `Unchanged -> (4, 4) (* default, shouldn't happen if signature is modified *)
+        in
+        (* Format as "from X/Y to A/B" *)
         let indent_str = make_indent_at_level (indent_level + 1) in
-        Printf.sprintf "%s~ Time signature changed from %d/%d to %d/%d" indent_str
-          m.Diff.old.numer m.Diff.old.denom m.Diff.new_.numer m.Diff.new_.denom
+        Printf.sprintf "%s~ Time signature changed from %d/%d to %d/%d"
+          indent_str old_numer old_denom new_numer new_denom
   in
 
   let loop_section =
     match patch.loop with
     | `Unchanged -> ""
-    | `Patched loop_patch ->
+    | `Modified loop_patch ->
         let loop_content = render_loop_section_patch ~indent_level:(indent_level + 3) loop_patch in
         if loop_content = "" then ""
         else
@@ -389,37 +405,37 @@ let render_midi_clip ?(indent_level = 0) (patch : Clip.MidiClip.Patch.t) =
            Some
              (match note_patch.time with
              | `Modified m ->
-                 Printf.sprintf "time: %f->%f" m.Diff.old m.Diff.new_
+                 Printf.sprintf "time: %f→%f" m.oldval m.newval
              | _ -> "")
          else None);
         (if note_patch.duration <> `Unchanged then
            Some
              (match note_patch.duration with
              | `Modified m ->
-                 Printf.sprintf "duration: %f->%f" m.Diff.old m.Diff.new_
+                 Printf.sprintf "duration: %f→%f" m.oldval m.newval
              | _ -> "")
          else None);
         (if note_patch.velocity <> `Unchanged then
            Some
              (match note_patch.velocity with
              | `Modified m ->
-                 Printf.sprintf "velocity: %d->%d" m.Diff.old m.Diff.new_
+                 Printf.sprintf "velocity: %d→%d" m.oldval m.newval
              | _ -> "")
          else None);
         (if note_patch.note <> `Unchanged then
            Some
              (match note_patch.note with
              | `Modified m ->
-                 let old_note_name = Clip.MidiNote.get_note_name_from_int m.Diff.old in
-                 let new_note_name = Clip.MidiNote.get_note_name_from_int m.Diff.new_ in
-                 Printf.sprintf "note: %s->%s" old_note_name new_note_name
+                 let old_note_name = Clip.MidiNote.get_note_name_from_int m.oldval in
+                 let new_note_name = Clip.MidiNote.get_note_name_from_int m.newval in
+                 Printf.sprintf "note: %s→%s" old_note_name new_note_name
              | _ -> "")
          else None);
         (if note_patch.off_velocity <> `Unchanged then
            Some
              (match note_patch.off_velocity with
              | `Modified m ->
-                 Printf.sprintf "off_velocity: %d->%d" m.Diff.old m.Diff.new_
+                 Printf.sprintf "off_velocity: %d→%d" m.oldval m.newval
              | _ -> "")
          else None);
       ]
@@ -589,32 +605,32 @@ let render_mixer_device_patch ?(_indent_level = 0) (patch : Device.MixerDevice.P
   let on_line =
     match patch.on with
     | `Unchanged -> ""
-    | `Patched p -> "  Mixer On: " ^ render_device_param_patch p
+    | `Modified p -> "  Mixer On: " ^ render_device_param_patch p
   in
   let speaker_line =
     match patch.speaker with
     | `Unchanged -> ""
-    | `Patched p -> "  Mixer Speaker: " ^ render_device_param_patch p
+    | `Modified p -> "  Mixer Speaker: " ^ render_device_param_patch p
   in
   let volume_line =
     match patch.volume with
     | `Unchanged -> ""
-    | `Patched p -> "  Mixer Volume: " ^ render_device_param_patch p
+    | `Modified p -> "  Mixer Volume: " ^ render_device_param_patch p
   in
   let pan_line =
     match patch.pan with
     | `Unchanged -> ""
-    | `Patched p -> "  Mixer Pan: " ^ render_device_param_patch p
+    | `Modified p -> "  Mixer Pan: " ^ render_device_param_patch p
   in
   join_non_empty [on_line; speaker_line; volume_line; pan_line]
 
 (* Helper functions for device rendering *)
-let render_device_preset_section ~indent_level preset =
+  let render_device_preset_section ~indent_level preset =
   match preset with
   | `Unchanged -> ""
   | `Added p -> Printf.sprintf "%s+ Preset: %s" (make_indent_at_level (indent_level + 1)) p.Device.PresetRef.name
   | `Removed p -> Printf.sprintf "%s- Preset: %s" (make_indent_at_level (indent_level + 1)) p.Device.PresetRef.name
-  | `Patched p -> render_preset_ref_patch ~indent_level p
+  | `Modified p -> render_preset_ref_patch ~indent_level p
 
 let render_device_params_section ~indent_level ~header ~param_formatter ~patch_formatter params =
   let open StructuredChangeRenderer in
@@ -716,7 +732,7 @@ let rec render_device ?(indent_level = 0) (patch : Device.Patch.t) : string =
       let mixer_section =
         match branch_patch.mixer with
         | `Unchanged -> ""
-        | `Patched m -> render_mixer_device_patch m
+        | `Modified m -> render_mixer_device_patch m
       in
       join_non_empty [devices_section; mixer_section]
     in
@@ -807,7 +823,7 @@ let render_track ?(indent_level = 0) (patch : Track.Patch.t) : string =
     let mixer_section =
       match mixer with
       | `Unchanged -> ""
-      | `Patched m -> render_mixer ~indent_level:(track_indent_level + 1) m
+      | `Modified m -> render_mixer ~indent_level:(track_indent_level + 1) m
     in
     join_non_empty [header; name_line; clips_section; automations_section; devices_section; mixer_section]
   in

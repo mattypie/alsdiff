@@ -23,8 +23,8 @@ module EnvelopeEvent = struct
 
   module Patch = struct
     type t = {
-      time : float simple_flat_change;
-      value : float simple_flat_change;
+      time : float atomic_update;
+      value : float atomic_update;
     }
 
     let is_empty = function
@@ -38,8 +38,8 @@ module EnvelopeEvent = struct
     else
       let { time = old_time; value = old_value; _ } = old_event in
       let { time = new_time; value = new_value; _ } = new_event in
-      let time_change = diff_value old_time new_time in
-      let value_change = diff_value old_value new_value in
+      let time_change = diff_atomic_value (module Equality.FloatEq) old_time new_time in
+      let value_change = diff_atomic_value (module Equality.FloatEq) old_value new_value in
       { time = time_change; value = value_change }
 end
 
@@ -68,7 +68,7 @@ module Patch = struct
   type t = {
     id : int;
     target : int;
-    events : (EnvelopeEvent.t, EnvelopeEvent.Patch.t) structured_change list;
+    events : (EnvelopeEvent.t, EnvelopeEvent.Patch.t) change list;
   }
 
   let is_empty x =
@@ -84,7 +84,6 @@ let diff (old_envelope : t) (new_envelope : t) : Patch.t =
   else
     let event_changes =
       diff_list_id (module EnvelopeEvent) old_envelope.events new_envelope.events
-      |> List.map @@ structured_change_of_flat (module EnvelopeEvent)
     in
 
     { id = new_envelope.id; target = new_envelope.target; events = event_changes }

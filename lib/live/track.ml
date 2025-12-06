@@ -10,6 +10,8 @@ module Routing = struct
     | AudioOut
   [@@deriving eq]
 
+  module RouteTypeEq = Equality.MakeDefaultEq(struct type t = route_type end)
+
   type t = {
     route_type : route_type;
     target : string;
@@ -49,10 +51,10 @@ module Routing = struct
 
   module Patch = struct
     type t = {
-      route_type : route_type simple_flat_change;
-      target : string simple_flat_change;
-      upper_string : string simple_flat_change;
-      lower_string : string simple_flat_change;
+      route_type : route_type atomic_update;
+      target : string atomic_update;
+      upper_string : string atomic_update;
+      lower_string : string atomic_update;
     }
 
     let is_empty patch =
@@ -66,10 +68,10 @@ module Routing = struct
     if old_routing.route_type <> new_routing.route_type then
       failwith "cannot diff two Routing with different route types"
     else
-      let route_type_change = diff_value old_routing.route_type new_routing.route_type in
-      let target_change = diff_value old_routing.target new_routing.target in
-      let upper_string_change = diff_value old_routing.upper_string new_routing.upper_string in
-      let lower_string_change = diff_value old_routing.lower_string new_routing.lower_string in
+      let route_type_change = diff_atomic_value (module RouteTypeEq) old_routing.route_type new_routing.route_type in
+      let target_change = diff_atomic_value (module Equality.StringEq) old_routing.target new_routing.target in
+      let upper_string_change = diff_atomic_value (module Equality.StringEq) old_routing.upper_string new_routing.upper_string in
+      let lower_string_change = diff_atomic_value (module Equality.StringEq) old_routing.lower_string new_routing.lower_string in
 
       {
         Patch.route_type = route_type_change;
@@ -101,10 +103,10 @@ module RoutingSet = struct
 
   module Patch = struct
     type t = {
-      audio_in : Routing.Patch.t simple_structured_change;
-      audio_out : Routing.Patch.t simple_structured_change;
-      midi_in : Routing.Patch.t simple_structured_change;
-      midi_out : Routing.Patch.t simple_structured_change;
+      audio_in : Routing.Patch.t update;
+      audio_out : Routing.Patch.t update;
+      midi_in : Routing.Patch.t update;
+      midi_out : Routing.Patch.t update;
     }
 
     let is_empty patch =
@@ -115,10 +117,10 @@ module RoutingSet = struct
   end
 
   let diff (old_set : t) (new_set : t) : Patch.t =
-    let audio_in = diff_structured_value (module Routing) old_set.audio_in new_set.audio_in in
-    let audio_out = diff_structured_value (module Routing) old_set.audio_out new_set.audio_out in
-    let midi_in = diff_structured_value (module Routing) old_set.midi_in new_set.midi_in in
-    let midi_out = diff_structured_value (module Routing) old_set.midi_out new_set.midi_out in
+    let audio_in = diff_complex_value_id (module Routing) old_set.audio_in new_set.audio_in in
+    let audio_out = diff_complex_value_id (module Routing) old_set.audio_out new_set.audio_out in
+    let midi_in = diff_complex_value_id (module Routing) old_set.midi_in new_set.midi_in in
+    let midi_out = diff_complex_value_id (module Routing) old_set.midi_out new_set.midi_out in
     { audio_in; audio_out; midi_in; midi_out }
 end
 
@@ -159,12 +161,12 @@ module MidiTrack = struct
 
   module Patch = struct
     type t = {
-      name : string flat_change;
-      clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change list;
-      automations : (Automation.t, Automation.Patch.t) structured_change list;
-      devices : (Device.t, Device.Patch.t) structured_change list;
-      mixer : Device.Mixer.Patch.t simple_structured_change;
-      routings : RoutingSet.Patch.t simple_structured_change;
+      name : string atomic_update;
+      clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) change list;
+      automations : (Automation.t, Automation.Patch.t) change list;
+      devices : (Device.t, Device.Patch.t) change list;
+      mixer : Device.Mixer.Patch.t update;
+      routings : RoutingSet.Patch.t update;
     }
 
     let is_empty patch =
@@ -180,21 +182,18 @@ module MidiTrack = struct
     if old_track.id <> new_track.id then
       failwith "cannot diff two MidiTracks with different Ids"
     else
-      let name_change = diff_value old_track.name new_track.name in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.MidiClip) old_track.clips new_track.clips
-        |> List.map @@ structured_change_of_flat (module Clip.MidiClip)
       in
       let automations_changes =
         diff_list_id (module Automation) old_track.automations new_track.automations
-        |> List.map @@ structured_change_of_flat (module Automation)
       in
       let devices_changes =
         diff_list_id (module Device) old_track.devices new_track.devices
-        |> List.map @@ structured_change_of_flat (module Device)
       in
-      let mixer_change = diff_structured_value (module Device.Mixer) old_track.mixer new_track.mixer in
-      let routings_change = diff_structured_value (module RoutingSet) old_track.routings new_track.routings in
+      let mixer_change = diff_complex_value (module Device.Mixer) old_track.mixer new_track.mixer in
+      let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
         Patch.name = name_change;
         clips = clips_changes;
@@ -241,12 +240,12 @@ module AudioTrack = struct
 
   module Patch = struct
     type t = {
-      name : string flat_change;
-      clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
-      automations : (Automation.t, Automation.Patch.t) structured_change list;
-      devices : (Device.t, Device.Patch.t) structured_change list;
-      mixer : Device.Mixer.Patch.t simple_structured_change;
-      routings : RoutingSet.Patch.t simple_structured_change;
+      name : string atomic_update;
+      clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) change list;
+      automations : (Automation.t, Automation.Patch.t) change list;
+      devices : (Device.t, Device.Patch.t) change list;
+      mixer : Device.Mixer.Patch.t update;
+      routings : RoutingSet.Patch.t update;
     }
 
     let is_empty patch =
@@ -262,21 +261,18 @@ module AudioTrack = struct
     if old_track.id <> new_track.id then
       failwith "cannot diff two AudioTracks with different Ids"
     else
-      let name_change = diff_value old_track.name new_track.name in
+      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.AudioClip) old_track.clips new_track.clips
-        |> List.map @@ structured_change_of_flat (module Clip.AudioClip)
       in
       let automations_changes =
         diff_list_id (module Automation) old_track.automations new_track.automations
-        |> List.map @@ structured_change_of_flat (module Automation)
       in
       let devices_changes =
         diff_list_id (module Device) old_track.devices new_track.devices
-        |> List.map @@ structured_change_of_flat (module Device)
       in
-      let mixer_change = diff_structured_value (module Device.Mixer) old_track.mixer new_track.mixer in
-      let routings_change = diff_structured_value (module RoutingSet) old_track.routings new_track.routings in
+      let mixer_change = diff_complex_value (module Device.Mixer) old_track.mixer new_track.mixer in
+      let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
         Patch.name = name_change;
         clips = clips_changes;
