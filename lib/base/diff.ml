@@ -292,3 +292,43 @@ let change_of_atomic (type a p)
   | `Removed a -> `Removed a
   | `Unchanged -> `Unchanged
   | `Modified { oldval; newval } -> `Modified (D.diff oldval newval)
+
+
+(** Post-process a change list to merge adjacent Removed+Added pairs into Modified.
+
+    This enables replacement detection for anonymous sequences (without IDs) by
+    converting patterns like [`Removed old; `Added new] into [`Modified patch].
+
+    The merging only happens for immediately adjacent pairs. For example:
+    - [`Removed 1; `Added 2; `Unchanged] becomes [`Modified {1,2}; `Unchanged]
+    - [`Removed 1; `Unchanged; `Added 2] stays unchanged (not adjacent)
+
+    @param diff Function to create a patch from old and new values
+    @param changes The change list from Myers diff
+    @return Change list with adjacent Removed+Added pairs merged into Modified
+*)
+let merge_adjacent_changes (type a p)
+    ~(diff : a -> a -> p)
+    (changes : (a, p) change list) : (a, p) change list =
+  let rec aux = function
+    | `Removed old :: `Added new_ :: rest ->
+        `Modified (diff old new_) :: aux rest
+    | x :: rest -> x :: aux rest
+    | [] -> []
+  in
+  aux changes
+
+
+(** Convenience function combining diff_list with merge_adjacent_changes.
+
+    This provides replacement detection for equality-based diffing by first
+    computing the Myers diff, then merging adjacent Removed+Added pairs.
+
+    Note: This may produce different results than diff_list for the same input,
+    as adjacent insert+delete pairs are collapsed into modifications.
+*)
+let diff_list_merged (type a p)
+    (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p)
+    (old_list : a list) (new_list : a list) : (a, p) change list =
+  diff_list (module EQ) old_list new_list
+  |> merge_adjacent_changes ~diff:EQ.diff
