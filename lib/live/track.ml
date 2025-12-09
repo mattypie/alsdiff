@@ -103,10 +103,10 @@ module RoutingSet = struct
 
   module Patch = struct
     type t = {
-      audio_in : Routing.Patch.t update;
-      audio_out : Routing.Patch.t update;
-      midi_in : Routing.Patch.t update;
-      midi_out : Routing.Patch.t update;
+      audio_in : Routing.Patch.t structured_update;
+      audio_out : Routing.Patch.t structured_update;
+      midi_in : Routing.Patch.t structured_update;
+      midi_out : Routing.Patch.t structured_update;
     }
 
     let is_empty patch =
@@ -162,11 +162,11 @@ module MidiTrack = struct
   module Patch = struct
     type t = {
       name : string atomic_update;
-      clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) change list;
-      automations : (Automation.t, Automation.Patch.t) change list;
-      devices : (Device.t, Device.Patch.t) change list;
-      mixer : Device.Mixer.Patch.t update;
-      routings : RoutingSet.Patch.t update;
+      clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change list;
+      automations : (Automation.t, Automation.Patch.t) structured_change list;
+      devices : (Device.t, Device.Patch.t) structured_change list;
+      mixer : Device.Mixer.Patch.t structured_update;
+      routings : RoutingSet.Patch.t structured_update;
     }
 
     let is_empty patch =
@@ -241,11 +241,11 @@ module AudioTrack = struct
   module Patch = struct
     type t = {
       name : string atomic_update;
-      clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) change list;
-      automations : (Automation.t, Automation.Patch.t) change list;
-      devices : (Device.t, Device.Patch.t) change list;
-      mixer : Device.Mixer.Patch.t update;
-      routings : RoutingSet.Patch.t update;
+      clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
+      automations : (Automation.t, Automation.Patch.t) structured_change list;
+      devices : (Device.t, Device.Patch.t) structured_change list;
+      mixer : Device.Mixer.Patch.t structured_update;
+      routings : RoutingSet.Patch.t structured_update;
     }
 
     let is_empty patch =

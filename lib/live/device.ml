@@ -433,7 +433,7 @@ module Mixer = struct
       pan : DeviceParam.Patch.t;
       mute : DeviceParam.Patch.t;
       solo : DeviceParam.Patch.t;
-      sends : (Send.t, Send.Patch.t) change list;
+      sends : (Send.t, Send.Patch.t) structured_change list;
     }
 
     let is_empty patch =
@@ -897,10 +897,10 @@ module MixerDevice = struct
 
   module Patch = struct
     type t = {
-      on : DeviceParam.Patch.t update;
-      speaker : DeviceParam.Patch.t update;
-      volume : DeviceParam.Patch.t update;
-      pan : DeviceParam.Patch.t update;
+      on : DeviceParam.Patch.t structured_update;
+      speaker : DeviceParam.Patch.t structured_update;
+      volume : DeviceParam.Patch.t structured_update;
+      pan : DeviceParam.Patch.t structured_update;
     }
 
     let is_empty patch =
@@ -1140,42 +1140,42 @@ and regular_device_patch = {
 
   (* parameters can be added or removed due to Ableton updates on their built-in devices,
      so change is more semantically correct than update *)
-  params : (DeviceParam.t, DeviceParam.Patch.t) change list;
+  params : (DeviceParam.t, DeviceParam.Patch.t) structured_change list;
 
-  preset : (PresetRef.t, PresetRef.Patch.t) change;
+  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
 }
 
 and plugin_device_patch = {
   display_name : string atomic_update;
-  enabled : DeviceParam.Patch.t update;
-  desc : PluginDesc.Patch.t update;
-  params : (PluginParam.t, PluginParam.Patch.t) change list;
-  preset : (PresetRef.t, PresetRef.Patch.t) change;
+  enabled : DeviceParam.Patch.t structured_update;
+  desc : PluginDesc.Patch.t structured_update;
+  params : (PluginParam.t, PluginParam.Patch.t) structured_change list;
+  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
 }
 
 and max4live_device_patch = {
   display_name : string atomic_update;
-  enabled : DeviceParam.Patch.t update;
-  patch_ref : (PatchRef.t, PatchRef.Patch.t) change;
-  params : (Max4LiveParam.t, Max4LiveParam.Patch.t) change list;
-  preset : (PresetRef.t, PresetRef.Patch.t) change;
+  enabled : DeviceParam.Patch.t structured_update;
+  patch_ref : (PatchRef.t, PatchRef.Patch.t) structured_change;
+  params : (Max4LiveParam.t, Max4LiveParam.Patch.t) structured_change list;
+  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
 }
 
 and branch_patch = {
   id : int atomic_update;
-  devices : (device, device_patch) change list;
-  mixer : MixerDevice.Patch.t update;
+  devices : (device, device_patch) structured_change list;
+  mixer : MixerDevice.Patch.t structured_update;
 }
 and group_device_patch = {
   display_name : string atomic_update;
-  enabled : DeviceParam.Patch.t update;
+  enabled : DeviceParam.Patch.t structured_update;
 
   (* devices always have preset, its either user-defined one or the defualt one,
      so only Unchanged/Modified cases *)
-  branches : (branch, branch_patch) change list;
-  macros : (Macro.t, Macro.Patch.t) change list;
-  snapshots : (Snapshot.t, Snapshot.Patch.t) change list;
-  preset : (PresetRef.t, PresetRef.Patch.t) change;
+  branches : (branch, branch_patch) structured_change list;
+  macros : (Macro.t, Macro.Patch.t) structured_change list;
+  snapshots : (Snapshot.t, Snapshot.Patch.t) structured_change list;
+  preset : (PresetRef.t, PresetRef.Patch.t) structured_change;
 }
 
 
@@ -1238,7 +1238,7 @@ and max4live_device_diff (old_device : max4live_device) (new_device : max4live_d
       diff_complex_value (module DeviceParam) old_device.enabled new_device.enabled
     in
     let patch_ref_change =
-      (diff_complex_value_id (module PatchRef) old_device.patch_ref new_device.patch_ref :> (PatchRef.t, PatchRef.Patch.t) change)
+      (diff_complex_value_id (module PatchRef) old_device.patch_ref new_device.patch_ref :> (PatchRef.t, PatchRef.Patch.t) structured_change)
     in
     let params_change =
       diff_list_id (module Max4LiveParam) old_device.params new_device.params

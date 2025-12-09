@@ -10,6 +10,10 @@ module EnvelopeEvent = struct
     value : float;
   } [@@deriving eq]
 
+  (* EnvelopeEvent is a structured type containing primitive fields.
+     It represents an automation envelope point that can be added,
+     removed, or modified as a unit within the events list. *)
+
   let create (xml : Xml.t) : t =
     {
       id = Xml.get_int_attr "Id" xml;
@@ -50,6 +54,9 @@ type t = {
   events : EnvelopeEvent.t list;
 } [@@deriving eq]
 
+(* Automation contains a list of EnvelopeEvents and is therefore
+   a structured type at a higher level of abstraction. *)
+
 let create (xml : Alsdiff_base.Xml.t) : t =
   let id = Xml.get_int_attr "Id" xml in
   let target = Upath.get_int_attr "/EnvelopeTarget/PointeeId" "Value" xml in
@@ -68,7 +75,7 @@ module Patch = struct
   type t = {
     id : int;
     target : int;
-    events : (EnvelopeEvent.t, EnvelopeEvent.Patch.t) change list;
+    events : (EnvelopeEvent.t, EnvelopeEvent.Patch.t) structured_change list;
   }
 
   let is_empty x =
@@ -83,7 +90,8 @@ let diff (old_envelope : t) (new_envelope : t) : Patch.t =
     failwith "cannot diff two AutomationEnvelopes with different Id or Target"
   else
     let event_changes =
-      diff_list_id (module EnvelopeEvent) old_envelope.events new_envelope.events
+      (diff_list_id (module EnvelopeEvent) old_envelope.events new_envelope.events
+       : (EnvelopeEvent.t, EnvelopeEvent.Patch.t) structured_change list)
     in
 
     { id = new_envelope.id; target = new_envelope.target; events = event_changes }

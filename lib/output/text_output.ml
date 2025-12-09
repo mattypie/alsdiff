@@ -115,7 +115,7 @@ module StructuredChangeRenderer = struct
 
   let render_change (type item patch) (item_fmt : item item_formatter)
       (patch_fmt : patch patch_formatter)
-      (change : (item, patch) change) =
+      (change : (item, patch) structured_change) =
     match change with
     | `Unchanged -> ""
     | `Added item ->
@@ -145,7 +145,7 @@ let render_event_change
     (change :
       ( Automation.EnvelopeEvent.t,
         Automation.EnvelopeEvent.Patch.t )
-      change) =
+      structured_change) =
   match change with
   | `Unchanged -> ""
   | `Added event ->

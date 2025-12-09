@@ -23,11 +23,15 @@ module type DIFFABLE_EQ = sig
   val diff : t -> t -> Patch.t
 end
 
+
+type atomic
+type structured
+
 (** The unified type to describe the change of an value.
     TODO: adding a [`Moved] or [`Reordered] variant,
     currently the Myers diff algorithm can't really detect an item moved/reordered in a sequence.
 *)
-type ('a, 'p) change = [
+type ('a, 'p, 'kind) change = [
   | `Unchanged
   | `Added of 'a
   | `Removed of 'a
@@ -35,18 +39,18 @@ type ('a, 'p) change = [
 ]
 
 type 'a atomic_patch = { oldval : 'a; newval : 'a }
-type 'a atomic_change = ('a, 'a atomic_patch) change
+type 'a atomic_change = ('a, 'a atomic_patch, atomic) change
 
+type ('a, 'p) structured_change = ('a, 'p, structured) change
 
-type 'p update = [
+type ('p, 'kind) update = [
   | `Unchanged
   | `Modified of 'p
 ]
 
-type 'a atomic_update = [
-  | `Unchanged
-  | `Modified of 'a atomic_patch
-]
+type 'p structured_update = ('p, structured) update
+type 'a atomic_update = ('a atomic_patch, atomic) update
+
 
 let diff_value ~equal ~diff old_value new_value =
   if equal old_value new_value then
@@ -75,30 +79,30 @@ let diff_atomic_value_opt (type a) (module EQ : EQUALABLE with type t = a)
 let diff_complex_value (type a p)
     (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p)
     (old_value : a)
-    (new_value : a) : p update =
+    (new_value : a) : p structured_update =
   diff_value ~equal:EQ.equal ~diff:EQ.diff old_value new_value
 
 let diff_complex_value_id (type a p)
     (module ID : DIFFABLE_ID with type t = a and type Patch.t = p)
     (old_value : a)
-    (new_value : a) : p update =
+    (new_value : a) : p structured_update =
   diff_value ~equal:ID.has_same_id ~diff:ID.diff old_value new_value
 
 let diff_complex_value_opt (type a p)
     (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p)
     (old_value : a option)
-    (new_value : a option) : (a, p) change =
+    (new_value : a option) : (a, p) structured_change =
   diff_value_opt
-    ~diff_some:(fun o n -> (diff_complex_value (module EQ) o n :> (a, p) change))
+    ~diff_some:(fun o n -> (diff_complex_value (module EQ) o n :> (a, p) structured_change))
     old_value new_value
 
 
 let diff_complex_value_id_opt (type a p)
     (module ID : DIFFABLE_ID with type t = a and type Patch.t = p)
     (old_value : a option)
-    (new_value : a option) : (a, p) change =
+    (new_value : a option) : (a, p) structured_change =
   diff_value_opt
-    ~diff_some:(fun o n -> (diff_complex_value_id (module ID) o n :> (a, p) change))
+    ~diff_some:(fun o n -> (diff_complex_value_id (module ID) o n :> (a, p) structured_change))
     old_value new_value
 
 
@@ -118,10 +122,10 @@ end
     @param new_list Modified list
     @return List of flat changes representing the minimal edit sequence
 *)
-let diff_list_generic (type a p)
+let diff_list_generic (type a p k)
     ~(compare: a -> a -> bool)
-    ~(on_match: a -> a -> (a, p) change)
-    (old_list : a list) (new_list : a list) : (a, p) change list =
+    ~(on_match: a -> a -> (a, p, k) change)
+    (old_list : a list) (new_list : a list) : (a, p, k) change list =
   let old_arr = Array.of_list old_list in
   let new_arr = Array.of_list new_list in
   let n = Array.length old_arr in
@@ -247,7 +251,7 @@ let diff_list_generic (type a p)
     Time complexity: O((N+M)D) where D is the size of the edit script.
     Space complexity: O((N+M)D) for trace storage.
 *)
-let diff_list (type a p) (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p) (old_list : a list) (new_list : a list) : (a, p) change list =
+let diff_list (type a p k) (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p) (old_list : a list) (new_list : a list) : (a, p, k) change list =
   diff_list_generic
     ~compare:EQ.equal
     ~on_match:(fun old_item new_item ->
@@ -258,7 +262,7 @@ let diff_list (type a p) (module EQ : DIFFABLE_EQ with type t = a and type Patch
     )
     old_list new_list
 
-let diff_list_id (type a p) (module ID : DIFFABLE_ID with type t = a and type Patch.t = p) (old_list : a list) (new_list : a list) : (a, p) change list =
+let diff_list_id (type a p k) (module ID : DIFFABLE_ID with type t = a and type Patch.t = p) (old_list : a list) (new_list : a list) : (a, p, k) change list =
   diff_list_generic
     ~compare:ID.has_same_id
     ~on_match:(fun old_item new_item ->
@@ -271,7 +275,7 @@ let diff_list_id (type a p) (module ID : DIFFABLE_ID with type t = a and type Pa
 
 (* Utility functions *)
 let update_of_patch (type a) (module P : PATCH with type t = a)
-    (x : a) : a update =
+    (x : a) : a structured_update =
   if P.is_empty x then
     `Unchanged
   else
@@ -279,14 +283,14 @@ let update_of_patch (type a) (module P : PATCH with type t = a)
 
 let update_of_atomic (type a p)
     (module D : DIFFABLE_EQ with type t = a and type Patch.t = p)
-    (x : a atomic_update) : p update =
+    (x : a atomic_update) : p structured_update =
   match x with
   | `Modified { oldval; newval } -> `Modified (D.diff oldval newval)
   | `Unchanged -> `Unchanged
 
-let change_of_atomic (type a p)
+let structured_of_atomic (type a p)
     (module D : DIFFABLE_EQ with type t = a and type Patch.t = p)
-    (x : a atomic_change) : (a, p) change =
+    (x : a atomic_change) : (a, p) structured_change =
   match x with
   | `Added a -> `Added a
   | `Removed a -> `Removed a
@@ -307,9 +311,9 @@ let change_of_atomic (type a p)
     @param changes The change list from Myers diff
     @return Change list with adjacent Removed+Added pairs merged into Modified
 *)
-let merge_adjacent_changes (type a p)
+let merge_adjacent_changes (type a p k)
     ~(diff : a -> a -> p)
-    (changes : (a, p) change list) : (a, p) change list =
+    (changes : (a, p, k) change list) : (a, p, k) change list =
   let rec aux = function
     | `Removed old :: `Added new_ :: rest ->
         `Modified (diff old new_) :: aux rest
@@ -327,8 +331,8 @@ let merge_adjacent_changes (type a p)
     Note: This may produce different results than diff_list for the same input,
     as adjacent insert+delete pairs are collapsed into modifications.
 *)
-let diff_list_merged (type a p)
+let diff_list_merged (type a p k)
     (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p)
-    (old_list : a list) (new_list : a list) : (a, p) change list =
+    (old_list : a list) (new_list : a list) : (a, p, k) change list =
   diff_list (module EQ) old_list new_list
   |> merge_adjacent_changes ~diff:EQ.diff

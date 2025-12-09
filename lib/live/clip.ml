@@ -203,14 +203,14 @@ module MidiClip = struct
 
 
   module Patch = struct
-    type note_change = (MidiNote.t, MidiNote.Patch.t) change
+    type note_change = (MidiNote.t, MidiNote.Patch.t) structured_change
 
     type t = {
       name : string atomic_update;
       start_time : float atomic_update;
       end_time : float atomic_update;
-      loop : Loop.Patch.t update;
-      signature : TimeSignature.Patch.t update;
+      loop : Loop.Patch.t structured_update;
+      signature : TimeSignature.Patch.t structured_update;
       notes : note_change list;
     }
 
@@ -343,9 +343,9 @@ module AudioClip = struct
       name : string atomic_update;
       start_time : float atomic_update;
       end_time : float atomic_update;
-      loop : Loop.Patch.t update;
-      signature : TimeSignature.Patch.t update;
-      sample_ref : SampleRef.Patch.t update;
+      loop : Loop.Patch.t structured_update;
+      signature : TimeSignature.Patch.t structured_update;
+      sample_ref : SampleRef.Patch.t structured_update;
     }
 
     let is_empty patch =
