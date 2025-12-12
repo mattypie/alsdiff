@@ -288,7 +288,8 @@ end
 type t =
   | Midi of MidiTrack.t
   | Audio of AudioTrack.t
-  (* TODO: send track, group track *)
+  | Group of AudioTrack.t
+  (* TODO: return track *)
 [@@deriving eq]
 
 let has_same_id old_track new_track =
@@ -299,12 +300,13 @@ let has_same_id old_track new_track =
 
 let id_hash = function
   | Midi midi -> MidiTrack.id_hash midi
-  | Audio audio -> AudioTrack.id_hash audio
+  | Group audio | Audio audio -> AudioTrack.id_hash audio
 
 let create (xml : Xml.t) : t =
   match xml with
   | Xml.Element { name = "MidiTrack"; _ } -> Midi (MidiTrack.create xml)
-  | Xml.Element { name = "AudioTrack"; _ } -> Audio (AudioTrack.create xml)
+  | Xml.Element { name = "AudioTrack"; _ }
+  | Xml.Element { name = "GroupTrack"; _ } -> Audio (AudioTrack.create xml)
   | _ -> failwith ("Unsupported track type: " ^
                  match xml with
                  | Xml.Element { name; _ } -> name
@@ -325,8 +327,9 @@ let diff (old_track : t) (new_track : t) : Patch.t =
   | Midi old_midi, Midi new_midi ->
     let midi_patch = MidiTrack.diff old_midi new_midi in
     Patch.MidiPatch midi_patch
-  | Audio old_audio, Audio new_audio ->
+  | Audio old_audio, Audio new_audio
+  | Group old_audio, Group new_audio ->
     let audio_patch = AudioTrack.diff old_audio new_audio in
     Patch.AudioPatch audio_patch
-  | Midi _, Audio _ | Audio _, Midi _ ->
+  | _ ->
     failwith "cannot diff tracks of different types (MidiTrack vs AudioTrack)"
