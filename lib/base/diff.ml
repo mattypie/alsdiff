@@ -24,31 +24,89 @@ module type DIFFABLE_EQ = sig
 end
 
 
+(** Phantom types for distinguishing change kinds *)
 type atomic
 type structured
 
-(** The unified type to describe the change of an value.
+(** The unified type to describe the change of a value.
+
+    This polymorphic variant type represents different kinds of changes that can occur
+    when comparing two values. The ['kind] parameter is a phantom type that distinguishes
+    between atomic and structured changes at the type level.
+
+    @param 'a The type of the value being changed
+    @param 'p The type of the patch/modify information
+    @param 'kind The phantom type (either [atomic] or [structured])
+
     TODO: adding a [`Moved] or [`Reordered] variant,
     currently the Myers diff algorithm can't really detect an item moved/reordered in a sequence.
 *)
 type ('a, 'p, 'kind) change = [
-  | `Unchanged
-  | `Added of 'a
-  | `Removed of 'a
-  | `Modified of 'p
+  | `Unchanged  (** The value remained the same *)
+  | `Added of 'a  (** A new value was added *)
+  | `Removed of 'a  (** A value was removed *)
+  | `Modified of 'p  (** A value was modified, with patch information [p] *)
 ]
 
+(** A patch representing the change of a simple atomic value.
+
+    Atomic patches are used for primitive values that can be directly compared
+    and replaced, such as integers, strings, floats, or booleans.
+
+    @param oldval The original value before the change
+    @param newval The new value after the change
+*)
 type 'a atomic_patch = { oldval : 'a; newval : 'a }
+
+(** A change type for atomic values with compile-time type safety.
+
+    This type ensures that only atomic changes (changes to simple/primitive values)
+    can be used, preventing accidental mixing with structured changes at compile time.
+
+    @param 'a The type of the atomic value (e.g., int, string, float)
+*)
 type 'a atomic_change = ('a, 'a atomic_patch, atomic) change
 
+(** A change type for structured values with compile-time type safety.
+
+    This type is used for complex objects that have their own Patch.t type
+    and require nested diffing. Examples include Loop, Send, Device, etc.
+    The phantom type [structured] prevents mixing with atomic changes.
+
+    @param 'a The type of the structured value
+    @param 'p The patch type for the structured value
+*)
 type ('a, 'p) structured_change = ('a, 'p, structured) change
 
+(** A type representing updates to complex structured objects.
+
+    Updates are used when a complex object has been modified internally,
+    with the patch describing the specific changes made to the object's structure.
+
+    @param 'p The patch type describing the modifications
+    @param 'kind The phantom type (either [atomic] or [structured])
+*)
 type ('p, 'kind) update = [
-  | `Unchanged
-  | `Modified of 'p
+  | `Unchanged  (** The object remained unchanged *)
+  | `Modified of 'p  (** The object was modified according to patch [p] *)
 ]
 
+(** An update type specifically for structured objects.
+
+    This type ensures that only structured updates (updates to complex objects)
+    can be used, providing compile-time guarantees about the type of update.
+
+    @param 'p The patch type for the structured object
+*)
 type 'p structured_update = ('p, structured) update
+
+(** An update type specifically for atomic values.
+
+    This type ensures that only atomic updates (updates to primitive values)
+    can be used, providing compile-time type safety.
+
+    @param 'a The type of the atomic value
+*)
 type 'a atomic_update = ('a atomic_patch, atomic) update
 
 
