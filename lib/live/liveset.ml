@@ -87,25 +87,27 @@ module IntHashtbl = Hashtbl.Make(Int)
 
 type pointee =
   | DevicePointee of Device.t
-  | DeviceParamPointee of Device.DeviceParam.t
+  | DeviceParamPointee of Device.DeviceParam.t   (* TODO: make those param pointees a tuple like (Device.t, Device.DeviceParam.t) *)
   | Max4LiveParamPointee of Device.Max4LiveParam.t
   | PluginParamPointee of Device.PluginParam.t
   | MacroPointee of Device.Macro.t
+
 
 type t = {
   name : string;
   version : Version.t;
   creator : string;
-  tracks : Track.t list;
+  tracks : Track.t list;        (* for Audio, MIDI and Group tracks *)
+  returns : Track.t list;       (* only Return tracks *)
   locators : Locator.t list;
   pointees : pointee IntHashtbl.t;
 }
 
+
 (* Helper to extract devices from any track type *)
 let get_track_devices = function
   | Track.Midi t -> t.devices
-  | Track.Audio t
-  | Track.Group t -> t.devices
+  | Track.Audio t | Track.Group t | Track.Return t -> t.devices
 
 (* Recursive helper to process a device and its children (for Groups) *)
 let rec process_device_recursive (pointees : pointee IntHashtbl.t) (device : Device.t) : unit =
@@ -203,10 +205,7 @@ let create (xml : Xml.t) (file_path : string) : t =
   in
 
   (* 3. Extract creator information *)
-  let creator =
-    try Xml.get_attr "Creator" xml
-    with Not_found -> "Unknown"
-  in
+  let creator = Xml.get_attr_opt "Creator" xml |> Option.value ~default:"Unknown" in
 
   (* 4. Extract name from file path *)
   let name =
@@ -219,19 +218,24 @@ let create (xml : Xml.t) (file_path : string) : t =
   let liveset_xml = Upath.find "LiveSet" xml |> snd in
 
   (* 6. Parse tracks *)
+  let tracks_xml = Upath.find "Tracks" liveset_xml |> snd in
+
   let tracks =
-    try
-      let tracks_xml = Upath.find "Tracks" liveset_xml |> snd in
       Xml.get_childs tracks_xml
       |> List.filter_map (fun track_xml ->
           match Xml.get_name track_xml with
-          | "MidiTrack" | "AudioTrack" | "GroupTrack" ->
-              Some (Track.create track_xml)
+          | "MidiTrack" | "AudioTrack" | "GroupTrack" -> Some (Track.create track_xml)
           | _ -> None
         )
-    with Not_found ->
-      (* Empty tracks list if no Tracks element *)
-      []
+  in
+
+  let returns =
+      Xml.get_childs tracks_xml
+      |> List.filter_map (fun track_xml ->
+          match Xml.get_name track_xml with
+          | "ReturnTrack" -> Some (Track.create track_xml)
+          | _ -> None
+        )
   in
 
   (* 7. Parse locators *)
@@ -244,9 +248,7 @@ let create (xml : Xml.t) (file_path : string) : t =
             Some (Locator.create locator_xml file_path)
           | _ -> None
         )
-    with Not_found ->
-      (* Empty locators list if no Locators element *)
-      []
+    with Not_found -> []
   in
 
   (* 8. Create initial liveset record *)
@@ -255,6 +257,7 @@ let create (xml : Xml.t) (file_path : string) : t =
     version;
     creator;
     tracks;
+    returns;
     locators;
     pointees = IntHashtbl.create 512  (* Initial size estimate *)
   } in
@@ -271,6 +274,7 @@ module Patch = struct
     version : Version.Patch.t structured_update;
     creator : string atomic_update;
     tracks : (Track.t, Track.Patch.t) structured_change list;
+    returns : (Track.t, Track.Patch.t) structured_change list;
     locators : (Locator.t, Locator.Patch.t) structured_change list;
     (* Note: pointees is derived from tracks, so we don't diff it directly *)
   }
@@ -280,6 +284,7 @@ module Patch = struct
     patch.version = `Unchanged &&
     patch.creator = `Unchanged &&
     List.for_all (function `Unchanged -> true | _ -> false) patch.tracks &&
+    List.for_all (function `Unchanged -> true | _ -> false) patch.returns &&
     List.for_all (function `Unchanged -> true | _ -> false) patch.locators
 end
 
@@ -290,6 +295,9 @@ let diff (old_liveset : t) (new_liveset : t) : Patch.t =
   let tracks_changes =
     diff_list_id (module Track) old_liveset.tracks new_liveset.tracks
   in
+  let returns_changes =
+    diff_list_id (module Track) old_liveset.returns new_liveset.returns
+  in
   let locators_changes =
     diff_list_id (module Locator) old_liveset.locators new_liveset.locators
   in
@@ -299,5 +307,6 @@ let diff (old_liveset : t) (new_liveset : t) : Patch.t =
     version = version_change;
     creator = creator_change;
     tracks = tracks_changes;
+    returns = returns_changes;
     locators = locators_changes;
   }
