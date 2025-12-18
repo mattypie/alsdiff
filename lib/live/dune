@@ -5,7 +5,6 @@
    clip
    device
    track
-   main_track
    liveset)
  (libraries alsdiff_base ppx_deriving)
  (preprocess (pps ppx_deriving.eq)))
