@@ -124,27 +124,27 @@ let rec process_device_recursive (pointees : pointee IntHashtbl.t) (device : Dev
   match device with
   | Device.Regular reg ->
       List.iter (fun (param : Device.DeviceParam.t) ->
-        IntHashtbl.add pointees param.automation (DeviceParamPointee param);
-        IntHashtbl.add pointees param.modulation (DeviceParamPointee param)
+        IntHashtbl.add pointees param.base.automation (DeviceParamPointee param);
+        IntHashtbl.add pointees param.base.modulation (DeviceParamPointee param)
       ) reg.params
 
   | Device.Plugin plugin ->
       List.iter (fun (param : Device.PluginParam.t) ->
-        IntHashtbl.add pointees param.automation (PluginParamPointee param);
-        IntHashtbl.add pointees param.modulation (PluginParamPointee param)
+        IntHashtbl.add pointees param.base.automation (PluginParamPointee param);
+        IntHashtbl.add pointees param.base.modulation (PluginParamPointee param)
       ) plugin.params
 
   | Device.Max4Live m4l ->
       List.iter (fun (param : Device.Max4LiveParam.t) ->
-        IntHashtbl.add pointees param.automation (Max4LiveParamPointee param);
-        IntHashtbl.add pointees param.modulation (Max4LiveParamPointee param)
+        IntHashtbl.add pointees param.base.automation (Max4LiveParamPointee param);
+        IntHashtbl.add pointees param.base.modulation (Max4LiveParamPointee param)
       ) m4l.params
 
   | Device.Group group ->
       (* Process Macros *)
       List.iter (fun (macro : Device.Macro.t) ->
-        IntHashtbl.add pointees macro.automation (MacroPointee macro);
-        IntHashtbl.add pointees macro.modulation (MacroPointee macro)
+        IntHashtbl.add pointees macro.base.automation (MacroPointee macro);
+        IntHashtbl.add pointees macro.base.modulation (MacroPointee macro)
       ) group.macros;
 
       (* Process Branches Recursively *)
@@ -161,8 +161,8 @@ and process_group_branches (pointees : pointee IntHashtbl.t) (branches : Device.
     let mixer = branch.mixer in
     let mixer_params = [mixer.volume; mixer.pan; mixer.speaker; mixer.on] in
     List.iter (fun (param : Device.DeviceParam.t) ->
-      IntHashtbl.add pointees param.automation (DeviceParamPointee param);
-      IntHashtbl.add pointees param.modulation (DeviceParamPointee param)
+      IntHashtbl.add pointees param.base.automation (DeviceParamPointee param);
+      IntHashtbl.add pointees param.base.modulation (DeviceParamPointee param)
     ) mixer_params
   ) branches
 

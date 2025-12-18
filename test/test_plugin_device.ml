@@ -64,17 +64,17 @@ let test_plugin_parameter_float_creation () =
 
   (* Verify parameter properties *)
   Alcotest.(check int) "float param id" 0 param.PluginParam.id;
-  Alcotest.(check string) "float param name" "GAIN: Input L (Locked)" param.PluginParam.name;
+  Alcotest.(check string) "float param name" "GAIN: Input L (Locked)" param.base.Device.GenericParam.name;
   Alcotest.(check int) "float param index" 0 param.PluginParam.index;
 
   (* Verify parameter value *)
-  (match param.PluginParam.value with
+  (match param.base.Device.GenericParam.value with
    | Device.Float v -> Alcotest.(check (float 0.01)) "float param value" 0.0 v
    | _ -> Alcotest.fail "parameter should be float");
 
   (* Verify automation and modulation IDs *)
-  Alcotest.(check int) "float param automation id" 203077 param.PluginParam.automation;
-  Alcotest.(check int) "float param modulation id" 203078 param.PluginParam.modulation
+  Alcotest.(check int) "float param automation id" 203077 param.base.Device.GenericParam.automation;
+  Alcotest.(check int) "float param modulation id" 203078 param.base.Device.GenericParam.modulation
 
 let test_plugin_parameter_with_automation () =
   (* Test parameter with automation target *)
@@ -84,17 +84,17 @@ let test_plugin_parameter_with_automation () =
 
   (* Verify parameter properties *)
   Alcotest.(check int) "param id" 11 param.PluginParam.id;
-  Alcotest.(check string) "param name" "IMG: Stereo/Main Band 1 Width Percent" param.PluginParam.name;
+  Alcotest.(check string) "param name" "IMG: Stereo/Main Band 1 Width Percent" param.base.Device.GenericParam.name;
   Alcotest.(check int) "param index" 10 param.PluginParam.index;
 
   (* Verify parameter value *)
-  (match param.PluginParam.value with
+  (match param.base.Device.GenericParam.value with
    | Device.Float v -> Alcotest.(check (float 0.01)) "param value" 0.0 v
    | _ -> Alcotest.fail "parameter should be float");
 
   (* Verify automation and modulation IDs *)
-  Alcotest.(check int) "param automation id" 203097 param.PluginParam.automation;
-  Alcotest.(check int) "param modulation id" 203098 param.PluginParam.modulation
+  Alcotest.(check int) "param automation id" 203097 param.base.Device.GenericParam.automation;
+  Alcotest.(check int) "param modulation id" 203098 param.base.Device.GenericParam.modulation
 
 let test_plugin_parameter_validation () =
   (* Test that all parameters have valid IDs and are properly structured *)
@@ -114,10 +114,10 @@ let test_plugin_parameter_validation () =
 
   (* Check all automation IDs are non-negative *)
   List.iteri (fun i param ->
-    if param.PluginParam.automation < 0 then
-      Alcotest.fail (Printf.sprintf "Parameter %d has negative automation ID: %d" i param.PluginParam.automation);
-    if param.PluginParam.modulation < 0 then
-      Alcotest.fail (Printf.sprintf "Parameter %d has negative modulation ID: %d" i param.PluginParam.modulation)
+    if param.PluginParam.base.Device.GenericParam.automation < 0 then
+      Alcotest.fail (Printf.sprintf "Parameter %d has negative automation ID: %d" i param.PluginParam.base.Device.GenericParam.automation);
+    if param.PluginParam.base.Device.GenericParam.modulation < 0 then
+      Alcotest.fail (Printf.sprintf "Parameter %d has negative modulation ID: %d" i param.PluginParam.base.Device.GenericParam.modulation)
   ) plugin_device.params
 
 let test_plugin_parameter_invalid_type_raises_exception () =

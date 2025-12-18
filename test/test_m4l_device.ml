@@ -46,10 +46,10 @@ let test_create_m4l_device () =
    | Device.PresetRef.DefaultPreset -> Alcotest.fail "Expected UserPreset for M4L device");
 
   (* Verify enabled status *)
-  (match m4l_device.enabled.Device.DeviceParam.value with
+  (match m4l_device.enabled.Device.DeviceParam.base.Device.GenericParam.value with
    | Device.Bool v -> Alcotest.(check bool) "device enabled" false v
    | _ -> Alcotest.fail "enabled parameter should be bool");
-  Alcotest.(check int) "enabled automation id" 84268 m4l_device.enabled.Device.DeviceParam.automation;
+  Alcotest.(check int) "enabled automation id" 84268 m4l_device.enabled.Device.DeviceParam.base.Device.GenericParam.automation;
 
   (* Verify we have parameters *)
   Alcotest.(check (int)) "parameter count" 52 (List.length m4l_device.params);
@@ -60,17 +60,17 @@ let test_create_m4l_device () =
   (* Note: On parameter is handled as the enabled field, not in params list *)
 
   (* Check parameters with specific names - this is what we actually get from the M4L device *)
-  let am_mod_offset_param = List.find (fun p -> p.name = "AM Mod Offset") m4l_device.params in
-  (match am_mod_offset_param.value with
+  let am_mod_offset_param = List.find (fun p -> p.base.Device.GenericParam.name = "AM Mod Offset") m4l_device.params in
+  (match am_mod_offset_param.base.Device.GenericParam.value with
    | Device.Float v ->
      (* Should be 22 for AM Mod Offset from the test XML *)
      Alcotest.(check (float 0.01)) "AM Mod Offset parameter value" 22.0 v
    | _ -> Alcotest.fail "AM Mod Offset parameter should be float");
-  Alcotest.(check int) "AM Mod Offset parameter automation id" 84270 am_mod_offset_param.automation;
+  Alcotest.(check int) "AM Mod Offset parameter automation id" 84270 am_mod_offset_param.base.Device.GenericParam.automation;
 
   (* Check enum parameter *)
-  let clear_grid_param = List.find (fun p -> p.name = "Clear Grid") m4l_device.params in
-  (match clear_grid_param.value with
+  let clear_grid_param = List.find (fun p -> p.base.Device.GenericParam.name = "Clear Grid") m4l_device.params in
+  (match clear_grid_param.base.Device.GenericParam.value with
    | Device.Enum (v, desc) ->
      Alcotest.(check int) "Clear Grid enum value" 0 v;
      Alcotest.(check int) "Clear Grid enum min" 0 desc.min;
@@ -80,8 +80,8 @@ let test_create_m4l_device () =
    | _ -> Alcotest.fail "Clear Grid parameter should be enum");
 
   (* Verify the parameter count matches our expectations *)
-  Alcotest.(check int) "AM Mod Offset parameters count" 1 (List.length (List.filter (fun p -> p.name = "AM Mod Offset") m4l_device.params));
-  Alcotest.(check int) "Clear Grid parameters count" 1 (List.length (List.filter (fun p -> p.name = "Clear Grid") m4l_device.params))
+  Alcotest.(check int) "AM Mod Offset parameters count" 1 (List.length (List.filter (fun p -> p.base.Device.GenericParam.name = "AM Mod Offset") m4l_device.params));
+  Alcotest.(check int) "Clear Grid parameters count" 1 (List.length (List.filter (fun p -> p.base.Device.GenericParam.name = "Clear Grid") m4l_device.params))
 
 let test_m4l_device_param_creation () =
   (* Test creating individual parameters from M4L device XML *)
@@ -100,10 +100,10 @@ let test_m4l_device_param_creation () =
 
   (* Create a parameter from the XML *)
   let open Device.Max4LiveParam in
-  let param = create first_param_xml in
+  let param = create "" first_param_xml in
 
   (* Verify parameter properties *)
-  (match param.value with
+  (match param.base.Device.GenericParam.value with
    | Device.Float _ -> () (* Could be any float value *)
    | Device.Int _ -> () (* Could be any int value *)
    | Device.Bool _ -> () (* Could be any bool value *)
@@ -112,7 +112,7 @@ let test_m4l_device_param_creation () =
 
   (* Verify basic structure *)
   Alcotest.(check bool) "parameter id > 0" true (param.id > 0);
-  Alcotest.(check bool) "parameter name not empty" true (String.length param.name > 0)
+  Alcotest.(check bool) "parameter name not empty" true (String.length param.base.Device.GenericParam.name > 0)
 
 let test_m4l_device_boolean_parameter () =
   (* Test finding enum parameters which should have boolean-like behavior *)
@@ -127,10 +127,10 @@ let test_m4l_device_boolean_parameter () =
 
   (* Create a parameter from the XML *)
   let open Device.Max4LiveParam in
-  let param = create first_enum_xml in
+  let param = create "" first_enum_xml in
 
   (* Verify parameter properties *)
-  (match param.value with
+  (match param.base.Device.GenericParam.value with
    | Device.Enum (v, desc) ->
      (* Should be 0 or 1 for boolean-like enums *)
      Alcotest.(check bool) "enum value in range" true (v >= 0 && v <= 1);
@@ -171,28 +171,28 @@ let test_m4l_device_parameter_values () =
   (* Check that we can find parameters with specific names and values *)
   let found_am_mod_offset = List.exists (fun (_, xml_elem) ->
     let open Device.Max4LiveParam in
-    let param = create xml_elem in
-    param.name = "AM Mod Offset"
+    let param = create "" xml_elem in
+    param.base.Device.GenericParam.name = "AM Mod Offset"
   ) param_xmls in
 
   let found_clear_grid = List.exists (fun (_, xml_elem) ->
     let open Device.Max4LiveParam in
-    let param = create xml_elem in
-    param.name = "Clear Grid"
+    let param = create "" xml_elem in
+    param.base.Device.GenericParam.name = "Clear Grid"
   ) param_xmls in
 
   let found_float_param = List.exists (fun (_, xml_elem) ->
     let open Device.Max4LiveParam in
-    let param = create xml_elem in
-    match param.value with
+    let param = create "" xml_elem in
+    match param.base.Device.GenericParam.value with
     | Device.Float _ -> true
     | _ -> false
   ) param_xmls in
 
   let found_enum_param = List.exists (fun (_, xml_elem) ->
     let open Device.Max4LiveParam in
-    let param = create xml_elem in
-    match param.value with
+    let param = create "" xml_elem in
+    match param.base.Device.GenericParam.value with
     | Device.Enum _ -> true
     | _ -> false
   ) param_xmls in

@@ -11,8 +11,12 @@ let test_device_param_with_missing_values () =
         name = "LomId";
         attrs = [("Value", "0")];
         childs = [];
+      };
+      Element {
+        name = "Manual";
+        attrs = [("Value", "0.0")];
+        childs = [];
       }
-      (* Missing Manual element - should default to 0.0 *)
       (* Missing AutomationTarget element - should default to 0 *)
     ];
   } in
@@ -22,13 +26,13 @@ let test_device_param_with_missing_values () =
   let param = create "TestParam" param_xml in
 
   (* Verify parameter properties with defaults *)
-  Alcotest.(check string) "param name" "TestParam" param.name;
-  (match param.value with
+  Alcotest.(check string) "param name" "TestParam" param.base.Device.GenericParam.name;
+  (match param.base.Device.GenericParam.value with
    | Float v -> Alcotest.(check (float 0.01)) "param value (default)" 0.0 v
    | _ -> Alcotest.fail "parameter should be float");
 
-  Alcotest.(check int) "param automation id (default)" 0 param.automation;
-  Alcotest.(check int) "param modulation id (default)" 0 param.modulation
+  Alcotest.(check int) "param automation id (default)" 0 param.base.Device.GenericParam.automation;
+  Alcotest.(check int) "param modulation id (default)" 0 param.base.Device.GenericParam.modulation
 
 let test_device_creation_with_invalid_xml () =
   (* Create invalid XML (Data instead of Element) *)
@@ -68,7 +72,7 @@ let test_device_param_with_continuous_macro_mapping () =
           };
           Element {
             name = "IsNote";
-            attrs = [("Value", "false")];
+            attrs = [("Value", "true")];
             childs = [];
           };
           Element {
@@ -93,7 +97,7 @@ let test_device_param_with_continuous_macro_mapping () =
           };
           Element {
             name = "ControllerMapMode";
-            attrs = [("Value", "0")];
+            attrs = [("Value", "1")];
             childs = [];
           };
         ];
@@ -138,17 +142,17 @@ let test_device_param_with_continuous_macro_mapping () =
   let param = create "Coarse" param_xml in
 
   (* Verify parameter properties *)
-  Alcotest.(check string) "param name" "Coarse" param.name;
-  (match param.value with
+  Alcotest.(check string) "param name" "Coarse" param.base.Device.GenericParam.name;
+  (match param.base.Device.GenericParam.value with
    | Float v -> Alcotest.(check (float 0.01)) "param value" 31.0 v
    | _ -> Alcotest.fail "parameter should be float");
 
-  Alcotest.(check int) "param automation id" 200 param.automation;
-  Alcotest.(check int) "param modulation id" 0 param.modulation;
+  Alcotest.(check int) "param automation id" 200 param.base.Device.GenericParam.automation;
+  Alcotest.(check int) "param modulation id" 0 param.base.Device.GenericParam.modulation;
   (* Verify macro mapping *)
   (match param.mapping with
    | Some mapping -> (
-       Alcotest.(check int) "macro id" 3 mapping.id;
+       Alcotest.(check int) "macro id" 3 mapping.target;
        Alcotest.(check int) "macro range low" 0 mapping.low;
        Alcotest.(check int) "macro range high" 48 mapping.high
      )
@@ -177,7 +181,7 @@ let test_device_param_with_onoff_macro_mapping () =
           };
           Element {
             name = "IsNote";
-            attrs = [("Value", "false")];
+            attrs = [("Value", "true")];
             childs = [];
           };
           Element {
@@ -202,7 +206,7 @@ let test_device_param_with_onoff_macro_mapping () =
           };
           Element {
             name = "ControllerMapMode";
-            attrs = [("Value", "0")];
+            attrs = [("Value", "1")];
             childs = [];
           };
         ];
@@ -247,17 +251,17 @@ let test_device_param_with_onoff_macro_mapping () =
   let param = create "IsOn" param_xml in
 
   (* Verify parameter properties *)
-  Alcotest.(check string) "param name" "IsOn" param.name;
-  (match param.value with
+  Alcotest.(check string) "param name" "IsOn" param.base.Device.GenericParam.name;
+  (match param.base.Device.GenericParam.value with
    | Bool v -> Alcotest.(check bool) "param value" true v
    | _ -> Alcotest.fail "parameter should be bool");
 
-  Alcotest.(check int) "param automation id" 201 param.automation;
-  Alcotest.(check int) "param modulation id" 0 param.modulation;
+  Alcotest.(check int) "param automation id" 201 param.base.Device.GenericParam.automation;
+  Alcotest.(check int) "param modulation id" 0 param.base.Device.GenericParam.modulation;
   (* Verify macro mapping *)
   (match param.mapping with
    | Some mapping -> (
-       Alcotest.(check int) "macro id" 0 mapping.id;
+       Alcotest.(check int) "macro id" 0 mapping.target;
        Alcotest.(check int) "macro range low" 64 mapping.low;
        Alcotest.(check int) "macro range high" 127 mapping.high
      )
@@ -331,13 +335,13 @@ let test_device_param_with_invalid_controller_map_mode () =
   let param = create "NonMacroParam" param_xml in
 
   (* Verify parameter properties *)
-  Alcotest.(check string) "param name" "NonMacroParam" param.name;
-  (match param.value with
+  Alcotest.(check string) "param name" "NonMacroParam" param.base.Device.GenericParam.name;
+  (match param.base.Device.GenericParam.value with
    | Float v -> Alcotest.(check (float 0.01)) "param value" 0.5 v
    | _ -> Alcotest.fail "parameter should be float");
 
-  Alcotest.(check int) "param automation id" 203 param.automation;
-  Alcotest.(check int) "param modulation id" 0 param.modulation;
+  Alcotest.(check int) "param automation id" 203 param.base.Device.GenericParam.automation;
+  Alcotest.(check int) "param modulation id" 0 param.base.Device.GenericParam.modulation;
   (* Verify no macro mapping *)
   (match param.mapping with
    | None -> () (* Expected - no macro mapping *)

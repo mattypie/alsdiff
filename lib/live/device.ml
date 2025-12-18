@@ -17,51 +17,161 @@ type param_value =
   | Enum of int * enum_desc
 [@@deriving eq]
 
-(* Equality modules for custom types *)
-module ParamValueEq = Equality.MakeDefaultEq(struct type t = param_value end)
-module EnumDescEq = Equality.MakeDefaultEq(struct type t = enum_desc end)
 
+(* ================== Helper functions ================== *)
+
+(** Extract a sub-path by dropping elements from both beginning and end.
+
+    @param drop_begin Number of elements to drop from the beginning (default: 0)
+    @param drop_end Number of elements to drop from the end (default: 0)
+    @param path The input path string
+    @return The sub-path with specified elements removed
+*)
+let sub_path ?(drop_begin = 0) ?(drop_end = 0) (path : string) : string =
+  let path_parts = String.split_on_char '/' path in
+  let non_empty_parts = List.filter (fun s -> s <> "") path_parts in
+  let length = List.length non_empty_parts in
+
+  (* Validate drop parameters *)
+  if drop_begin < 0 then
+    invalid_arg (Printf.sprintf "sub_path: drop_begin must be non-negative: %d" drop_begin)
+  else if drop_end < 0 then
+    invalid_arg (Printf.sprintf "sub_path: drop_end must be non-negative: %d" drop_end)
+  else if drop_begin + drop_end > length then
+    invalid_arg (Printf.sprintf "sub_path: cannot drop more elements than available: drop_begin:%d + drop_end:%d > length:%d"
+                   drop_begin
+                   drop_end
+                   length);
+
+  (* Calculate the range to keep *)
+  let keep_start = drop_begin in
+  let keep_end = length - drop_end in
+
+  (* Extract the sub-list using standard List functions *)
+  let rec drop_first n lst =
+    if n <= 0 then lst
+    else
+      match lst with
+      | [] -> []
+      | _ :: rest -> drop_first (n - 1) rest
+  in
+
+  let rec take_first n lst =
+    if n <= 0 then []
+    else
+      match lst with
+      | [] -> []
+      | x :: rest -> x :: take_first (n - 1) rest
+  in
+
+  let sub_parts =
+    non_empty_parts
+    |> drop_first keep_start
+    |> take_first (keep_end - keep_start)
+  in
+
+  (* Reconstruct the path *)
+  match sub_parts with
+  | [] -> ""
+  | _ -> "/" ^ String.concat "/" sub_parts
+
+(** [param_name_from_path path] extracts a parameter name from a path string.
+    The path is relative to the device XML element. This function removes the
+    first path component (device name) and joins the rest with "/".
+
+    Examples:
+    - "DeviceName/Param" -> "Param"
+    - "DeviceName/Nested/Param" -> "Nested/Param"
+    - "Param" -> "Param"
+    - "" -> ""
+*)
+(* FIXME: This function was keep because all XML files like
+   tests/compressor.xml that made for unit testing each individual module.
+   In a full .als XML file, extract parameter name from a path doesn't need such complex logic.
+   But in the other hand, unit testing against a full .als XML file is *SLOW*.
+*)
+let param_name_from_path (path : string) : string =
+  let path_parts = String.split_on_char '/' path in
+  let non_empty_parts = List.filter (fun s -> s <> "") path_parts in
+  match non_empty_parts with
+  | [] -> ""
+  | [single] -> single (* Only one part, return it as-is *)
+  | _ :: rest -> String.concat "/" rest (* Skip first part, join rest *)
 
 
 (* ================== Common modules ================== *)
-module DeviceParam = struct
-
-  type macro_mapping = {
-    id : int;                   (* macro id *)
-    low : int;                  (* mapping range *)
-    high : int;
-  } [@@deriving eq]
-
-
-  (** Represents a single device parameter with a name, a value of a mixed type,
-      and an automation ID. *)
+module GenericParam = struct
   type t = {
     name : string;
     value : param_value;
     automation : int;
-    modulation : int;
-    mapping : macro_mapping option;
+    modulation : int;           (* parameter cannot modulated will be set to a negative number *)
   } [@@deriving eq]
 
-  let has_same_id a b = a.name = b.name (* each parameter has their unique names in the device *)
+  let create ~parse_value xml =
+    let name = Xml.get_name xml in
+    let value = parse_value xml in
+    let automation = Upath.get_int_attr_opt "/AutomationTarget" "Id" xml
+      |> Option.value ~default:0 in
+    let modulation = Upath.get_int_attr_opt "/ModulationTarget" "Id" xml
+      |> Option.value ~default:0 in
+    { name; value; automation; modulation; }
 
-  let id_hash t = Hashtbl.hash t.name
+  let create_int_manual xml =
+    create xml ~parse_value:(fun x -> Int (Upath.get_int_attr "/Manual" "Value" x))
 
-  (** [value_of_string_opt s] attempts to parse a string [s] into a [value] type.
-      For device parameters, we always prefer float values for numeric parameters,
-      as device parameters are typically continuous values even when they appear
-      as whole numbers. This is a private helper function. *)
-  let value_of_string_opt (s : string) : param_value option =
-    match float_of_string_opt s with
-    | Some f -> Some (Float f)
-    | None ->
-      (match bool_of_string_opt s with
-       | Some b -> Some (Bool b)
-       | None ->
-         (* Try int as last resort for values that can't be parsed as float *)
-         (match int_of_string_opt s with
-          | Some i -> Some (Int i)
-          | None -> None))
+  let create_float_manual xml =
+    create xml ~parse_value:(fun x -> Float (Upath.get_float_attr "/Manual" "Value" x))
+
+  let create_bool_manual xml =
+    create xml ~parse_value:(fun x -> Bool (Upath.get_bool_attr "/Manual" "Value" x))
+
+
+  let has_same_id a b = a.name = b.name
+  let id_hash a = Hashtbl.hash a
+
+  module Patch = struct
+    type t = {
+      name : string atomic_update;
+      value : param_value atomic_update;
+      automation : int atomic_update;
+      modulation : int atomic_update;
+    }
+
+    let is_empty t =
+      t.name = `Unchanged &&
+      t.value = `Unchanged &&
+      t.automation = `Unchanged &&
+      t.modulation = `Unchanged
+  end
+
+  let diff (old_param : t) (new_param : t) : Patch.t =
+    let name_change = diff_atomic_value (module String) old_param.name new_param.name in
+    let automation_change = diff_atomic_value (module Int) old_param.automation new_param.automation in
+    let modulation_change = diff_atomic_value (module Int) old_param.modulation new_param.modulation in
+    let module ParamValueEq = struct
+      type t = param_value
+      let equal = (=)
+    end in
+    let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
+    {
+      name = name_change;
+      value = value_change;
+      automation = automation_change;
+      modulation = modulation_change;
+    }
+end
+
+
+module MacroMapping = struct
+  type mapping_kind = Continuous | OnOff [@@deriving eq]
+
+  type t = {
+    target : int;
+    kind : mapping_kind;
+    low : int;
+    high : int;
+  } [@@deriving eq]
 
   (** Extract range from MidiControllerRange (continuous parameters) *)
   let extract_continuous_range (xml : Xml.t) : (int * int) option =
@@ -82,78 +192,112 @@ module DeviceParam = struct
     | (Some min_val, Some max_val) -> Some (min_val, max_val)
     | _ -> None
 
-  (** Parse macro mapping from XML element *)
-  let parse_macro_mapping (xml : Xml.t) : macro_mapping option =
-    match Upath.get_attr_opt "/KeyMidi/ControllerMapMode" "Value" xml with
-    | Some "0" ->
-      (match Upath.get_int_attr_opt "/KeyMidi/NoteOrController" "Value" xml with
-       | Some macro_id ->
-         (match extract_continuous_range xml with
-          | Some (low, high) -> Some { id = macro_id; low; high }
-          | None -> extract_onoff_range xml |> Option.map (fun (low, high) -> { id = macro_id; low; high }))
-       | None -> None)
-    | _ -> None
+  (** [has_macro_mapping xml] checks if an XML elements has a macro mapping *)
+  let has_macro_mapping (xml : Xml.t) : bool =
+    let keymidi_xml = Upath.find "/KeyMidi" xml |> snd in
+    let is_note = Upath.get_bool_attr "IsNote" "Value" keymidi_xml in
+    let controller_map_mode = Upath.get_int_attr "ControllerMapMode" "Value" keymidi_xml in
+    is_note && controller_map_mode <> 0
 
-  (** [create xml] creates a device parameter from an XML element.
+  let create (xml : Xml.t) : t =
+    if not (has_macro_mapping xml) then
+      failwith "It's not a MacroMapping"
+    else
+      let target = Upath.get_int_attr "/KeyMidi/NoteOrController" "Value" xml in
+      let continuous = extract_continuous_range xml in
+      let onoff = extract_onoff_range xml in
+      let (low, high, kind) = match (continuous, onoff) with
+        | Some (l, h), None -> (l, h, Continuous)
+        | None, Some (l, h) -> (l, h, OnOff)
+        | _ -> failwith "Invalid XML for creating a MacroMapping"
+      in
+      { target; kind; low; high }
+
+  let create_opt (xml : Xml.t) : t option =
+    try Some (create xml) with _ -> None
+
+  let has_same_id a b = a.target = b.target
+  let id_hash a = Hashtbl.hash a.target
+
+  module Patch = struct
+    type t = {
+      low : int atomic_update;
+      high : int atomic_update;
+    }
+
+    let is_empty a = a.low = `Unchanged && a.high = `Unchanged
+  end
+
+  let diff (old_mapping : t) (new_mapping : t) : Patch.t =
+    if old_mapping.target <> new_mapping.target then
+      failwith (Printf.sprintf "Cannot compare two MacroMapping with different targets (%d vs %d)"
+                  old_mapping.target
+                  new_mapping.target)
+    else
+      let low_change = diff_atomic_value (module Int) old_mapping.low new_mapping.low in
+      let high_change = diff_atomic_value (module Int) old_mapping.high new_mapping.high in
+      { low = low_change; high = high_change }
+end
+
+
+module DeviceParam = struct
+  (** Represents a single device parameter with a name, a value of a mixed type,
+      and an automation ID. *)
+  type t = {
+    base : GenericParam.t;
+    mapping : MacroMapping.t option;
+  } [@@deriving eq]
+
+  let has_same_id a b = GenericParam.has_same_id a.base b.base (* each parameter has their unique names in the device *)
+
+  let id_hash a = GenericParam.id_hash a.base
+
+  (** [create path xml] creates a device parameter from a Device XML element.
       It raises [Failure "Invalid XML element for creating DeviceParam"] if the XML
       is not a valid element, and raises [Failure "Failed to parse device parameter"]
-      if the parameter value cannot be parsed. *)
+      if the parameter value cannot be parsed.
+
+      @param path the path relative to the device XML element
+      @param xml the device XML element
+  *)
   let create (path : string) (xml : Xml.t) : t =
     match xml with
     | Xml.Element _ ->
-      let name =
-        let path_parts = String.split_on_char '/' path in
-        let non_empty_parts = List.filter (fun s -> s <> "") path_parts in
-        match non_empty_parts with
-        | [] -> ""
-        | [single] -> single (* Only one part, return it as-is *)
-        | _ :: rest -> String.concat "/" rest (* Skip first part, join rest *)
+      let name = param_name_from_path path in
+      let parse_value = fun xml ->
+        let literal = Upath.get_attr "/Manual" "Value" xml in
+        match literal with
+        | "true" | "false" -> Bool (bool_of_string literal)
+        | _ -> Float (float_of_string literal)
       in
-      let automation =
-        Upath.get_int_attr_opt "/AutomationTarget" "Id" xml
-        |> Option.value ~default:0
-      in
-      let modulation =
-        Upath.get_int_attr_opt "/ModulationTarget" "Id" xml
-        |> Option.value ~default:0
-      in
-      let value_str_opt = Upath.get_attr_opt "/Manual" "Value" xml in
-      let value =
-        match value_str_opt with
-        | Some s ->
-          (match value_of_string_opt s with
-           | Some v -> v
-           | None -> failwith "Failed to parse device parameter")
-        | None ->
-          (* Default to 0.0 when Manual element is missing *)
-          Float 0.0
-      in
-      let mapping = parse_macro_mapping xml in
-      { name; value; automation; modulation; mapping }
+      let base = GenericParam.create ~parse_value xml in
+      let name_updated_base = { base with name } in
+      let mapping = MacroMapping.create_opt xml in
+      { base = name_updated_base; mapping }
     | _ -> failwith "Invalid XML element for creating DeviceParam"
 
   let create_from_upath_find (path, xml) = create path xml
 
   module Patch = struct
     type t = {
-      value : param_value atomic_update;
-      automation : int atomic_update;
-      modulation : int atomic_update;
+      base : GenericParam.Patch.t structured_update;
+      mapping : (MacroMapping.t, MacroMapping.Patch.t) structured_change;
     }
 
-    let is_empty = function
-      | { value = `Unchanged; automation = `Unchanged; modulation = `Unchanged } -> true
-      | _ -> false
+    let is_empty patch =
+      Diff.is_unchanged_update (module GenericParam.Patch) patch.base &&
+      Diff.is_unchanged_change (module MacroMapping.Patch) patch.mapping
   end
 
   let diff (old_param : t) (new_param : t) : Patch.t =
-    if old_param.name <> new_param.name then
+    if old_param.base.name <> new_param.base.name then
       failwith "cannot diff two DeviceParams with different names"
     else
-      let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
-      let automation_change = diff_atomic_value (module Equality.IntEq) old_param.automation new_param.automation in
-      let modulation_change = diff_atomic_value (module Equality.IntEq) old_param.modulation new_param.modulation in
-      { value = value_change; automation = automation_change; modulation = modulation_change }
+      let base_change = diff_complex_value_id (module GenericParam) old_param.base new_param.base in
+      let mapping_change = diff_complex_value_id_opt (module MacroMapping)
+          old_param.mapping new_param.mapping
+      in
+      { base = base_change; mapping = mapping_change }
 end
 
 
@@ -465,54 +609,43 @@ end
 module PluginParam = struct
   type t = {
     id : int;                   (* ParameterId *)
-    name : string;              (* ParameterName *)
     index : int;                (* VisualIndex *)
-    value : param_value;        (* Manual *)
-    automation : int;           (* ParameterValue/AutomationTarget *)
-    modulation : int;           (* ParameterValue/ModulationTarget *)
+    base : GenericParam.t;
     (* TODO: macro mapping *)
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
     let id = Upath.get_int_attr "/ParameterId" "Value" xml in
-    let name = Upath.get_attr "/ParameterName" "Value" xml in
     let index = Upath.get_int_attr "/VisualIndex" "Value" xml in
 
-    let value =
-      let parameter_type = Xml.get_name xml in
-      match  parameter_type with
+    let param_type = Xml.get_name xml in
+    let parse_value = fun val_xml ->
+      match param_type with
       | "PluginFloatParameter" ->
-        Float (Upath.get_float_attr "/ParameterValue/Manual" "Value" xml)
+        Float (Upath.get_float_attr "/Manual" "Value" val_xml)
       | "PluginIntParameter" ->
-        Int (Upath.get_int_attr "/ParameterValue/Manual" "Value" xml)
+        Int (Upath.get_int_attr "/Manual" "Value" val_xml)
       | "PluginBoolParameter" ->
-        Bool (Upath.get_bool_attr "/ParameterValue/Manual" "Value" xml)
+        Bool (Upath.get_bool_attr "/Manual" "Value" val_xml)
       | "PluginEnumParameter" ->
         (* failwith "PluginEnumParameter parsing not yet implemented - needs further analysis of Ableton Live XML format" *)
-        Float (Upath.get_float_attr "/ParameterValue/Manual" "Value" xml)  (* FIXME: Temporary fallback *)
-      | _ -> failwith ("Invalid parameter type " ^ parameter_type)
+        Float (Upath.get_float_attr "/Manual" "Value" val_xml)  (* FIXME: Temporary fallback *)
+      | _ -> failwith ("Invalid parameter type " ^ param_type)
     in
-
-    let automation = Upath.get_int_attr "/ParameterValue/AutomationTarget" "Id" xml in
-    let modulation = Upath.get_int_attr_opt "/ParameterValue/ModulationTarget" "Id" xml |> Option.value ~default:0 in
-
-    { id; name; index; value; automation; modulation }
+    let base = Upath.find "/ParameterValue" xml |> snd |> GenericParam.create ~parse_value in
+    let name = Upath.get_attr "/ParameterName" "Value" xml in
+    let name_updated_base = { base with name } in
+    { id; index; base = name_updated_base; }
 
   module Patch = struct
     type t = {
-      name : string atomic_update;
       index : int atomic_update;
-      value : param_value atomic_update;
-      automation : int atomic_update;
-      modulation : int atomic_update;
+      base : GenericParam.Patch.t structured_update;
     }
 
     let is_empty patch =
-      patch.name = `Unchanged &&
       patch.index = `Unchanged &&
-      patch.value = `Unchanged &&
-      patch.automation = `Unchanged &&
-      patch.modulation = `Unchanged
+      is_unchanged_update (module GenericParam.Patch) patch.base
   end
 
   let has_same_id a b = a.id = b.id
@@ -523,19 +656,9 @@ module PluginParam = struct
     if old_param.id <> new_param.id then
       failwith "cannot diff two PluginParams with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_param.name new_param.name in
-      let index_change = diff_atomic_value (module Equality.IntEq) old_param.index new_param.index in
-      let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
-      let automation_change = diff_atomic_value (module Equality.IntEq) old_param.automation new_param.automation in
-      let modulation_change = diff_atomic_value (module Equality.IntEq) old_param.modulation new_param.modulation in
-
-      {
-        Patch.name = name_change;
-        index = index_change;
-        value = value_change;
-        automation = automation_change;
-        modulation = modulation_change;
-      }
+      let index_change = diff_atomic_value (module Int) old_param.index new_param.index in
+      let base_change = diff_complex_value_id (module GenericParam) old_param.base new_param.base in
+      { index = index_change; base = base_change; }
 end
 
 
@@ -767,16 +890,13 @@ end
 module Max4LiveParam = struct
   type t = {
     id : int;                   (* ParameterId *)
-    name : string;              (* ParameterName *)
     index : int;                (* VisualIndex *)
-    value : param_value;        (* Manual *)
-    automation : int;           (* Timeable/AutomationTarget *)
-    modulation : int;           (* Timeable/ModulationTarget *)
+    base : GenericParam.t;
     (* TODO: macro mapping *)
   } [@@deriving eq]
 
   (** Extract enum description from Names/Name/Name structure - specific to M4L *)
-  let extract_enum_desc (xml : Xml.t) : enum_desc =
+  let extract_enum_desc (xml : Xml.t) : enum_desc option =
     try
       (* Find all Name elements under Names *)
       let name_elements = Upath.find_all "/Names/Name/Name" xml in
@@ -788,66 +908,48 @@ module Max4LiveParam = struct
       in
       if Array.length enums > 0 then
         let max_id = Array.length enums - 1 in
-        { min = 0; max = max_id; enums }
+        Some { min = 0; max = max_id; enums }
       else
-        (* Fallback to empty enum if no names found *)
-        { min = 0; max = 0; enums = [|""|] }
-    with
-    | _ ->
-      (* Fallback if parsing fails *)
-      { min = 0; max = 0; enums = [|""|] }
+        None
+    with _ -> None
 
   (** Create M4L parameter from XML element *)
-  let create (xml : Xml.t) : t =
+  let create (_path : string) (xml : Xml.t) : t =
     let id = Xml.get_int_attr "Id" xml in
-    let name = Upath.get_attr "/Name" "Value" xml in
     let index = Upath.get_int_attr "/Index" "Value" xml in
 
-    let value =
-      let parameter_type = Xml.get_name xml in
-      match parameter_type with
+    let param_type = Xml.get_name xml in
+    let parse_value = fun val_xml ->
+      match param_type with
       | "MxDFloatParameter" ->
-        Float (Upath.get_float_attr "/Timeable/Manual" "Value" xml)
+        Float (Upath.get_float_attr "/Manual" "Value" val_xml)
       | "MxDIntParameter" ->
-        Int (Upath.get_int_attr "/Timeable/Manual" "Value" xml)
+        Int (Upath.get_int_attr "/Manual" "Value" val_xml)
       | "MxDBoolParameter" ->
-        Bool (Upath.get_bool_attr "/Timeable/Manual" "Value" xml)
+        Bool (Upath.get_bool_attr "/Manual" "Value" val_xml)
       | "MxDEnumParameter" ->
-        let enum_value = Upath.get_int_attr "/Timeable/Manual" "Value" xml in
-        let enum_desc = extract_enum_desc xml in
-        Enum (enum_value, enum_desc)
-      | _ -> failwith ("Invalid M4L parameter type: " ^ parameter_type)
+        let enum_value = Upath.get_int_attr "/Manual" "Value" val_xml in
+        let enum_desc_opt = extract_enum_desc xml in
+        (match enum_desc_opt with
+         | Some enum_desc  -> Enum (enum_value, enum_desc)
+         | None -> failwith "Haven't found enum definitions")
+      | _ -> failwith ("Invalid M4L parameter type: " ^ param_type)
     in
 
-    (* AutomationTarget is optional, use -1 as fallback *)
-    let automation =
-      try Upath.get_int_attr "/Timeable/AutomationTarget" "Id" xml
-      with _ -> -1
-    in
+    let name = Upath.get_attr "/Name" "Value" xml in
+    let base = Upath.find "/Timeable" xml |> snd |> GenericParam.create ~parse_value in
+    let name_updated_base = { base with name } in
+    { id; index; base = name_updated_base; }
 
-    (* ModulationTarget is optional, use -1 as fallback *)
-    let modulation =
-      try Upath.get_int_attr "/Timeable/ModulationTarget" "Id" xml
-      with _ -> -1
-    in
-
-    { id; name; index; value; automation; modulation }
+  let create_from_upath_find (path, xml) = create path xml
 
   module Patch = struct
     type t = {
-      name : string atomic_update;
       index : int atomic_update;
-      value : param_value atomic_update;
-      automation : int atomic_update;
-      modulation : int atomic_update;
+      base : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.index = `Unchanged &&
-      patch.value = `Unchanged &&
-      patch.automation = `Unchanged &&
-      patch.modulation = `Unchanged
+    let is_empty patch = patch.index = `Unchanged && is_unchanged_update (module GenericParam.Patch) patch.base
   end
 
   let has_same_id a b = a.id = b.id
@@ -858,18 +960,12 @@ module Max4LiveParam = struct
     if old_param.id <> new_param.id then
       failwith "cannot diff two Max4LiveParams with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_param.name new_param.name in
       let index_change = diff_atomic_value (module Equality.IntEq) old_param.index new_param.index in
-      let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
-      let automation_change = diff_atomic_value (module Equality.IntEq) old_param.automation new_param.automation in
-      let modulation_change = diff_atomic_value (module Equality.IntEq) old_param.modulation new_param.modulation in
+      let base_change = diff_complex_value (module GenericParam) old_param.base new_param.base in
 
       {
-        Patch.name = name_change;
         index = index_change;
-        value = value_change;
-        automation = automation_change;
-        modulation = modulation_change;
+        base = base_change;
       }
 end
 
@@ -950,61 +1046,36 @@ let diff_atomic_list (old_list : float list) (new_list : float list) : float ato
 module Macro = struct
   type t = {
     id : int;
-    name : string;
-    manual : float;             (* current value *)
-    automation : int;
-    modulation : int;           (* Live 12 added modulation *)
+    base : GenericParam.t;
   } [@@deriving eq]
 
   let has_same_id a b = a.id = b.id
-
   let id_hash t = Hashtbl.hash t.id
 
   let create (name_xml : Xml.t) (control_xml : Xml.t) : t =
     (* Extract the macro name from MacroDisplayNames element *)
     let name_id = extract_index_from_name @@ Xml.get_name name_xml in
     let control_id = extract_index_from_name @@ Xml.get_name control_xml in
-    let name = Xml.get_attr "Value" name_xml in
-    let manual = Upath.get_float_attr "/Manual" "Value" control_xml in
-    let automation = Upath.get_int_attr "/AutomationTarget" "Id" control_xml in
-    (* Extract modulation target ID (Live 12 feature) *)
-    let modulation =
-      Upath.get_int_attr_opt "/ModulationTarget" "Id" control_xml
-      |> Option.value ~default:0 in
+    let base = GenericParam.create_float_manual control_xml in
     if name_id <> control_id then
       failwith ("Macro name ID " ^ string_of_int name_id ^ " does not match control ID " ^ string_of_int control_id ^ ". Macro names and controls must be paired correctly.")
     else
-    { id=name_id; name; manual; automation; modulation }
+    { id=name_id; base; }
 
   module Patch = struct
     type t = {
-      name : string atomic_update;
-      manual : float atomic_update;
-      automation : int atomic_update;
-      modulation : int atomic_update;
+      base : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.manual = `Unchanged &&
-      patch.automation = `Unchanged &&
-      patch.modulation = `Unchanged
+    let is_empty p = is_unchanged_update (module GenericParam.Patch) p.base
   end
 
   let diff (old_macro : t) (new_macro : t) : Patch.t =
     if old_macro.id <> new_macro.id then
       failwith "cannot diff two Macros with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_macro.name new_macro.name in
-      let manual_change = diff_atomic_value (module Equality.FloatEq) old_macro.manual new_macro.manual in
-      let automation_change = diff_atomic_value (module Equality.IntEq) old_macro.automation new_macro.automation in
-      let modulation_change = diff_atomic_value (module Equality.IntEq) old_macro.modulation new_macro.modulation in
-      {
-        Patch.name = name_change;
-        manual = manual_change;
-        automation = automation_change;
-        modulation = modulation_change;
-      }
+      let base_change = diff_complex_value (module GenericParam) old_macro.base new_macro.base in
+      { base = base_change }
 end
 
 
@@ -1016,7 +1087,6 @@ module Snapshot = struct
   } [@@deriving eq]
 
   let has_same_id a b = a.id = b.id
-
   let id_hash t = Hashtbl.hash t.id
 
   let create (xml : Xml.t) : t =
@@ -1574,25 +1644,7 @@ module Max4LiveDevice = struct
     let enabled = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
 
     (* Parse PatchSlot/MxPatchRef for patch_ref *)
-    let patch_ref =
-      try
-        let patch_slot_xml = Upath.find "/PatchSlot/Value/MxPatchRef" xml |> snd in
-        PatchRef.create patch_slot_xml
-      with _ ->
-        (* Fallback if PatchSlot/MxPatchRef not found *)
-        {
-          id = 0;
-          name = "";
-          preset_type = PresetRef.UserPreset;
-          relative_path = "";
-          path = "";
-          pack_name = "";
-          pack_id = 0;
-          file_size = 0;
-          crc = 0;
-          last_mod_date = 0L;
-        }
-    in
+    let patch_ref = Upath.find "/PatchSlot/Value/MxPatchRef" xml |> snd |> PatchRef.create in
 
     (* Extract all M4L parameters *)
     let float_params = Alsdiff_base.Upath.find_all "**/MxDFloatParameter" xml in
@@ -1600,7 +1652,7 @@ module Max4LiveDevice = struct
     let bool_params = Alsdiff_base.Upath.find_all "**/MxDBoolParameter" xml in
     let enum_params = Alsdiff_base.Upath.find_all "**/MxDEnumParameter" xml in
     let all_params = float_params @ int_params @ bool_params @ enum_params in
-    let params = List.map (fun (_, param_xml) -> Max4LiveParam.create param_xml) all_params in
+    let params = List.map Max4LiveParam.create_from_upath_find all_params in
 
     { id; device_name; display_name; pointee; enabled; patch_ref; params; preset }
 

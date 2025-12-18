@@ -178,8 +178,8 @@ let render_envelope_op op =
         env.Automation.target
   | `Modified patch -> render_envelope_patch patch
 
-(* Helper function for rendering device parameter patches *)
-let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Patch.t) =
+(* Helper function for rendering GenericParam patches *)
+let render_generic_param_patch ?(indent_level = 0) (patch : Device.GenericParam.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
   let value_line =
@@ -193,14 +193,21 @@ let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Pa
   in
   join_non_empty [ value_line; auto_line; mod_line ]
 
-let render_mixer ?(indent_level = 0) (patch : Device.Mixer.Patch.t) =
+(* Helper function for rendering device parameter patches *)
+let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Patch.t) =
+  match patch.base with
+  | `Unchanged -> ""
+  | `Modified base_patch -> render_generic_param_patch ~indent_level base_patch
+
+let render_mixer ?(indent_level = 0) (patch : Track.Mixer.Patch.t) =
   let open SectionRenderer in
   let open StructuredChangeRenderer in
+  let open FieldRenderer in
   let header = make_indent_at_level indent_level ^ "Mixer Patch:" in
 
-  (* Helper to render device param patch prefixed with field name *)
-  let render_param_field field_name (param_patch : Device.DeviceParam.Patch.t) =
-    let content = render_device_param_patch ~indent_level:(indent_level + 2) param_patch in
+  (* Helper to render generic param patch prefixed with field name *)
+  let render_param_field field_name (param_patch : Device.GenericParam.Patch.t) =
+    let content = render_generic_param_patch ~indent_level:(indent_level + 2) param_patch in
     if content = "" then ""
     else
       let indent_str = make_indent_at_level (indent_level + 1) in
@@ -210,11 +217,13 @@ let render_mixer ?(indent_level = 0) (patch : Device.Mixer.Patch.t) =
   let volume_line = render_param_field "Volume" patch.volume in
   let pan_line = render_param_field "Pan" patch.pan in
   let mute_line = render_param_field "Mute" patch.mute in
-  let solo_line = render_param_field "Solo" patch.solo in
+  let solo_line = render_simple_change (bool_formatter ~indent_level:(indent_level + 1) "Solo") patch.solo in
 
   (* Helper to render send patch *)
-  let render_send_patch indent_level (send_patch : Device.DeviceParam.Patch.t) =
-    render_device_param_patch ~indent_level:(indent_level + 1) send_patch
+  let render_send_patch indent_level (send_patch : Track.Send.Patch.t) =
+    match send_patch.amount with
+    | `Unchanged -> ""
+    | `Modified amount_patch -> render_generic_param_patch ~indent_level:(indent_level + 1) amount_patch
   in
 
   let send_section =
@@ -222,15 +231,15 @@ let render_mixer ?(indent_level = 0) (patch : Device.Mixer.Patch.t) =
       ~item_fmt:
         {
           format_item =
-            (fun (s : Device.Send.t) ->
+            (fun (s : Track.Send.t) ->
               let amount_str =
-                match s.Device.Send.device_param.Device.DeviceParam.value with
+                match s.Track.Send.amount.Device.GenericParam.value with
                 | Device.Float f -> Printf.sprintf "%.4f" f
                 | Device.Int i -> string_of_int i
                 | Device.Bool b -> string_of_bool b
                 | Device.Enum (i, _) -> string_of_int i
               in
-              Printf.sprintf "Send %d with amount %s" s.Device.Send.id amount_str);
+              Printf.sprintf "Send %d with amount %s" s.Track.Send.id amount_str);
           indent_level = indent_level + 2;
         }
       ~patch_fmt:{ format_patch = render_send_patch }
@@ -492,43 +501,29 @@ let render_parameter_fields ?(include_name = false) ?(include_index = false)
 
 let render_plugin_param_patch ?(indent_level = 0) (patch : Device.PluginParam.Patch.t) =
   let open FieldRenderer in
-  let name_line =
-    Some (render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name)
-  in
+  let open SectionRenderer in
   let index_line =
-    Some (render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Index") patch.index)
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Index") patch.index
   in
-  let value_line =
-    render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Value") patch.value
+  let base_content =
+    match patch.base with
+    | `Unchanged -> ""
+    | `Modified base_patch -> render_generic_param_patch ~indent_level:(indent_level + 1) base_patch
   in
-  let auto_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
-  in
-  let mod_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
-  in
-  render_parameter_fields ~include_name:true ~include_index:true name_line index_line value_line
-    auto_line mod_line
+  join_non_empty [ index_line; base_content ]
 
 let render_max4live_param_patch ?(indent_level = 0) (patch : Device.Max4LiveParam.Patch.t) =
   let open FieldRenderer in
-  let name_line =
-    Some (render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name)
-  in
+  let open SectionRenderer in
   let index_line =
-    Some (render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Index") patch.index)
+    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Index") patch.index
   in
-  let value_line =
-    render_simple_change (device_value_formatter ~indent_level:(indent_level + 1) "Value") patch.value
+  let base_content =
+    match patch.base with
+    | `Unchanged -> ""
+    | `Modified base_patch -> render_generic_param_patch ~indent_level:(indent_level + 1) base_patch
   in
-  let auto_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
-  in
-  let mod_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
-  in
-  render_parameter_fields ~include_name:true ~include_index:true name_line index_line value_line
-    auto_line mod_line
+  join_non_empty [ index_line; base_content ]
 
 let render_preset_ref_patch ?(indent_level = 0) (patch : Device.PresetRef.Patch.t) =
   let open FieldRenderer in
@@ -540,21 +535,9 @@ let render_preset_ref_patch ?(indent_level = 0) (patch : Device.PresetRef.Patch.
   join_non_empty [ path_line; pack_name_line ]
 
 let render_macro_patch ?(indent_level = 0) (patch : Device.Macro.Patch.t) =
-  let open FieldRenderer in
-  let open SectionRenderer in
-  let name_line =
-    render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name
-  in
-  let manual_line =
-    render_simple_change (float_formatter ~indent_level:(indent_level + 1) "Manual") patch.manual
-  in
-  let auto_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Automation") patch.automation
-  in
-  let mod_line =
-    render_simple_change (int_formatter ~indent_level:(indent_level + 1) "Modulation") patch.modulation
-  in
-  join_non_empty [ name_line; manual_line; auto_line; mod_line ]
+  match patch.base with
+  | `Unchanged -> ""
+  | `Modified base_patch -> render_generic_param_patch ~indent_level:(indent_level + 1) base_patch
 
 let render_snapshot_patch ?(indent_level = 0) (patch : Device.Snapshot.Patch.t) =
   let open FieldRenderer in
@@ -656,7 +639,7 @@ let rec render_device ?(indent_level = 0) (patch : Device.Patch.t) : string =
       render_device_params_section
         ~indent_level
         ~header:(make_indent_at_level (indent_level + 1) ^ "Parameters Changes:")
-        ~param_formatter:(fun (p : Device.DeviceParam.t) -> p.name)
+        ~param_formatter:(fun (p : Device.DeviceParam.t) -> p.base.name)
         ~patch_formatter:(fun ~indent_level patch -> render_device_param_patch ~indent_level:indent_level patch)
         patch.params
     in
@@ -673,7 +656,7 @@ let rec render_device ?(indent_level = 0) (patch : Device.Patch.t) : string =
       render_device_params_section
         ~indent_level
         ~header:(make_indent_at_level (indent_level + 1) ^ "Parameters Changes:")
-        ~param_formatter:(fun (p : Device.PluginParam.t) -> Printf.sprintf "%s (Index: %d)" p.name p.index)
+        ~param_formatter:(fun (p : Device.PluginParam.t) -> Printf.sprintf "%s (Index: %d)" p.base.name p.index)
         ~patch_formatter:(fun ~indent_level patch -> render_plugin_param_patch ~indent_level:indent_level patch)
         patch.params
     in
@@ -690,7 +673,7 @@ let rec render_device ?(indent_level = 0) (patch : Device.Patch.t) : string =
       render_device_params_section
         ~indent_level
         ~header:(make_indent_at_level (indent_level + 1) ^ "Parameters Changes:")
-        ~param_formatter:(fun (p : Device.Max4LiveParam.t) -> Printf.sprintf "%s (Index: %d)" p.name p.index)
+        ~param_formatter:(fun (p : Device.Max4LiveParam.t) -> Printf.sprintf "%s (Index: %d)" p.base.name p.index)
         ~patch_formatter:(fun ~indent_level patch -> render_max4live_param_patch ~indent_level:indent_level patch)
         patch.params
     in
@@ -754,7 +737,7 @@ let rec render_device ?(indent_level = 0) (patch : Device.Patch.t) : string =
       render_changes_section
         ~header:(make_indent_at_level (indent_level + 1) ^ "Macros Changes:")
         ~item_fmt:{
-          format_item = (fun (m : Device.Macro.t) -> m.name);
+          format_item = (fun (m : Device.Macro.t) -> m.base.name);
           indent_level = indent_level + 2;
         }
         ~patch_fmt:{ format_patch = fun level patch -> render_macro_patch ~indent_level:level patch }

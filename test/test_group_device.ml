@@ -26,7 +26,7 @@ let test_group_device_macros_from_xml () =
   Alcotest.(check (int)) "total 16 macros" 16 (List.length macros);
 
   (* Check that we have some macros with expected names *)
-  let macro_names = List.map (fun m -> m.Device.Macro.name) macros in
+  let macro_names = List.map (fun m -> m.Device.Macro.base.Device.GenericParam.name) macros in
   (* Just check that we have some macros and they're not empty *)
   Alcotest.(check int) "non-empty macro names count"
     (List.length (List.filter (fun n -> n <> "") macro_names))
@@ -34,21 +34,27 @@ let test_group_device_macros_from_xml () =
 
   (* Check first macro details *)
   let macro0 = List.nth macros 0 in
-  Alcotest.(check (float 0.01)) "macro 0 manual value" 0.0 macro0.Device.Macro.manual;
-  Alcotest.(check int) "macro 0 automation id" 24233 macro0.Device.Macro.automation;
-  Alcotest.(check int) "macro 0 modulation id" 24234 macro0.Device.Macro.modulation;
+  (match macro0.Device.Macro.base.Device.GenericParam.value with
+   | Device.Float v -> Alcotest.(check (float 0.01)) "macro 0 manual value" 0.0 v
+   | _ -> Alcotest.fail "Expected float value");
+  Alcotest.(check int) "macro 0 automation id" 24233 macro0.Device.Macro.base.Device.GenericParam.automation;
+  Alcotest.(check int) "macro 0 modulation id" 24234 macro0.Device.Macro.base.Device.GenericParam.modulation;
 
   (* Check fourth macro details *)
   let macro1 = List.nth macros 3 in
-  Alcotest.(check (float 0.01)) "macro 3 manual value" 82.0208 macro1.Device.Macro.manual;
-  Alcotest.(check int) "macro 1 automation id" 24239 macro1.Device.Macro.automation;
-  Alcotest.(check int) "macro 1 modulation id" 24240 macro1.Device.Macro.modulation;
+  (match macro1.Device.Macro.base.Device.GenericParam.value with
+   | Device.Float v -> Alcotest.(check (float 0.01)) "macro 3 manual value" 82.0208 v
+   | _ -> Alcotest.fail "Expected float value");
+  Alcotest.(check int) "macro 1 automation id" 24239 macro1.Device.Macro.base.Device.GenericParam.automation;
+  Alcotest.(check int) "macro 1 modulation id" 24240 macro1.Device.Macro.base.Device.GenericParam.modulation;
 
   (* Check that all macros have expected structure *)
   List.iter (fun macro ->
-    ignore (macro.Device.Macro.manual : float);
-    ignore (macro.Device.Macro.automation : int);
-    ignore (macro.Device.Macro.modulation : int);
+    (match macro.Device.Macro.base.Device.GenericParam.value with
+     | Device.Float v -> ignore (v : float)
+     | _ -> ());
+    ignore (macro.Device.Macro.base.Device.GenericParam.automation : int);
+    ignore (macro.Device.Macro.base.Device.GenericParam.modulation : int);
   ) macros
 
 let test_group_device_structure_from_xml () =
@@ -66,7 +72,7 @@ let test_group_device_structure_from_xml () =
 
   (* Verify basic group device properties *)
   Alcotest.(check string) "group device display name" "Industrial FM Kick" group.display_name;
-  (match group.enabled.Device.DeviceParam.value with
+  (match group.enabled.Device.DeviceParam.base.Device.GenericParam.value with
    | Device.Bool b -> Alcotest.(check bool) "group device enabled" true b
    | _ -> Alcotest.fail "enabled should be bool");
 

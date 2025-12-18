@@ -144,7 +144,12 @@ let diff_complex_value_id (type a p)
     (module ID : DIFFABLE_ID with type t = a and type Patch.t = p)
     (old_value : a)
     (new_value : a) : p structured_update =
-  diff_value ~equal:ID.has_same_id ~diff:ID.diff old_value new_value
+  if ID.has_same_id old_value new_value then
+    let patch = ID.diff old_value new_value in
+    if ID.Patch.is_empty patch then `Unchanged
+    else `Modified patch
+  else
+    failwith "diff_complex_value_id: IDs do not match"
 
 let diff_complex_value_opt (type a p)
     (module EQ : DIFFABLE_EQ with type t = a and type Patch.t = p)
@@ -162,6 +167,81 @@ let diff_complex_value_id_opt (type a p)
   diff_value_opt
     ~diff_some:(fun o n -> (diff_complex_value_id (module ID) o n :> (a, p) structured_change))
     old_value new_value
+
+
+(** Check if a change or update represents no actual modification.
+
+    This unified function works with both change and update types by using
+    polymorphic variants to handle both cases safely.
+
+    For structured changes:
+    {[
+      let unchanged = is_unchanged_change (module MyPatch) structured_change
+    ]}
+
+    For structured updates:
+    {[
+      let unchanged = is_unchanged_update (module MyPatch) structured_update
+    ]}
+
+    @param P A PATCH module for the patch type
+    @return true if the operation represents no modification
+*)
+let is_unchanged_change (type a p)
+    (module P : PATCH with type t = p)
+    (operation : (a, p, structured) change) : bool =
+  match operation with
+  | `Added _ | `Removed _ -> false
+  | `Unchanged -> true
+  | `Modified p -> P.is_empty p
+
+(** Check if an update represents no actual modification.
+
+    This function specifically handles update types which lack Added/Removed variants.
+
+    @param P A PATCH module for the patch type
+    @param operation The update to check
+    @return true if the update represents no modification
+*)
+let is_unchanged_update (type p)
+    (module P : PATCH with type t = p)
+    (operation : (p, structured) update) : bool =
+  match operation with
+  | `Unchanged -> true
+  | `Modified p -> P.is_empty p
+
+
+(** Check if an atomic change represents no actual modification.
+
+    For atomic changes, the patch equality is checked using direct value comparison
+    since atomic types don't have corresponding PATCH modules.
+
+    @param c The atomic change to check
+    @return true if the change represents no modification
+*)
+let is_unchanged_atomic_change (type a) (c : a atomic_change) : bool =
+  is_unchanged_change
+    (module struct
+      type t = a atomic_patch
+      let is_empty {oldval; newval} = oldval = newval
+    end)
+    c
+
+(** Check if an atomic update represents no actual modification.
+
+    For atomic updates, the patch equality is checked using direct value comparison
+    since atomic types don't have corresponding PATCH modules.
+
+    @param u The atomic update to check
+    @return true if the update represents no modification
+*)
+let is_unchanged_atomic_update (type a) (u : a atomic_update) : bool =
+  is_unchanged_update
+    (module struct
+      type t = a atomic_patch
+      let is_empty {oldval; newval} = oldval = newval
+    end)
+    u
 
 
 (* Module type for a hashable type, used by diff_set_generic *)

@@ -105,8 +105,8 @@ let test_audio_track_mixer () =
   (* Test the first send amount against XML *)
   if sends_count > 0 then (
     let first_send = List.hd audio_track.mixer.sends in
-    let amount = match first_send.device_param.value with
-      | Float f -> f
+    let amount = match first_send.amount.Device.GenericParam.value with
+      | Device.Float f -> f
       | _ -> 0.0
     in
     Alcotest.(check (float 0.001)) "first send amount" 0.0003162277571 amount

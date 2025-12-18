@@ -6,10 +6,12 @@ open Alsdiff_live.Device
 (* Helper to create a dummy DeviceParam *)
 let make_param name value =
   {
-    DeviceParam.name = name;
-    value = value;
-    automation = 0;
-    modulation = 0;
+    DeviceParam.base = {
+      GenericParam.name = name;
+      value = value;
+      automation = 0;
+      modulation = 0;
+    };
     mapping = None;
   }
 
@@ -31,7 +33,7 @@ let test_regular_device_diff () =
 
   let old_device = make_regular_device 1 "Overdrive" [param1; param2] in
 
-  let param1_mod = { param1 with value = Float 0.8 } in
+  let param1_mod = { param1 with base = { param1.base with Device.GenericParam.value = Float 0.8 } } in
   let new_device = make_regular_device 1 "Overdrive" [param1_mod; param2] in
 
   let patch = Device.diff old_device new_device in
@@ -46,11 +48,13 @@ let test_plugin_device_diff () =
   let make_plugin_param id name index value =
     {
       PluginParam.id = id;
-      name = name;
       index = index;
-      value = value;
-      automation = 0;
-      modulation = 0;
+      base = {
+        GenericParam.name = name;
+        value = value;
+        automation = 0;
+        modulation = 0;
+      };
     }
   in
 
@@ -89,7 +93,7 @@ let test_plugin_device_diff () =
   let patch = Device.diff old_plugin new_plugin in
   let output = Text_output.render_device patch in
 
-  let expected = "Plugin Device Patch:\n  Parameters Changes:\n      ~ Value changed from 0.50 to 0.70" in
+  let expected = "Plugin Device Patch:\n  Parameters Changes:\n        ~ Value changed from 0.50 to 0.70" in
   Alcotest.(check string) "Plugin device diff output" expected output
 
 let () =

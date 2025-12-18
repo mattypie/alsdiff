@@ -26,7 +26,7 @@ type view =
   | Collection of collection_view
   | Section of section_view
 
-and  field_view = {
+and field_view = {
   name : string;
   change : change_type;
   oldval : field_value option;
@@ -150,3 +150,17 @@ let create_events_element_view
     change = Modified;
     fields
   }
+
+(* let create_midi_note_element_view *)
+(*   (c : (Clip.MidiNote.t, Clip.MidiNote.Patch.t) structured_change) *)
+(*   : element_view = *)
+(*   let open Clip in *)
+(*   let field_descs = [ *)
+(*     FieldDesc { *)
+(*       name = "Pitch"; *)
+(*       of_parent_value = (fun x -> x.MidiNote.note); *)
+(*       of_parent_patch = (fun x -> (x.MidiNote.Patch.note :> int atomic_change)); *)
+(*       wrapper = int_value; *)
+(*     }; *)
+(*   ] *)
+(*   in *)

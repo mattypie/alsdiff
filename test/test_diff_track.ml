@@ -5,24 +5,24 @@ open Alsdiff_live.Track
 
 
 
-(* Helper to create a dummy Device.DeviceParam.t *)
-let make_device_param name value =
+(* Helper to create a dummy Device.GenericParam.t *)
+let make_generic_param name value =
   {
-    Device.DeviceParam.name = name;
+    Device.GenericParam.name = name;
     value = value;
     automation = 0;
     modulation = 0;
-    mapping = None;
   }
 
-(* Helper to create a dummy Device.Device.Mixer *)
+
+(* Helper to create a dummy Track.Mixer *)
 let make_mixer volume pan =
   {
-    Device.Mixer.volume = make_device_param "Volume" (Device.Float volume);
-    Device.Mixer.pan = make_device_param "Pan" (Device.Float pan);
-    mute = make_device_param "On" (Device.Bool false);
-    solo = make_device_param "SoloSink" (Device.Bool false);
-    sends = [];
+    Track.Mixer.volume = make_generic_param "Volume" (Device.Float volume);
+    Track.Mixer.pan = make_generic_param "Pan" (Device.Float pan);
+    Track.Mixer.mute = make_generic_param "On" (Device.Bool false);
+    Track.Mixer.solo = false;
+    Track.Mixer.sends = [];
   }
 
 (* Helper to create a dummy RoutingSet.t *)
