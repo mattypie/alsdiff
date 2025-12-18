@@ -125,6 +125,105 @@ module RoutingSet = struct
 end
 
 
+(* ================== Mixer module ================== *)
+module Send = struct
+  type t = {
+    id : int;                   (* Id is the target *)
+    amount : Device.GenericParam.t;
+    (* TODO: MIDI mapping *)
+  } [@@deriving eq]
+
+  (** Create [Send.t] from XML element.
+      @param xml XML element [<TrackHolder Id="N">...</TrackHolder>] *)
+  let create (xml : Xml.t) : t =
+    let id = Xml.get_int_attr "Id" xml in
+    let amount = Upath.find "/Send" xml |> snd |> Device.GenericParam.create_float_manual in
+    { id; amount }
+
+  let has_same_id a b = a.id = b.id
+  let id_hash t = Hashtbl.hash t
+
+  module Patch = struct
+    type t = {
+      amount : Device.GenericParam.Patch.t structured_update;
+    }
+
+    let is_empty p = is_unchanged_update (module Device.GenericParam.Patch) p.amount
+  end
+
+  let diff old_send new_send =
+    if old_send.id <> new_send.id then
+      failwith (Printf.sprintf "You can't compare two Send with different IDs: old = %d, new = %d" old_send.id new_send.id)
+    else
+      let amount = diff_complex_value (module Device.GenericParam) old_send.amount new_send.amount in
+      { Patch.amount }
+end
+
+
+module Mixer = struct
+  type t = {
+    volume : Device.GenericParam.t;
+    pan : Device.GenericParam.t;
+    mute : Device.GenericParam.t;
+    solo : bool;
+    sends : Send.t list;
+  } [@@deriving eq]
+
+  let create (xml : Xml.t) : t =
+    let volume = Upath.find "/Volume" xml |> snd |> Device.GenericParam.create_float_manual in
+    let pan = Upath.find "/Pan" xml |> snd |> Device.GenericParam.create_float_manual in
+    let mute = Upath.find "/On" xml |> snd |> Device.GenericParam.create_bool_manual in
+
+    (* SoloSink has a different structure - it's just <SoloSink Value="..."/> without Manual element *)
+    (* We need to wrap it to make it compatible with Device.GenericParam.create *)
+    let solo = Upath.get_bool_attr "/SoloSink" "Value" xml
+    in
+
+    let sends = xml
+      |> Upath.find_all "/Sends/TrackSendHolder"
+      |> List.map (fun (_, xml) -> Send.create xml)
+    in
+    { volume; pan; mute; solo; sends }
+
+  (* Mixer doesn't have a natural ID, so use placeholder interface *)
+  (* TODO: is this necessary? *)
+  let has_same_id _ _ = true
+  let id_hash _ = Hashtbl.hash 0
+
+  module Patch = struct
+    type t = {
+      volume : Device.GenericParam.Patch.t;
+      pan : Device.GenericParam.Patch.t;
+      mute : Device.GenericParam.Patch.t;
+      solo : bool atomic_update;
+      sends : (Send.t, Send.Patch.t) structured_change list;
+    }
+
+    let is_empty patch =
+      Device.GenericParam.Patch.is_empty patch.volume &&
+      Device.GenericParam.Patch.is_empty patch.pan &&
+      Device.GenericParam.Patch.is_empty patch.mute &&
+      is_unchanged_atomic_update patch.solo &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.sends
+  end
+
+  let diff (old_mixer : t) (new_mixer : t) : Patch.t =
+    let volume_change = Device.GenericParam.diff old_mixer.volume new_mixer.volume in
+    let pan_change = Device.GenericParam.diff old_mixer.pan new_mixer.pan in
+    let mute_change = Device.GenericParam.diff old_mixer.mute new_mixer.mute in
+    let solo_change = diff_atomic_value (module Bool) old_mixer.solo new_mixer.solo in
+
+    let send_changes = diff_list_id (module Send) old_mixer.sends new_mixer.sends
+    in
+    { volume = volume_change;
+      pan = pan_change;
+      mute = mute_change;
+      solo = solo_change;
+      sends = send_changes;
+    }
+end
+
+
 module MidiTrack = struct
   type t = {
     id : int;                     (* Id attribute *)
@@ -132,7 +231,7 @@ module MidiTrack = struct
     clips : Clip.MidiClip.t list;
     automations : Automation.t list;
     devices : Device.t list;
-    mixer : Device.Mixer.t;
+    mixer : Mixer.t;
     routings : RoutingSet.t;
   } [@@deriving eq]
 
@@ -151,7 +250,7 @@ module MidiTrack = struct
       |> Seq.concat_map (fun devs ->
           Xml.get_childs devs |> List.to_seq |> Seq.map Device.create)
       |> List.of_seq in
-    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Device.Mixer.create in
+    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Mixer.create in
     let routings = Upath.find "/DeviceChain" xml |> snd |> RoutingSet.create in
 
     { id; name; clips; automations; devices; mixer; routings }
@@ -165,7 +264,7 @@ module MidiTrack = struct
       clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
       devices : (Device.t, Device.Patch.t) structured_change list;
-      mixer : Device.Mixer.Patch.t structured_update;
+      mixer : Mixer.Patch.t structured_update;
       routings : RoutingSet.Patch.t structured_update;
     }
 
@@ -192,7 +291,7 @@ module MidiTrack = struct
       let devices_changes =
         diff_list_id (module Device) old_track.devices new_track.devices
       in
-      let mixer_change = diff_complex_value (module Device.Mixer) old_track.mixer new_track.mixer in
+      let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
         Patch.name = name_change;
@@ -212,7 +311,7 @@ module AudioTrack = struct
     clips : Clip.AudioClip.t list;
     automations : Automation.t list;
     devices : Device.t list;
-    mixer : Device.Mixer.t;
+    mixer : Mixer.t;
     routings : RoutingSet.t;
   } [@@deriving eq]
 
@@ -231,7 +330,7 @@ module AudioTrack = struct
       |> Seq.concat_map (fun devs ->
           Xml.get_childs devs |> List.to_seq |> Seq.map Device.create)
       |> List.of_seq in
-    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Device.Mixer.create in
+    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> Mixer.create in
     let routings = Upath.find "/DeviceChain" xml |> snd |> RoutingSet.create in
     { id; name; clips; automations; devices; mixer; routings }
 
@@ -244,7 +343,7 @@ module AudioTrack = struct
       clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
       devices : (Device.t, Device.Patch.t) structured_change list;
-      mixer : Device.Mixer.Patch.t structured_update;
+      mixer : Mixer.Patch.t structured_update;
       routings : RoutingSet.Patch.t structured_update;
     }
 
@@ -271,7 +370,7 @@ module AudioTrack = struct
       let devices_changes =
         diff_list_id (module Device) old_track.devices new_track.devices
       in
-      let mixer_change = diff_complex_value (module Device.Mixer) old_track.mixer new_track.mixer in
+      let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
         Patch.name = name_change;
