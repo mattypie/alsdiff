@@ -100,12 +100,103 @@ let param_name_from_path (path : string) : string =
 
 
 (* ================== Common modules ================== *)
+module MIDIMapping = struct
+  type mapping_kind = Continuous | OnOff [@@deriving eq]
+
+  type t = {
+    target : int;               (* NoteOrController *)
+    channel : int;              (* 0-15 for MIDI, 16 for Macro *)
+    kind : mapping_kind;
+    low : int;
+    high : int;
+    (* TODO: MIDI Note mapping *)
+  } [@@deriving eq]
+
+  let is_midi m = m.channel >= 0 && m.channel <= 15 (* MIDI Channel starts from 0 to 15 in Ableton Live .als XML *)
+  let is_macro m = m.channel = 16
+
+  (** Extract range from MidiControllerRange (continuous parameters) *)
+  let extract_continuous_range (xml : Xml.t) : (int * int) option =
+    match
+      (Upath.get_int_attr_opt "/MidiControllerRange/Min" "Value" xml,
+       Upath.get_int_attr_opt "/MidiControllerRange/Max" "Value" xml)
+    with
+    | (Some min_val, Some max_val) ->
+      Some (min_val, max_val)
+    | _ -> None
+
+  (** Extract range from MidiCCOnOffThresholds (On/Off parameters) *)
+  let extract_onoff_range (xml : Xml.t) : (int * int) option =
+    match
+      (Upath.get_int_attr_opt "/MidiCCOnOffThresholds/Min" "Value" xml,
+       Upath.get_int_attr_opt "/MidiCCOnOffThresholds/Max" "Value" xml)
+    with
+    | (Some min_val, Some max_val) -> Some (min_val, max_val)
+    | _ -> None
+
+  (** [has_macro_mapping xml] checks if an XML elements has a macro mapping *)
+  let has_macro_mapping (xml : Xml.t) : bool =
+    let keymidi_xml = Upath.find "/KeyMidi" xml |> snd in
+    let is_note = Upath.get_bool_attr "IsNote" "Value" keymidi_xml in
+    let controller_map_mode = Upath.get_int_attr "ControllerMapMode" "Value" keymidi_xml in
+    is_note && controller_map_mode <> 0
+
+  let create (xml : Xml.t) : t =
+    if not (has_macro_mapping xml) then
+      failwith "It's not a MIDIMapping"
+    else
+      let target = Upath.get_int_attr "/KeyMidi/NoteOrController" "Value" xml in
+      let channel = Upath.get_int_attr "/KeyMidi/Channel" "Value" xml in
+      let continuous = extract_continuous_range xml in
+      let onoff = extract_onoff_range xml in
+      let (low, high, kind) = match (continuous, onoff) with
+        | Some (l, h), None -> (l, h, Continuous)
+        | None, Some (l, h) -> (l, h, OnOff)
+        | _ -> failwith "Invalid XML for creating a MIDIMapping"
+      in
+      { target; channel; kind; low; high }
+
+  let create_opt (xml : Xml.t) : t option = try Some (create xml) with _ -> None
+
+  (** [create_head_key_midi xml] create a [MIDIMapping] from a [<HeadKeyMidi></HeadKeyMidi>] element *)
+  let create_head_key_midi (xml : Xml.t) : t =
+    let target = Upath.get_int_attr "/NoteOrController" "Value" xml in
+    let channel = Upath.get_int_attr "/Channel" "Value" xml in
+    (* NOTE: This function was only used for creating a MIDIMapping.t for Solo in the Mixer. Solo only supports on/off mapping *)
+    { target; channel; kind = OnOff; low = 64; high = 127; }
+
+  let has_same_id a b = a.target = b.target
+  let id_hash a = Hashtbl.hash a.target
+
+  module Patch = struct
+    type t = {
+      channel : int atomic_update;
+      low : int atomic_update;
+      high : int atomic_update;
+    }
+
+    let is_empty p = p.channel = `Unchanged && p.low = `Unchanged && p.high = `Unchanged
+  end
+
+  let diff (old_mapping : t) (new_mapping : t) : Patch.t =
+    if old_mapping.target <> new_mapping.target then
+      failwith (Printf.sprintf "Cannot compare two MIDIMapping with different targets (%d vs %d)"
+                  old_mapping.target
+                  new_mapping.target)
+    else
+      let channel_change = diff_atomic_value (module Int) old_mapping.channel new_mapping.channel in
+      let low_change = diff_atomic_value (module Int) old_mapping.low new_mapping.low in
+      let high_change = diff_atomic_value (module Int) old_mapping.high new_mapping.high in
+      { channel = channel_change; low = low_change; high = high_change }
+end
+
 module GenericParam = struct
   type t = {
     name : string;
     value : param_value;
     automation : int;
     modulation : int;           (* parameter cannot modulated will be set to a negative number *)
+    mapping : MIDIMapping.t option;
   } [@@deriving eq]
 
   let create ~parse_value xml =
@@ -115,7 +206,8 @@ module GenericParam = struct
       |> Option.value ~default:0 in
     let modulation = Upath.get_int_attr_opt "/ModulationTarget" "Id" xml
       |> Option.value ~default:0 in
-    { name; value; automation; modulation; }
+    let mapping = MIDIMapping.create_opt xml in
+    { name; value; automation; modulation; mapping }
 
   let create_int_manual xml =
     create xml ~parse_value:(fun x -> Int (Upath.get_int_attr "/Manual" "Value" x))
@@ -163,94 +255,13 @@ module GenericParam = struct
 end
 
 
-module MacroMapping = struct
-  type mapping_kind = Continuous | OnOff [@@deriving eq]
-
-  type t = {
-    target : int;
-    kind : mapping_kind;
-    low : int;
-    high : int;
-  } [@@deriving eq]
-
-  (** Extract range from MidiControllerRange (continuous parameters) *)
-  let extract_continuous_range (xml : Xml.t) : (int * int) option =
-    match
-      (Upath.get_int_attr_opt "/MidiControllerRange/Min" "Value" xml,
-       Upath.get_int_attr_opt "/MidiControllerRange/Max" "Value" xml)
-    with
-    | (Some min_val, Some max_val) ->
-      Some (min_val, max_val)
-    | _ -> None
-
-  (** Extract range from MidiCCOnOffThresholds (On/Off parameters) *)
-  let extract_onoff_range (xml : Xml.t) : (int * int) option =
-    match
-      (Upath.get_int_attr_opt "/MidiCCOnOffThresholds/Min" "Value" xml,
-       Upath.get_int_attr_opt "/MidiCCOnOffThresholds/Max" "Value" xml)
-    with
-    | (Some min_val, Some max_val) -> Some (min_val, max_val)
-    | _ -> None
-
-  (** [has_macro_mapping xml] checks if an XML elements has a macro mapping *)
-  let has_macro_mapping (xml : Xml.t) : bool =
-    let keymidi_xml = Upath.find "/KeyMidi" xml |> snd in
-    let is_note = Upath.get_bool_attr "IsNote" "Value" keymidi_xml in
-    let controller_map_mode = Upath.get_int_attr "ControllerMapMode" "Value" keymidi_xml in
-    is_note && controller_map_mode <> 0
-
-  let create (xml : Xml.t) : t =
-    if not (has_macro_mapping xml) then
-      failwith "It's not a MacroMapping"
-    else
-      let target = Upath.get_int_attr "/KeyMidi/NoteOrController" "Value" xml in
-      let continuous = extract_continuous_range xml in
-      let onoff = extract_onoff_range xml in
-      let (low, high, kind) = match (continuous, onoff) with
-        | Some (l, h), None -> (l, h, Continuous)
-        | None, Some (l, h) -> (l, h, OnOff)
-        | _ -> failwith "Invalid XML for creating a MacroMapping"
-      in
-      { target; kind; low; high }
-
-  let create_opt (xml : Xml.t) : t option =
-    try Some (create xml) with _ -> None
-
-  let has_same_id a b = a.target = b.target
-  let id_hash a = Hashtbl.hash a.target
-
-  module Patch = struct
-    type t = {
-      low : int atomic_update;
-      high : int atomic_update;
-    }
-
-    let is_empty a = a.low = `Unchanged && a.high = `Unchanged
-  end
-
-  let diff (old_mapping : t) (new_mapping : t) : Patch.t =
-    if old_mapping.target <> new_mapping.target then
-      failwith (Printf.sprintf "Cannot compare two MacroMapping with different targets (%d vs %d)"
-                  old_mapping.target
-                  new_mapping.target)
-    else
-      let low_change = diff_atomic_value (module Int) old_mapping.low new_mapping.low in
-      let high_change = diff_atomic_value (module Int) old_mapping.high new_mapping.high in
-      { low = low_change; high = high_change }
-end
-
-
 module DeviceParam = struct
-  (** Represents a single device parameter with a name, a value of a mixed type,
-      and an automation ID. *)
   type t = {
     base : GenericParam.t;
-    mapping : MacroMapping.t option;
   } [@@deriving eq]
 
-  let has_same_id a b = GenericParam.has_same_id a.base b.base (* each parameter has their unique names in the device *)
-
-  let id_hash a = GenericParam.id_hash a.base
+  let has_same_id a b = GenericParam.has_same_id a.base b.base
+  let id_hash t = GenericParam.id_hash t.base
 
   (** [create path xml] creates a device parameter from a Device XML element.
       It raises [Failure "Invalid XML element for creating DeviceParam"] if the XML
@@ -272,8 +283,7 @@ module DeviceParam = struct
       in
       let base = GenericParam.create ~parse_value xml in
       let name_updated_base = { base with name } in
-      let mapping = MacroMapping.create_opt xml in
-      { base = name_updated_base; mapping }
+      { base = name_updated_base }
     | _ -> failwith "Invalid XML element for creating DeviceParam"
 
   let create_from_upath_find (path, xml) = create path xml
@@ -281,23 +291,16 @@ module DeviceParam = struct
   module Patch = struct
     type t = {
       base : GenericParam.Patch.t structured_update;
-      mapping : (MacroMapping.t, MacroMapping.Patch.t) structured_change;
     }
 
     let is_empty patch =
-      Diff.is_unchanged_update (module GenericParam.Patch) patch.base &&
-      Diff.is_unchanged_change (module MacroMapping.Patch) patch.mapping
+      Diff.is_unchanged_update (module GenericParam.Patch) patch.base
   end
 
-  let diff (old_param : t) (new_param : t) : Patch.t =
-    if old_param.base.name <> new_param.base.name then
-      failwith "cannot diff two DeviceParams with different names"
-    else
-      let base_change = diff_complex_value_id (module GenericParam) old_param.base new_param.base in
-      let mapping_change = diff_complex_value_id_opt (module MacroMapping)
-          old_param.mapping new_param.mapping
-      in
-      { base = base_change; mapping = mapping_change }
+  let diff old_param new_param =
+    let base_change = Diff.diff_complex_value_id (module GenericParam)
+        old_param.base new_param.base in
+    { Patch.base = base_change }
 end
 
 
@@ -507,7 +510,6 @@ module PluginParam = struct
     id : int;                   (* ParameterId *)
     index : int;                (* VisualIndex *)
     base : GenericParam.t;
-    (* TODO: macro mapping *)
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
@@ -788,7 +790,6 @@ module Max4LiveParam = struct
     id : int;                   (* ParameterId *)
     index : int;                (* VisualIndex *)
     base : GenericParam.t;
-    (* TODO: macro mapping *)
   } [@@deriving eq]
 
   (** Extract enum description from Names/Name/Name structure - specific to M4L *)

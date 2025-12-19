@@ -126,18 +126,19 @@ end
 
 
 (* ================== Mixer module ================== *)
+module GenericParam = Device.GenericParam
+
 module Send = struct
   type t = {
     id : int;                   (* Id is the target *)
-    amount : Device.GenericParam.t;
-    (* TODO: MIDI mapping *)
+    amount : GenericParam.t;
   } [@@deriving eq]
 
   (** Create [Send.t] from XML element.
       @param xml XML element [<TrackHolder Id="N">...</TrackHolder>] *)
   let create (xml : Xml.t) : t =
     let id = Xml.get_int_attr "Id" xml in
-    let amount = Upath.find "/Send" xml |> snd |> Device.GenericParam.create_float_manual in
+    let amount = Upath.find "/Send" xml |> snd |> GenericParam.create_float_manual in
     { id; amount }
 
   let has_same_id a b = a.id = b.id
@@ -145,40 +146,51 @@ module Send = struct
 
   module Patch = struct
     type t = {
-      amount : Device.GenericParam.Patch.t structured_update;
+      amount : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty p = is_unchanged_update (module Device.GenericParam.Patch) p.amount
+    let is_empty p = is_unchanged_update (module GenericParam.Patch) p.amount
   end
 
   let diff old_send new_send =
     if old_send.id <> new_send.id then
       failwith (Printf.sprintf "You can't compare two Send with different IDs: old = %d, new = %d" old_send.id new_send.id)
     else
-      let amount = diff_complex_value (module Device.GenericParam) old_send.amount new_send.amount in
+      let amount = diff_complex_value (module GenericParam) old_send.amount new_send.amount in
       { Patch.amount }
 end
 
 
 module Mixer = struct
   type t = {
-    volume : Device.GenericParam.t;
-    pan : Device.GenericParam.t;
-    mute : Device.GenericParam.t;
-    solo : bool;
+    volume : GenericParam.t;
+    pan : GenericParam.t;
+    mute : GenericParam.t;
+    solo : GenericParam.t;
     sends : Send.t list;
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
-    let volume = Upath.find "/Volume" xml |> snd |> Device.GenericParam.create_float_manual in
-    let pan = Upath.find "/Pan" xml |> snd |> Device.GenericParam.create_float_manual in
-    let mute = Upath.find "/On" xml |> snd |> Device.GenericParam.create_bool_manual in
+    let volume = Upath.find "/Volume" xml |> snd |> GenericParam.create_float_manual in
+    let pan = Upath.find "/Pan" xml |> snd |> GenericParam.create_float_manual in
+    let mute = Upath.find "/On" xml |> snd |> GenericParam.create_bool_manual in
 
     (* SoloSink has a different structure - it's just <SoloSink Value="..."/> without Manual element *)
     (* We need to wrap it to make it compatible with Device.GenericParam.create *)
-    let solo = Upath.get_bool_attr "/SoloSink" "Value" xml
+    (* let solo = Upath.get_bool_attr "/SoloSink" "Value" xml in *)
+    let solo_value = Upath.get_bool_attr "/SoloSink" "Value" xml in
+    let mapping =
+      Upath.find_opt "/HeadKeyMidi" xml
+      |> Option.map snd
+      |> Option.map Device.MIDIMapping.create_head_key_midi
     in
-
+    let solo = {
+      GenericParam.name = "SoloSink";
+      value = Bool solo_value;
+      automation = 0;
+      modulation = 0;
+      mapping;
+    } in
     let sends = xml
       |> Upath.find_all "/Sends/TrackSendHolder"
       |> List.map (fun (_, xml) -> Send.create xml)
@@ -192,26 +204,26 @@ module Mixer = struct
 
   module Patch = struct
     type t = {
-      volume : Device.GenericParam.Patch.t;
-      pan : Device.GenericParam.Patch.t;
-      mute : Device.GenericParam.Patch.t;
-      solo : bool atomic_update;
+      volume : GenericParam.Patch.t structured_update;
+      pan : GenericParam.Patch.t structured_update;
+      mute : GenericParam.Patch.t structured_update;
+      solo : GenericParam.Patch.t structured_update;
       sends : (Send.t, Send.Patch.t) structured_change list;
     }
 
-    let is_empty patch =
-      Device.GenericParam.Patch.is_empty patch.volume &&
-      Device.GenericParam.Patch.is_empty patch.pan &&
-      Device.GenericParam.Patch.is_empty patch.mute &&
-      is_unchanged_atomic_update patch.solo &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.sends
+    let is_empty p =
+      is_unchanged_update (module GenericParam.Patch) p.volume &&
+      is_unchanged_update (module GenericParam.Patch) p.pan &&
+      is_unchanged_update (module GenericParam.Patch) p.mute &&
+      is_unchanged_update (module GenericParam.Patch) p.solo &&
+      List.for_all (function `Unchanged -> true | _ -> false) p.sends
   end
 
   let diff (old_mixer : t) (new_mixer : t) : Patch.t =
-    let volume_change = Device.GenericParam.diff old_mixer.volume new_mixer.volume in
-    let pan_change = Device.GenericParam.diff old_mixer.pan new_mixer.pan in
-    let mute_change = Device.GenericParam.diff old_mixer.mute new_mixer.mute in
-    let solo_change = diff_atomic_value (module Bool) old_mixer.solo new_mixer.solo in
+    let volume_change = diff_complex_value_id (module GenericParam) old_mixer.volume new_mixer.volume in
+    let pan_change = diff_complex_value_id (module GenericParam) old_mixer.pan new_mixer.pan in
+    let mute_change = diff_complex_value_id (module GenericParam) old_mixer.mute new_mixer.mute in
+    let solo_change = diff_complex_value_id (module GenericParam) old_mixer.solo new_mixer.solo in
 
     let send_changes = diff_list_id (module Send) old_mixer.sends new_mixer.sends
     in

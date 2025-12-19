@@ -202,22 +202,24 @@ let render_device_param_patch ?(indent_level = 0) (patch : Device.DeviceParam.Pa
 let render_mixer ?(indent_level = 0) (patch : Track.Mixer.Patch.t) =
   let open SectionRenderer in
   let open StructuredChangeRenderer in
-  let open FieldRenderer in
   let header = make_indent_at_level indent_level ^ "Mixer Patch:" in
 
   (* Helper to render generic param patch prefixed with field name *)
-  let render_param_field field_name (param_patch : Device.GenericParam.Patch.t) =
-    let content = render_generic_param_patch ~indent_level:(indent_level + 2) param_patch in
-    if content = "" then ""
-    else
-      let indent_str = make_indent_at_level (indent_level + 1) in
-      indent_str ^ field_name ^ ":\n" ^ content
+  let render_param_field field_name (param_update : Device.GenericParam.Patch.t structured_update) =
+    match param_update with
+    | `Unchanged -> ""
+    | `Modified param_patch ->
+        let content = render_generic_param_patch ~indent_level:(indent_level + 2) param_patch in
+        if content = "" then ""
+        else
+          let indent_str = make_indent_at_level (indent_level + 1) in
+          indent_str ^ field_name ^ ":\n" ^ content
   in
 
   let volume_line = render_param_field "Volume" patch.volume in
   let pan_line = render_param_field "Pan" patch.pan in
   let mute_line = render_param_field "Mute" patch.mute in
-  let solo_line = render_simple_change (bool_formatter ~indent_level:(indent_level + 1) "Solo") patch.solo in
+  let solo_line = render_param_field "Solo" patch.solo in
 
   (* Helper to render send patch *)
   let render_send_patch indent_level (send_patch : Track.Send.Patch.t) =

@@ -11,8 +11,8 @@ let make_param name value =
       value = value;
       automation = 0;
       modulation = 0;
+      mapping = None;
     };
-    mapping = None;
   }
 
 (* Helper to create a dummy Regular Device *)
@@ -33,7 +33,7 @@ let test_regular_device_diff () =
 
   let old_device = make_regular_device 1 "Overdrive" [param1; param2] in
 
-  let param1_mod = { param1 with base = { param1.base with Device.GenericParam.value = Float 0.8 } } in
+  let param1_mod = { DeviceParam.base = { param1.base with Device.GenericParam.value = Float 0.8 } } in
   let new_device = make_regular_device 1 "Overdrive" [param1_mod; param2] in
 
   let patch = Device.diff old_device new_device in
@@ -54,6 +54,7 @@ let test_plugin_device_diff () =
         value = value;
         automation = 0;
         modulation = 0;
+        mapping = None;
       };
     }
   in

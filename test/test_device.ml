@@ -150,7 +150,7 @@ let test_device_param_with_continuous_macro_mapping () =
   Alcotest.(check int) "param automation id" 200 param.base.Device.GenericParam.automation;
   Alcotest.(check int) "param modulation id" 0 param.base.Device.GenericParam.modulation;
   (* Verify macro mapping *)
-  (match param.mapping with
+  (match param.base.Device.GenericParam.mapping with
    | Some mapping -> (
        Alcotest.(check int) "macro id" 3 mapping.target;
        Alcotest.(check int) "macro range low" 0 mapping.low;
@@ -259,7 +259,7 @@ let test_device_param_with_onoff_macro_mapping () =
   Alcotest.(check int) "param automation id" 201 param.base.Device.GenericParam.automation;
   Alcotest.(check int) "param modulation id" 0 param.base.Device.GenericParam.modulation;
   (* Verify macro mapping *)
-  (match param.mapping with
+  (match param.base.Device.GenericParam.mapping with
    | Some mapping -> (
        Alcotest.(check int) "macro id" 0 mapping.target;
        Alcotest.(check int) "macro range low" 64 mapping.low;
@@ -343,7 +343,7 @@ let test_device_param_with_invalid_controller_map_mode () =
   Alcotest.(check int) "param automation id" 203 param.base.Device.GenericParam.automation;
   Alcotest.(check int) "param modulation id" 0 param.base.Device.GenericParam.modulation;
   (* Verify no macro mapping *)
-  (match param.mapping with
+  (match param.base.Device.GenericParam.mapping with
    | None -> () (* Expected - no macro mapping *)
    | Some _ -> Alcotest.fail "parameter should not have macro mapping")
 

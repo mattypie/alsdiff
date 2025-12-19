@@ -80,6 +80,15 @@
     </MidiCCOnOffThresholds>
   </Speaker>
   <SoloSink Value="true"/>
+  <HeadKeyMidi>
+    <PersistentKeyString Value="" />
+    <IsNote Value="true" />
+    <Channel Value="8" />
+    <NoteOrController Value="72" />
+    <LowerRangeNote Value="-1" />
+    <UpperRangeNote Value="-1" />
+    <ControllerMapMode Value="0" />
+  </HeadKeyMidi>
   <PanMode Value="0"/>
   <Pan>
     <LomId Value="731"/>

@@ -12,6 +12,7 @@ let make_generic_param name value =
     value = value;
     automation = 0;
     modulation = 0;
+    mapping = None;
   }
 
 
@@ -21,7 +22,7 @@ let make_mixer volume pan =
     Track.Mixer.volume = make_generic_param "Volume" (Device.Float volume);
     Track.Mixer.pan = make_generic_param "Pan" (Device.Float pan);
     Track.Mixer.mute = make_generic_param "On" (Device.Bool false);
-    Track.Mixer.solo = false;
+    Track.Mixer.solo = make_generic_param "Sololink" (Device.Bool false);
     Track.Mixer.sends = [];
   }
 

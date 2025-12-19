@@ -115,7 +115,7 @@ let test_device_param_without_macro_mapping () =
   Alcotest.(check int) "param automation id" 153210 param.base.Device.GenericParam.automation;
   Alcotest.(check int) "param modulation id" 153211 param.base.Device.GenericParam.modulation;
   (* Verify no macro mapping - Ratio parameter has no KeyMidi element *)
-  (match param.mapping with
+  (match param.base.Device.GenericParam.mapping with
    | None -> () (* Expected - no macro mapping *)
    | Some _ -> Alcotest.fail "parameter should not have macro mapping");
   ()
@@ -469,7 +469,7 @@ let test_wavetable_parameter_creation () =
   Alcotest.(check int) "wavetable param modulation id" 0 param.base.Device.GenericParam.modulation;
 
   (* Verify no macro mapping for this parameter *)
-  (match param.mapping with
+  (match param.base.Device.GenericParam.mapping with
    | None -> () (* Expected - no macro mapping *)
    | Some _ -> Alcotest.fail "wavetable parameter should not have macro mapping");
   ()
