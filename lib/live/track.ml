@@ -177,7 +177,6 @@ module Mixer = struct
 
     (* SoloSink has a different structure - it's just <SoloSink Value="..."/> without Manual element *)
     (* We need to wrap it to make it compatible with Device.GenericParam.create *)
-    (* let solo = Upath.get_bool_attr "/SoloSink" "Value" xml in *)
     let solo_value = Upath.get_bool_attr "/SoloSink" "Value" xml in
     let mapping =
       Upath.find_opt "/HeadKeyMidi" xml
@@ -197,8 +196,7 @@ module Mixer = struct
     in
     { volume; pan; mute; solo; sends }
 
-  (* Mixer doesn't have a natural ID, so use placeholder interface *)
-  (* TODO: is this necessary? *)
+  (* MainMixer is a singleton in every track - all instances have same ID *)
   let has_same_id _ _ = true
   let id_hash _ = Hashtbl.hash 0
 
@@ -395,13 +393,146 @@ module AudioTrack = struct
 end
 
 
+module MainMixer = struct
+  type t = {
+    base : Mixer.t;
+    tempo : GenericParam.t;
+    time_signature : GenericParam.t;
+    crossfade : GenericParam.t;
+    global_groove : GenericParam.t;
+  } [@@deriving eq]
+
+  let create (xml : Xml.t) : t =
+    let base = Mixer.create xml in
+    let tempo = Upath.find "/Tempo" xml |> snd |> GenericParam.create_int_manual in
+    let time_signature = Upath.find "/TimeSignature" xml |> snd |> GenericParam.create_int_manual in
+    let crossfade = Upath.find "/CrossFade" xml |> snd |> GenericParam.create_int_manual in
+    let global_groove = Upath.find "/GlobalGrooveAmount" xml |> snd |> GenericParam.create_float_manual in
+    { base; tempo; time_signature; crossfade; global_groove; }
+
+  (* MainMixer is a singleton - all instances have same ID *)
+  let has_same_id _ _ = true
+  let id_hash _ = Hashtbl.hash 0
+
+  module Patch = struct
+    type t = {
+      base : Mixer.Patch.t structured_update;
+      tempo : GenericParam.Patch.t structured_update;
+      time_signature : GenericParam.Patch.t structured_update;
+      crossfade : GenericParam.Patch.t structured_update;
+      global_groove : GenericParam.Patch.t structured_update;
+    }
+
+    let is_empty p =
+      is_unchanged_update (module Mixer.Patch) p.base &&
+      is_unchanged_update (module GenericParam.Patch) p.tempo &&
+      is_unchanged_update (module GenericParam.Patch) p.time_signature &&
+      is_unchanged_update (module GenericParam.Patch) p.crossfade &&
+      is_unchanged_update (module GenericParam.Patch) p.global_groove
+  end
+
+  let diff (old_mixer : t) (new_mixer : t) : Patch.t =
+    let base_change = diff_complex_value (module Mixer) old_mixer.base new_mixer.base in
+    let tempo_change = diff_complex_value_id (module GenericParam) old_mixer.tempo new_mixer.tempo in
+    let time_signature_change = diff_complex_value_id (module GenericParam) old_mixer.time_signature new_mixer.time_signature in
+    let crossfade_change = diff_complex_value_id (module GenericParam) old_mixer.crossfade new_mixer.crossfade in
+    let global_groove_change = diff_complex_value_id (module GenericParam) old_mixer.global_groove new_mixer.global_groove in
+    {
+      Patch.base = base_change;
+      tempo = tempo_change;
+      time_signature = time_signature_change;
+      crossfade = crossfade_change;
+      global_groove = global_groove_change;
+    }
+
+end
+
+
+module MainTrack = struct
+  type t = {
+    id : int;                     (* Id attribute *)
+    name : string;                (* EffectiveName *)
+    clips : Clip.AudioClip.t list;
+    automations : Automation.t list;
+    devices : Device.t list;
+    mixer : MainMixer.t;          (* Use MainMixer instead of Mixer *)
+    routings : RoutingSet.t;
+  } [@@deriving eq]
+
+  let create (xml : Xml.t) : t =
+    let id = Xml.get_int_attr "Id" xml in
+    let name = Upath.get_attr "/Name/EffectiveName" "Value" xml in
+    let automations =
+      Upath.find_all_seq "/AutomationEnvelopes/*/AutomationEnvelope" xml
+      |> Seq.map (fun x -> x |> snd |> Automation.create)
+      |> List.of_seq in
+    let clips = Upath.find_all_seq "/**/AudioClip" xml
+              |> Seq.map (fun x -> x |> snd |> Clip.AudioClip.create)
+              |> List.of_seq in
+    let devices = Upath.find_all_seq "/DeviceChain/*/Devices" xml
+      |> Seq.map snd
+      |> Seq.concat_map (fun devs ->
+          Xml.get_childs devs |> List.to_seq |> Seq.map Device.create)
+      |> List.of_seq in
+    let mixer = MainMixer.create xml in
+    let routings = Upath.find "/DeviceChain" xml |> snd |> RoutingSet.create in
+    { id; name; clips; automations; devices; mixer; routings }
+
+  let has_same_id a b = a.id = b.id
+  let id_hash t = Hashtbl.hash t.id
+
+  module Patch = struct
+    type t = {
+      name : string atomic_update;
+      clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
+      automations : (Automation.t, Automation.Patch.t) structured_change list;
+      devices : (Device.t, Device.Patch.t) structured_change list;
+      mixer : MainMixer.Patch.t structured_update;
+      routings : RoutingSet.Patch.t structured_update;
+    }
+
+    let is_empty patch =
+      patch.name = `Unchanged &&
+      patch.mixer = `Unchanged &&
+      patch.routings = `Unchanged &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.clips &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.automations &&
+      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+  end
+
+  let diff (old_track : t) (new_track : t) : Patch.t =
+    if old_track.id <> new_track.id then
+      failwith "cannot diff two MainTracks with different Ids"
+    else
+      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+      let clips_changes =
+        diff_list_id (module Clip.AudioClip) old_track.clips new_track.clips
+      in
+      let automations_changes =
+        diff_list_id (module Automation) old_track.automations new_track.automations
+      in
+      let devices_changes =
+        diff_list_id (module Device) old_track.devices new_track.devices
+      in
+      let mixer_change = diff_complex_value (module MainMixer) old_track.mixer new_track.mixer in
+      let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
+      {
+        Patch.name = name_change;
+        clips = clips_changes;
+        automations = automations_changes;
+        devices = devices_changes;
+        mixer = mixer_change;
+        routings = routings_change;
+      }
+end
+
 (* Sum type that represents either a MidiTrack or AudioTrack *)
 type t =
   | Midi of MidiTrack.t
   | Audio of AudioTrack.t
   | Group of AudioTrack.t
   | Return of AudioTrack.t
-  (* TODO: return track *)
+  | Main of MainTrack.t
 [@@deriving eq]
 
 let has_same_id old_track new_track =
@@ -410,11 +541,13 @@ let has_same_id old_track new_track =
   | Audio old_audio, Audio new_audio
   | Group old_audio, Group new_audio
   | Return old_audio, Return new_audio -> AudioTrack.has_same_id old_audio new_audio
+  | Main old_main, Main new_main -> MainTrack.has_same_id old_main new_main
   | _ -> false
 
 let id_hash = function
   | Midi midi -> MidiTrack.id_hash midi
   | Group audio | Audio audio | Return audio -> AudioTrack.id_hash audio
+  | Main main -> MainTrack.id_hash main
 
 let create (xml : Xml.t) : t =
   match xml with
@@ -422,6 +555,7 @@ let create (xml : Xml.t) : t =
   | Xml.Element { name = "AudioTrack"; _ }
   | Xml.Element { name = "GroupTrack"; _ }
   | Xml.Element { name = "ReturnTrack"; _ } -> Audio (AudioTrack.create xml)
+  | Xml.Element { name = "MainTrack"; _ } -> Main (MainTrack.create xml)
   | _ -> failwith ("Unsupported track type: " ^
                  match xml with
                  | Xml.Element { name; _ } -> name
@@ -431,10 +565,12 @@ module Patch = struct
   type t =
     | MidiPatch of MidiTrack.Patch.t
     | AudioPatch of AudioTrack.Patch.t
+    | MainPatch of MainTrack.Patch.t
 
   let is_empty = function
     | MidiPatch patch -> MidiTrack.Patch.is_empty patch
     | AudioPatch patch -> AudioTrack.Patch.is_empty patch
+    | MainPatch patch -> MainTrack.Patch.is_empty patch
 end
 
 let diff (old_track : t) (new_track : t) : Patch.t =
@@ -447,5 +583,8 @@ let diff (old_track : t) (new_track : t) : Patch.t =
   | Return old_audio, Return new_audio ->
     let audio_patch = AudioTrack.diff old_audio new_audio in
     Patch.AudioPatch audio_patch
+  | Main old_main, Main new_main ->
+    let main_patch = MainTrack.diff old_main new_main in
+    Patch.MainPatch main_patch
   | _ ->
     failwith "cannot diff tracks of different types (e.g. MidiTrack vs AudioTrack)"

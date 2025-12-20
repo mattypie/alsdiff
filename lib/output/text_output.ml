@@ -251,6 +251,36 @@ let render_mixer ?(indent_level = 0) (patch : Track.Mixer.Patch.t) =
   join_non_empty
     [ header; volume_line; pan_line; mute_line; solo_line; send_section ]
 
+let render_main_mixer ?(indent_level = 0) (patch : Track.MainMixer.Patch.t) =
+  let open SectionRenderer in
+  let header = make_indent_at_level indent_level ^ "Main Mixer Patch:" in
+
+  (* Helper to render generic param patch prefixed with field name *)
+  let render_param_field field_name (param_update : Device.GenericParam.Patch.t structured_update) =
+    match param_update with
+    | `Unchanged -> ""
+    | `Modified param_patch ->
+        let content = render_generic_param_patch ~indent_level:(indent_level + 2) param_patch in
+        if content = "" then ""
+        else
+          let indent_str = make_indent_at_level (indent_level + 1) in
+          indent_str ^ field_name ^ ":\n" ^ content
+  in
+
+  (* Render the base mixer *)
+  let base_section = match patch.base with
+    | `Unchanged -> ""
+    | `Modified base_patch -> render_mixer ~indent_level:(indent_level + 1) base_patch
+  in
+
+  (* Render MainMixer-specific parameters *)
+  let tempo_line = render_param_field "Tempo" patch.tempo in
+  let time_signature_line = render_param_field "Time Signature" patch.time_signature in
+  let crossfade_line = render_param_field "Crossfade" patch.crossfade in
+  let global_groove_line = render_param_field "Global Groove" patch.global_groove in
+
+  join_non_empty [header; base_section; tempo_line; time_signature_line; crossfade_line; global_groove_line]
+
 let render_loop_section_patch ?(indent_level = 0) (patch : Clip.Loop.Patch.t) =
   let open FieldRenderer in
   let open SectionRenderer in
@@ -851,6 +881,31 @@ let render_track ?(indent_level = 0) (patch : Track.Patch.t) : string =
       ~mixer:patch.mixer
   in
 
+  let render_main_track (patch : Track.MainTrack.Patch.t) =
+    let open StructuredChangeRenderer in
+    let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name in
+    let clips_section =
+      render_changes_section
+        ~header:(make_indent_at_level (indent_level + 1) ^ "Clips Changes:")
+        ~item_fmt:{
+          format_item = (fun (c : Clip.AudioClip.t) -> c.name);
+          indent_level = indent_level + 2;
+        }
+        ~patch_fmt:{ format_patch = fun level patch -> render_audio_clip ~indent_level:level patch }
+        patch.clips
+    in
+    let automations_section = render_track_automations_section ~indent_level:indent_level patch.automations in
+    let devices_section = render_track_devices_section ~indent_level:indent_level patch.devices in
+    let mixer_section =
+      match patch.mixer with
+      | `Unchanged -> ""
+      | `Modified mixer_patch -> render_main_mixer ~indent_level:(indent_level + 1) mixer_patch
+    in
+    let header = make_indent_at_level indent_level ^ "Main Track Patch:" in
+    join_non_empty [header; name_line; clips_section; automations_section; devices_section; mixer_section]
+  in
+
   match patch with
   | Track.Patch.MidiPatch p -> render_midi_track p
   | Track.Patch.AudioPatch p -> render_audio_track p
+  | Track.Patch.MainPatch p -> render_main_track p

@@ -12,6 +12,7 @@ let get_track_info (track : Track.t) =
   match track with
   | Midi m -> m.name, m.id
   | Audio a | Group a | Return a -> a.name, a.id
+  | Main m -> m.name, m.id
 
 let display_liveset_changes patch =
   let open Alsdiff_base.Diff in

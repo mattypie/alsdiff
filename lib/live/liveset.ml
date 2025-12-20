@@ -108,6 +108,7 @@ type t = {
 let get_track_devices = function
   | Track.Midi t -> t.devices
   | Track.Audio t | Track.Group t | Track.Return t -> t.devices
+  | Track.Main t -> t.devices
 
 (* Recursive helper to process a device and its children (for Groups) *)
 let rec process_device_recursive (pointees : pointee IntHashtbl.t) (device : Device.t) : unit =
