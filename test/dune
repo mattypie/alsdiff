@@ -132,3 +132,9 @@
  (modules test_liveset)
  (libraries alsdiff_lib alcotest test_utils)
  (deps t4.xml))
+
+(test
+ (name test_main_track)
+ (modules test_main_track)
+ (libraries alsdiff_lib alcotest test_utils)
+ (deps main_track.xml))

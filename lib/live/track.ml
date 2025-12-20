@@ -452,7 +452,6 @@ module MainTrack = struct
   type t = {
     id : int;                     (* Id attribute *)
     name : string;                (* EffectiveName *)
-    clips : Clip.AudioClip.t list;
     automations : Automation.t list;
     devices : Device.t list;
     mixer : MainMixer.t;          (* Use MainMixer instead of Mixer *)
@@ -460,23 +459,20 @@ module MainTrack = struct
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
-    let id = Xml.get_int_attr "Id" xml in
+    let id = Upath.get_int_attr "/LomId" "Value" xml in
     let name = Upath.get_attr "/Name/EffectiveName" "Value" xml in
     let automations =
       Upath.find_all_seq "/AutomationEnvelopes/*/AutomationEnvelope" xml
       |> Seq.map (fun x -> x |> snd |> Automation.create)
       |> List.of_seq in
-    let clips = Upath.find_all_seq "/**/AudioClip" xml
-              |> Seq.map (fun x -> x |> snd |> Clip.AudioClip.create)
-              |> List.of_seq in
     let devices = Upath.find_all_seq "/DeviceChain/*/Devices" xml
       |> Seq.map snd
       |> Seq.concat_map (fun devs ->
           Xml.get_childs devs |> List.to_seq |> Seq.map Device.create)
       |> List.of_seq in
-    let mixer = MainMixer.create xml in
+    let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> MainMixer.create in
     let routings = Upath.find "/DeviceChain" xml |> snd |> RoutingSet.create in
-    { id; name; clips; automations; devices; mixer; routings }
+    { id; name; automations; devices; mixer; routings }
 
   let has_same_id a b = a.id = b.id
   let id_hash t = Hashtbl.hash t.id
@@ -484,7 +480,6 @@ module MainTrack = struct
   module Patch = struct
     type t = {
       name : string atomic_update;
-      clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
       devices : (Device.t, Device.Patch.t) structured_change list;
       mixer : MainMixer.Patch.t structured_update;
@@ -495,7 +490,6 @@ module MainTrack = struct
       patch.name = `Unchanged &&
       patch.mixer = `Unchanged &&
       patch.routings = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.clips &&
       List.for_all (function `Unchanged -> true | _ -> false) patch.automations &&
       List.for_all (function `Unchanged -> true | _ -> false) patch.devices
   end
@@ -505,9 +499,6 @@ module MainTrack = struct
       failwith "cannot diff two MainTracks with different Ids"
     else
       let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
-      let clips_changes =
-        diff_list_id (module Clip.AudioClip) old_track.clips new_track.clips
-      in
       let automations_changes =
         diff_list_id (module Automation) old_track.automations new_track.automations
       in
@@ -518,7 +509,6 @@ module MainTrack = struct
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
         Patch.name = name_change;
-        clips = clips_changes;
         automations = automations_changes;
         devices = devices_changes;
         mixer = mixer_change;

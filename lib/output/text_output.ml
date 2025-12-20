@@ -882,18 +882,7 @@ let render_track ?(indent_level = 0) (patch : Track.Patch.t) : string =
   in
 
   let render_main_track (patch : Track.MainTrack.Patch.t) =
-    let open StructuredChangeRenderer in
     let name_line = render_simple_change (string_formatter ~indent_level:(indent_level + 1) "Name") patch.name in
-    let clips_section =
-      render_changes_section
-        ~header:(make_indent_at_level (indent_level + 1) ^ "Clips Changes:")
-        ~item_fmt:{
-          format_item = (fun (c : Clip.AudioClip.t) -> c.name);
-          indent_level = indent_level + 2;
-        }
-        ~patch_fmt:{ format_patch = fun level patch -> render_audio_clip ~indent_level:level patch }
-        patch.clips
-    in
     let automations_section = render_track_automations_section ~indent_level:indent_level patch.automations in
     let devices_section = render_track_devices_section ~indent_level:indent_level patch.devices in
     let mixer_section =
@@ -902,7 +891,7 @@ let render_track ?(indent_level = 0) (patch : Track.Patch.t) : string =
       | `Modified mixer_patch -> render_main_mixer ~indent_level:(indent_level + 1) mixer_patch
     in
     let header = make_indent_at_level indent_level ^ "Main Track Patch:" in
-    join_non_empty [header; name_line; clips_section; automations_section; devices_section; mixer_section]
+    join_non_empty [header; name_line; automations_section; devices_section; mixer_section]
   in
 
   match patch with
