@@ -15,16 +15,16 @@ This project, `alsdiff`, is a command-line tool written in OCaml for working wit
 *   **ppx_deriving.eq:** PPX extension for deriving equality functions.
 *   **ppx_deriving_jsonschema:** PPX extension for JSON schema generation.
 *   **ppx_deriving_yojson:** PPX extension for Yojson serialization.
+*   **fmt:** OCaml formatting library.
 
 ## Architecture
 
 The project is structured into a library (`lib`) and a binary (`bin`).
 
 *   **`lib`:** Contains the core logic for parsing and manipulating Ableton Live Sets, organized into sublibraries:
-    *   `lib/base/` - Base functionality modules: `xml.ml`, `upath.ml`, `file.ml`, `equality.ml`.
-    *   `lib/live/` - Ableton Live specific modules: `automation.ml`, `clip.ml`, `track.ml`, `device.ml`.
-    *   `lib/diff/` - Diffing algorithms: `diff.ml`, `clip_patch.ml`, `automation_patch.ml`, `track_patch.ml`.
-    *   `lib/output/` - Output formatting: `output.ml`, `text_output.ml`.
+    *   `lib/base/` - Base functionality modules: `xml.ml`, `upath.ml`, `file.ml`, `equality.ml`, `diff.ml`.
+    *   `lib/live/` - Ableton Live specific modules: `automation.ml`, `clip.ml`, `track.ml`, `device.ml`, `liveset.ml`.
+    *   `lib/output/` - Output formatting and view models: `output.ml`, `text_output.ml`, `view_model.ml`.
 *   **`bin`:** Contains the executable entry point.
     *   `main.ml`: The main executable.
 
@@ -75,34 +75,33 @@ dune runtest
     - `upath.ml` - XPath-like query language for XML
     - `file.ml` - File handling and .als file decompression
     - `equality.ml` - Equality checking utilities
+    - `diff.ml` - Core diffing algorithms including Myers O(ND) implementation
   - `lib/live/` - Ableton Live specific modules:
     - `automation.ml` - Automation envelope handling
     - `clip.ml` - Clip and mixer functionality
     - `track.ml` - Track handling and management
     - `device.ml` - Device and plugin functionality
-  - `lib/diff/` - Diffing algorithms:
-    - `diff.ml` - Core diffing algorithms including Myers O(ND) implementation
-    - `clip_patch.ml` - Clip patching and modification handling
-    - `automation_patch.ml` - Automation patching and modification handling
-    - `track_patch.ml` - Track patching and modification handling
+    - `liveset.ml` - LiveSet structure and locator handling
   - `lib/output/` - Output formatting:
     - `output.ml` - Output interface definitions
     - `text_output.ml` - Plain text output rendering
+    - `view_model.ml` - Intermediate representation for UI rendering
 - `test/` - Test suites (all use specific module opens for cleaner code):
   - `test_upath.ml` - Tests for XPath-like functionality
   - `test_xml.ml` - Tests for XML parsing
-  - `test_live.ml` - Tests for Live set functionality
   - `test_wildcard.ml` - Tests for wildcard matching
-  - `test_wildcard_debug.ml` - Debug tests for wildcard matching
   - `test_complex.ml` - Complex integration tests
-  - `test_audio_clip.ml` - Tests for audio clip functionality
-  - `test_midi_clip.ml` - Tests for MIDI clip functionality
   - `test_diff_automation.ml` - Tests for diffing automation envelopes
-  - `test_diff_list.ml` - Tests for list diffing algorithms (Myers and LCS)
+  - `test_diff_list.ml` - Tests for list diffing algorithms (Myers)
   - `test_diff_mixer.ml` - Tests for mixer diffing functionality
-  - `test_diff_audio_clip.ml` - Tests for audio clip diffing
-  - `test_diff_midi_clip.ml` - Tests for MIDI clip diffing
-  - `test_clip_patch.ml` - Tests for clip patching functionality
+  - `test_audio_clip.ml` / `test_midi_clip.ml` - Tests for clip functionality
+  - `test_diff_audio_clip.ml` / `test_diff_midi_clip.ml` - Tests for clip diffing
+  - `test_audio_track.ml` / `test_midi_track.ml` - Tests for track functionality
+  - `test_diff_track.ml` - Tests for track diffing
+  - `test_device.ml` - Tests for device functionality
+  - `test_diff_device.ml` - Tests for device diffing
+  - `test_real_devices.ml` - Tests with real Ableton device XMLs
+  - `test_liveset.ml` - Tests for full LiveSet parsing and diffing
   - `utils.ml` - Shared test utilities
 
 ## Architecture Overview
@@ -113,8 +112,7 @@ This is a Git helper tool for Ableton Live Set (.als) files. The core functional
 2.  **XML Processing**: Parse and navigate XML structure of Live sets
 3.  **Upath**: Custom XPath-like query language for finding elements in XML
 4.  **Diffing**: Compare Live set objects to detect changes with advanced algorithms
-5.  **Patch Management**: Handle patches and modifications
-6.  **Output Formatting**: Format and display results
+5.  **Output Formatting**: Format and display results via ViewModels
 
 The `Upath` module provides a subset of XPath functionality with support for:
 
@@ -131,12 +129,12 @@ The `Diff` module implements multiple diffing algorithms:
 
 ## Library Organization
 
-The project is organized into four main libraries:
+The project is organized into three main sublibraries and a wrapper library:
 
-1.  **alsdiff_base** (`lib/base/`) - Core functionality
+1.  **alsdiff_base** (`lib/base/`) - Core functionality and diffing algorithms
 2.  **alsdiff_live** (`lib/live/`) - Ableton Live specific types and logic
-3.  **alsdiff_diff** (`lib/diff/`) - Diffing algorithms
-4.  **alsdiff_output** (`lib/output/`) - Output formatting
+3.  **alsdiff_output** (`lib/output/`) - Output formatting and view models
+4.  **alsdiff_lib** (`lib/`) - Wrapper library combining the above
 
 ### Module Access Patterns
 
@@ -146,18 +144,14 @@ When working with the libraries, use specific module opens for cleaner code:
 (* Base modules *)
 open Alsdiff_base.Xml
 open Alsdiff_base.Upath
+open Alsdiff_base.Diff
 
 (* Live modules *)
 open Alsdiff_live.Automation
 open Alsdiff_live.Clip
 open Alsdiff_live.Track
 open Alsdiff_live.Device
-
-(* Diff modules *)
-open Alsdiff_diff.Diff
-open Alsdiff_diff.Clip_patch
-open Alsdiff_diff.Automation_patch
-open Alsdiff_diff.Track_patch
+open Alsdiff_live.Liveset
 
 (* Output modules *)
 open Alsdiff_output.Text_output.TextOutput
@@ -165,15 +159,13 @@ open Alsdiff_output.Text_output.TextOutput
 
 This allows you to write `Automation.t` instead of `Alsdiff_lib_live.Automation.Automation.t` and `Xml.read_file` instead of `Alsdiff_lib_base.Xml.read_file`.
 
-### Legacy Modules
+### Refactored Modules
 
-The following modules have been refactored into the new library structure:
+The project has undergone significant refactoring:
 
-*   `config.ml`, `time.ml`, `eff.ml`, `gadt.ml`, `fraction.ml`, `oop.ml` - Moved to lib/base/ or removed
-*   `output.ml` - Split into interface (`output.ml`) and implementation (`text_output.ml`) in lib/output/
-
-## Project Cleanup
-*   `live.ml` - Removed, as it was split into `automation.ml` and `clip.ml` in lib/live/
+*   `lib/diff/` sublibrary was merged into `lib/base/`.
+*   Specialized patching logic (formerly `clip_patch.ml`, etc.) is now integrated into the respective modules' `Patch` submodule.
+*   `live.ml` was split into `automation.ml`, `clip.ml`, `track.ml`, etc.
 
 ## Development Commands
 
