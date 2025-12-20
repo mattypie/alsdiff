@@ -18,11 +18,9 @@ let test_main_track_basic_properties () =
   let main_track = MainTrack.create xml in
 
   (* Expected values based on XML file *)
-  let expected_id = 0 in
   let expected_name = "Main" in
 
   (* Test basic fields *)
-  Alcotest.(check int) "id" expected_id main_track.id;
   Alcotest.(check string) "name" expected_name main_track.name
 
 let test_main_track_automations () =
@@ -150,7 +148,6 @@ let test_main_track_comprehensive () =
   let main_track = MainTrack.create xml in
 
   (* Comprehensive test of all fields together *)
-  Alcotest.(check int) "id" 0 main_track.id;
   Alcotest.(check string) "name" "Main" main_track.name;
   Alcotest.(check int) "automation count" 2 (List.length main_track.automations);
   Alcotest.(check int) "device count" 1 (List.length main_track.devices);
@@ -229,7 +226,6 @@ let test_main_track_edge_case_empty () =
   } in
 
   let main_track = MainTrack.create empty_main_track_xml in
-  Alcotest.(check int) "empty main track id" 100 main_track.id;
   Alcotest.(check string) "empty main track name" "Empty Main" main_track.name;
   Alcotest.(check int) "empty main track automation count" 0 (List.length main_track.automations);
   Alcotest.(check int) "empty main track device count" 0 (List.length main_track.devices)

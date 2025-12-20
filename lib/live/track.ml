@@ -450,7 +450,6 @@ end
 
 module MainTrack = struct
   type t = {
-    id : int;                     (* Id attribute *)
     name : string;                (* EffectiveName *)
     automations : Automation.t list;
     devices : Device.t list;
@@ -459,7 +458,6 @@ module MainTrack = struct
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
-    let id = Upath.get_int_attr "/LomId" "Value" xml in
     let name = Upath.get_attr "/Name/EffectiveName" "Value" xml in
     let automations =
       Upath.find_all_seq "/AutomationEnvelopes/*/AutomationEnvelope" xml
@@ -472,10 +470,11 @@ module MainTrack = struct
       |> List.of_seq in
     let mixer = Upath.find "/DeviceChain/Mixer" xml |> snd |> MainMixer.create in
     let routings = Upath.find "/DeviceChain" xml |> snd |> RoutingSet.create in
-    { id; name; automations; devices; mixer; routings }
+    { name; automations; devices; mixer; routings }
 
-  let has_same_id a b = a.id = b.id
-  let id_hash t = Hashtbl.hash t.id
+  (* MainTrack is also a singleton *)
+  let has_same_id _ _ = true
+  let id_hash _ = Hashtbl.hash 0
 
   module Patch = struct
     type t = {
@@ -495,25 +494,22 @@ module MainTrack = struct
   end
 
   let diff (old_track : t) (new_track : t) : Patch.t =
-    if old_track.id <> new_track.id then
-      failwith "cannot diff two MainTracks with different Ids"
-    else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
-      let automations_changes =
-        diff_list_id (module Automation) old_track.automations new_track.automations
-      in
-      let devices_changes =
-        diff_list_id (module Device) old_track.devices new_track.devices
-      in
-      let mixer_change = diff_complex_value (module MainMixer) old_track.mixer new_track.mixer in
-      let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
-      {
-        Patch.name = name_change;
-        automations = automations_changes;
-        devices = devices_changes;
-        mixer = mixer_change;
-        routings = routings_change;
-      }
+    let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+    let automations_changes =
+      diff_list_id (module Automation) old_track.automations new_track.automations
+    in
+    let devices_changes =
+      diff_list_id (module Device) old_track.devices new_track.devices
+    in
+    let mixer_change = diff_complex_value (module MainMixer) old_track.mixer new_track.mixer in
+    let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
+    {
+      Patch.name = name_change;
+      automations = automations_changes;
+      devices = devices_changes;
+      mixer = mixer_change;
+      routings = routings_change;
+    }
 end
 
 (* Sum type that represents either a MidiTrack or AudioTrack *)
