@@ -1365,10 +1365,10 @@ module RegularDevice = struct
   module Patch = struct
     type t = regular_device_patch
 
-    let is_empty (p : t) =
-      is_unchanged_atomic_update p.display_name &&
-      is_unchanged_change (module PresetRef.Patch) p.preset &&
-      List.for_all (is_unchanged_change (module DeviceParam.Patch)) p.params
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "RegularDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let diff (old_device : t) (new_device : t) : Patch.t =
@@ -1415,12 +1415,10 @@ module PluginDevice = struct
   module Patch = struct
     type t = plugin_device_patch
 
-    let is_empty (p : t) =
-      is_unchanged_atomic_update p.display_name &&
-      is_unchanged_update (module DeviceParam.Patch) p.enabled &&
-      is_unchanged_update (module PluginDesc.Patch) p.desc &&
-      is_unchanged_change (module PresetRef.Patch) p.preset &&
-      List.for_all (is_unchanged_change (module PluginParam.Patch)) p.params
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "PluginDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let has_same_id (a : t) (b : t) = a.id = b.id
@@ -1512,13 +1510,10 @@ module GroupDevice = struct
   module Patch = struct
     type t = group_device_patch
 
-    let is_empty (p : t) =
-      is_unchanged_atomic_update p.display_name &&
-      is_unchanged_update (module DeviceParam.Patch) p.enabled &&
-      is_unchanged_change (module PresetRef.Patch) p.preset &&
-      List.for_all (is_unchanged_change (module Branch.Patch)) p.branches &&
-      List.for_all (is_unchanged_change (module Macro.Patch)) p.macros &&
-      List.for_all (is_unchanged_change (module Snapshot.Patch)) p.snapshots
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "GroupDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let diff = group_device_diff
@@ -1558,12 +1553,10 @@ module Max4LiveDevice = struct
   module Patch = struct
     type t = max4live_device_patch
 
-    let is_empty (p : t) =
-      is_unchanged_atomic_update p.display_name &&
-      is_unchanged_update (module DeviceParam.Patch) p.enabled &&
-      is_unchanged_change (module PatchRef.Patch) p.patch_ref &&
-      is_unchanged_change (module PresetRef.Patch) p.preset &&
-      List.for_all (is_unchanged_change (module Max4LiveParam.Patch)) p.params
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "Max4LiveDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let has_same_id (a : t) (b : t) = a.id = b.id
@@ -1661,26 +1654,32 @@ and device_patch_is_empty = function
     List.for_all (is_unchanged_change (module Macro.Patch)) gp.macros &&
     List.for_all (is_unchanged_change (module Snapshot.Patch)) gp.snapshots
 
-and group_device_patch_is_empty (p : group_device_patch) =
-  is_unchanged_atomic_update p.display_name &&
-  is_unchanged_update (module DeviceParam.Patch) p.enabled &&
-  is_unchanged_change (module PresetRef.Patch) p.preset &&
-  List.for_all is_unchanged_branch_change p.branches &&
-  List.for_all (is_unchanged_change (module Macro.Patch)) p.macros &&
-  List.for_all (is_unchanged_change (module Snapshot.Patch)) p.snapshots
-
 (* ================== Initialize Forward References ================== *)
 (* Initialize all mutable references for is_empty functions.
    This must come after the mutually recursive helpers are defined. *)
-let () = Patch.is_empty_ref := (function
+
+(* Helper to convert between Patch.t and device_patch for is_empty *)
+let patch_t_is_empty = function
   | Patch.RegularPatch p -> device_patch_is_empty (RegularPatch p)
   | Patch.PluginPatch p -> device_patch_is_empty (PluginPatch p)
   | Patch.Max4LivePatch p -> device_patch_is_empty (Max4LivePatch p)
-  | Patch.GroupPatch p -> device_patch_is_empty (GroupPatch p))
+  | Patch.GroupPatch p -> device_patch_is_empty (GroupPatch p)
 
+let () = Patch.is_empty_ref := patch_t_is_empty
 let () = device_patch_is_empty_ref := device_patch_is_empty
 let () = branch_patch_is_empty_ref := branch_patch_is_empty
 let () = Branch.Patch.is_empty_ref := branch_patch_is_empty
+
+(* Initialize submodule is_empty references using centralized logic *)
+let regular_device_patch_is_empty p = device_patch_is_empty (RegularPatch p)
+let plugin_device_patch_is_empty p = device_patch_is_empty (PluginPatch p)
+let max4live_device_patch_is_empty p = device_patch_is_empty (Max4LivePatch p)
+let group_device_patch_is_empty p = device_patch_is_empty (GroupPatch p)
+
+let () = RegularDevice.Patch.is_empty_ref := regular_device_patch_is_empty
+let () = PluginDevice.Patch.is_empty_ref := plugin_device_patch_is_empty
+let () = Max4LiveDevice.Patch.is_empty_ref := max4live_device_patch_is_empty
+let () = GroupDevice.Patch.is_empty_ref := group_device_patch_is_empty
 
 
 
