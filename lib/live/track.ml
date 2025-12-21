@@ -57,11 +57,11 @@ module Routing = struct
       lower_string : string atomic_update;
     }
 
-    let is_empty patch =
-      patch.route_type = `Unchanged &&
-      patch.target = `Unchanged &&
-      patch.upper_string = `Unchanged &&
-      patch.lower_string = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.route_type &&
+      is_unchanged_atomic_update p.target &&
+      is_unchanged_atomic_update p.upper_string &&
+      is_unchanged_atomic_update p.lower_string
   end
 
   let diff (old_routing : t) (new_routing : t) : Patch.t =
@@ -109,11 +109,11 @@ module RoutingSet = struct
       midi_out : Routing.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.audio_in = `Unchanged &&
-      patch.audio_out = `Unchanged &&
-      patch.midi_in = `Unchanged &&
-      patch.midi_out = `Unchanged
+    let is_empty p =
+      is_unchanged_update (module Routing.Patch) p.audio_in &&
+      is_unchanged_update (module Routing.Patch) p.audio_out &&
+      is_unchanged_update (module Routing.Patch) p.midi_in &&
+      is_unchanged_update (module Routing.Patch) p.midi_out
   end
 
   let diff (old_set : t) (new_set : t) : Patch.t =
@@ -214,7 +214,7 @@ module Mixer = struct
       is_unchanged_update (module GenericParam.Patch) p.pan &&
       is_unchanged_update (module GenericParam.Patch) p.mute &&
       is_unchanged_update (module GenericParam.Patch) p.solo &&
-      List.for_all (function `Unchanged -> true | _ -> false) p.sends
+      List.for_all (is_unchanged_change (module Send.Patch)) p.sends
   end
 
   let diff (old_mixer : t) (new_mixer : t) : Patch.t =
@@ -278,13 +278,13 @@ module MidiTrack = struct
       routings : RoutingSet.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.mixer = `Unchanged &&
-      patch.routings = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.clips &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.automations &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_update (module Mixer.Patch) p.mixer &&
+      is_unchanged_update (module RoutingSet.Patch) p.routings &&
+      List.for_all (is_unchanged_change (module Clip.MidiClip.Patch)) p.clips &&
+      List.for_all (is_unchanged_change (module Automation.Patch)) p.automations &&
+      List.for_all (is_unchanged_change (module Device.Patch)) p.devices
   end
 
   let diff (old_track : t) (new_track : t) : Patch.t =
@@ -357,13 +357,13 @@ module AudioTrack = struct
       routings : RoutingSet.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.mixer = `Unchanged &&
-      patch.routings = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.clips &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.automations &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_update (module Mixer.Patch) p.mixer &&
+      is_unchanged_update (module RoutingSet.Patch) p.routings &&
+      List.for_all (is_unchanged_change (module Clip.AudioClip.Patch)) p.clips &&
+      List.for_all (is_unchanged_change (module Automation.Patch)) p.automations &&
+      List.for_all (is_unchanged_change (module Device.Patch)) p.devices
   end
 
   let diff (old_track : t) (new_track : t) : Patch.t =
@@ -485,12 +485,12 @@ module MainTrack = struct
       routings : RoutingSet.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.mixer = `Unchanged &&
-      patch.routings = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.automations &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_update (module MainMixer.Patch) p.mixer &&
+      is_unchanged_update (module RoutingSet.Patch) p.routings &&
+      List.for_all (is_unchanged_change (module Automation.Patch)) p.automations &&
+      List.for_all (is_unchanged_change (module Device.Patch)) p.devices
   end
 
   let diff (old_track : t) (new_track : t) : Patch.t =

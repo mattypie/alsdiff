@@ -31,9 +31,9 @@ module EnvelopeEvent = struct
       value : float atomic_update;
     }
 
-    let is_empty = function
-      | { time = `Unchanged; value = `Unchanged } -> true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.time &&
+      is_unchanged_atomic_update p.value
   end
 
   let diff (old_event : t) (new_event : t) : Patch.t =
@@ -79,9 +79,7 @@ module Patch = struct
   }
 
   let is_empty x =
-    List.for_all (function
-        | `Unchanged -> true
-        | _ -> false) x.events
+    List.for_all (is_unchanged_change (module EnvelopeEvent.Patch)) x.events
 end
 
 let diff (old_envelope : t) (new_envelope : t) : Patch.t =

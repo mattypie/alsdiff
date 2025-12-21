@@ -175,7 +175,10 @@ module MIDIMapping = struct
       high : int atomic_update;
     }
 
-    let is_empty p = p.channel = `Unchanged && p.low = `Unchanged && p.high = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.channel &&
+      is_unchanged_atomic_update p.low &&
+      is_unchanged_atomic_update p.high
   end
 
   let diff (old_mapping : t) (new_mapping : t) : Patch.t =
@@ -230,11 +233,11 @@ module GenericParam = struct
       modulation : int atomic_update;
     }
 
-    let is_empty t =
-      t.name = `Unchanged &&
-      t.value = `Unchanged &&
-      t.automation = `Unchanged &&
-      t.modulation = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_atomic_update p.value &&
+      is_unchanged_atomic_update p.automation &&
+      is_unchanged_atomic_update p.modulation
   end
 
   let diff (old_param : t) (new_param : t) : Patch.t =
@@ -376,13 +379,13 @@ module PresetRef = struct
       crc : int atomic_update;
     }
 
-    let is_empty patch =
-      patch.relative_path = `Unchanged &&
-      patch.path = `Unchanged &&
-      patch.pack_name = `Unchanged &&
-      patch.pack_id = `Unchanged &&
-      patch.file_size = `Unchanged &&
-      patch.crc = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.relative_path &&
+      is_unchanged_atomic_update p.path &&
+      is_unchanged_atomic_update p.pack_name &&
+      is_unchanged_atomic_update p.pack_id &&
+      is_unchanged_atomic_update p.file_size &&
+      is_unchanged_atomic_update p.crc
   end
 
   let diff (old_preset : t) (new_preset : t) : Patch.t =
@@ -470,14 +473,14 @@ module PatchRef = struct
       last_mod_date : int64 atomic_update;
     }
 
-    let is_empty patch =
-      patch.relative_path = `Unchanged &&
-      patch.path = `Unchanged &&
-      patch.pack_name = `Unchanged &&
-      patch.pack_id = `Unchanged &&
-      patch.file_size = `Unchanged &&
-      patch.crc = `Unchanged &&
-      patch.last_mod_date = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.relative_path &&
+      is_unchanged_atomic_update p.path &&
+      is_unchanged_atomic_update p.pack_name &&
+      is_unchanged_atomic_update p.pack_id &&
+      is_unchanged_atomic_update p.file_size &&
+      is_unchanged_atomic_update p.crc &&
+      is_unchanged_atomic_update p.last_mod_date
   end
 
   let diff (old_patch : t) (new_patch : t) : Patch.t =
@@ -541,9 +544,9 @@ module PluginParam = struct
       base : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.index = `Unchanged &&
-      is_unchanged_update (module GenericParam.Patch) patch.base
+    let is_empty p =
+      is_unchanged_atomic_update p.index &&
+      is_unchanged_update (module GenericParam.Patch) p.base
   end
 
   let has_same_id a b = a.id = b.id
@@ -754,11 +757,11 @@ module PluginDesc = struct
       state : string atomic_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.uid = `Unchanged &&
-      patch.plugin_type = `Unchanged &&
-      patch.state = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_atomic_update p.uid &&
+      is_unchanged_atomic_update p.plugin_type &&
+      is_unchanged_atomic_update p.state
   end
 
   let diff (old_desc : t) (new_desc : t) : Patch.t =
@@ -846,7 +849,9 @@ module Max4LiveParam = struct
       base : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty patch = patch.index = `Unchanged && is_unchanged_update (module GenericParam.Patch) patch.base
+    let is_empty p =
+      is_unchanged_atomic_update p.index &&
+      is_unchanged_update (module GenericParam.Patch) p.base
   end
 
   let has_same_id a b = a.id = b.id
@@ -896,11 +901,11 @@ module MixerDevice = struct
       pan : DeviceParam.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.on = `Unchanged &&
-      patch.speaker = `Unchanged &&
-      patch.volume = `Unchanged &&
-      patch.pan = `Unchanged
+    let is_empty p =
+      is_unchanged_update (module DeviceParam.Patch) p.on &&
+      is_unchanged_update (module DeviceParam.Patch) p.speaker &&
+      is_unchanged_update (module DeviceParam.Patch) p.volume &&
+      is_unchanged_update (module DeviceParam.Patch) p.pan
   end
 
   (* MixerDevice doesn't have a natural ID, so use placeholder interface *)
@@ -1019,9 +1024,9 @@ module Snapshot = struct
       values : float atomic_change list;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.values
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      List.for_all is_unchanged_atomic_change p.values
   end
 
   let diff (old_snapshot : t) (new_snapshot : t) : Patch.t =
@@ -1146,6 +1151,15 @@ and group_device_patch = {
 }
 
 
+(* ================== Forward Reference Declarations ================== *)
+(* These mutable references are used to break the circular dependency between
+   device, branch patch is_empty functions and the diff functions. They are
+   initialized at the end of the file after all types and modules are defined. *)
+let device_patch_is_empty_ref : (device_patch -> bool) ref =
+  ref (fun _ -> failwith "device_patch_is_empty not initialized")
+let branch_patch_is_empty_ref : (branch_patch -> bool) ref =
+  ref (fun _ -> failwith "branch_patch_is_empty not initialized")
+
 (* regular_device diff functions *)
 let rec regular_device_diff (old_device : regular_device) (new_device : regular_device) : regular_device_patch =
   if old_device.id <> new_device.id && old_device.device_name <> new_device.device_name  then
@@ -1246,20 +1260,10 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
 
       module Patch = struct
         type t = device_patch
-        let is_empty = function
-          | RegularPatch rp -> rp.display_name = `Unchanged && rp.preset = `Unchanged &&
-                            List.for_all (function `Unchanged -> true | _ -> false) rp.params
-          | PluginPatch pp -> pp.display_name = `Unchanged && pp.enabled = `Unchanged &&
-                            pp.desc = `Unchanged && pp.preset = `Unchanged &&
-                            List.for_all (function `Unchanged -> true | _ -> false) pp.params
-          | Max4LivePatch mp -> mp.display_name = `Unchanged && mp.enabled = `Unchanged &&
-                             mp.patch_ref = `Unchanged && mp.preset = `Unchanged &&
-                             List.for_all (function `Unchanged -> true | _ -> false) mp.params
-          | GroupPatch gp -> gp.display_name = `Unchanged && gp.enabled = `Unchanged &&
-                             gp.preset = `Unchanged &&
-                             List.for_all (function `Unchanged -> true | _ -> false) gp.branches &&
-                             List.for_all (function `Unchanged -> true | _ -> false) gp.macros &&
-                             List.for_all (function `Unchanged -> true | _ -> false) gp.snapshots
+        (* Use mutable references that will be initialized at module load time.
+           The device_patch_is_empty_ref will be set after the mutually recursive
+           helpers are defined at the end of the file. *)
+        let is_empty p = !device_patch_is_empty_ref p
       end
 
       let diff old_dev new_dev =
@@ -1292,10 +1296,8 @@ and group_device_diff (old_group : group_device) (new_group : group_device) =
         let id_hash (t : t) = Hashtbl.hash t.id
         module Patch = struct
           type t = branch_patch
-          let is_empty patch =
-            patch.id = `Unchanged &&
-            patch.mixer = `Unchanged &&
-            List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+          (* Use mutable reference that will be initialized at module load time *)
+          let is_empty p = !branch_patch_is_empty_ref p
         end
         let diff = branch_diff
       end in
@@ -1363,10 +1365,10 @@ module RegularDevice = struct
   module Patch = struct
     type t = regular_device_patch
 
-    let is_empty (patch : t) =
-      patch.display_name = `Unchanged &&
-      patch.preset = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.params
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "RegularDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let diff (old_device : t) (new_device : t) : Patch.t =
@@ -1413,13 +1415,10 @@ module PluginDevice = struct
   module Patch = struct
     type t = plugin_device_patch
 
-    let is_empty (patch : t) =
-      patch.enabled = `Unchanged &&
-      patch.desc = `Unchanged &&
-      List.for_all (function
-          | `Unchanged -> true
-          | _ -> false
-        ) patch.params
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "PluginDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let has_same_id (a : t) (b : t) = a.id = b.id
@@ -1447,10 +1446,11 @@ module Branch = struct
 
   module Patch = struct
     type t = branch_patch
-    let is_empty patch =
-      patch.id = `Unchanged &&
-      patch.mixer = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+
+    (* Use references to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "Branch.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let diff = branch_diff
@@ -1510,13 +1510,10 @@ module GroupDevice = struct
   module Patch = struct
     type t = group_device_patch
 
-    let is_empty (patch : t) =
-      patch.display_name = `Unchanged &&
-      patch.enabled = `Unchanged &&
-      patch.preset = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.branches &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.macros &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.snapshots
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "GroupDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let diff = group_device_diff
@@ -1556,13 +1553,10 @@ module Max4LiveDevice = struct
   module Patch = struct
     type t = max4live_device_patch
 
-    let is_empty (patch : t) =
-      patch.enabled = `Unchanged &&
-      patch.patch_ref = `Unchanged &&
-      List.for_all (function
-          | `Unchanged -> true
-          | _ -> false
-        ) patch.params
+    (* Use reference to break circular dependency - initialized after
+       the mutually recursive helpers are defined at end of file *)
+    let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "Max4LiveDevice.Patch.is_empty not initialized")
+    let is_empty p = !is_empty_ref p
   end
 
   let has_same_id (a : t) (b : t) = a.id = b.id
@@ -1608,12 +1602,81 @@ module Patch = struct
     | PluginPatch of PluginDevice.Patch.t
     | Max4LivePatch of Max4LiveDevice.Patch.t
     | GroupPatch of GroupDevice.Patch.t
-  let is_empty = function
-    | RegularPatch patch -> RegularDevice.Patch.is_empty patch
-    | PluginPatch patch -> PluginDevice.Patch.is_empty patch
-    | Max4LivePatch patch -> Max4LiveDevice.Patch.is_empty patch
-    | GroupPatch patch -> GroupDevice.Patch.is_empty patch
+
+  (* Use reference to break circular dependency - initialized after
+     the mutually recursive helpers are defined *)
+  let is_empty_ref : (t -> bool) ref = ref (fun _ -> failwith "is_empty not initialized")
+  let is_empty p = !is_empty_ref p
 end
+
+(* ================== Mutually Recursive is_empty Helpers ================== *)
+(* These functions are defined here at the end of the file where all modules
+   are available, to properly handle the circular dependency between
+   Branch.Patch and Device.Patch. *)
+
+let rec is_unchanged_branch_change = function
+  | `Added _ | `Removed _ -> false
+  | `Unchanged -> true
+  | `Modified p -> branch_patch_is_empty p
+
+and is_unchanged_device_change = function
+  | `Added _ | `Removed _ -> false
+  | `Unchanged -> true
+  | `Modified p -> device_patch_is_empty p
+
+and branch_patch_is_empty (p : branch_patch) =
+  is_unchanged_atomic_update p.id &&
+  is_unchanged_update (module MixerDevice.Patch) p.mixer &&
+  List.for_all is_unchanged_device_change p.devices
+
+and device_patch_is_empty = function
+  | RegularPatch rp ->
+    is_unchanged_atomic_update rp.display_name &&
+    is_unchanged_change (module PresetRef.Patch) rp.preset &&
+    List.for_all (is_unchanged_change (module DeviceParam.Patch)) rp.params
+  | PluginPatch pp ->
+    is_unchanged_atomic_update pp.display_name &&
+    is_unchanged_update (module DeviceParam.Patch) pp.enabled &&
+    is_unchanged_update (module PluginDesc.Patch) pp.desc &&
+    is_unchanged_change (module PresetRef.Patch) pp.preset &&
+    List.for_all (is_unchanged_change (module PluginParam.Patch)) pp.params
+  | Max4LivePatch mp ->
+    is_unchanged_atomic_update mp.display_name &&
+    is_unchanged_update (module DeviceParam.Patch) mp.enabled &&
+    is_unchanged_change (module PatchRef.Patch) mp.patch_ref &&
+    is_unchanged_change (module PresetRef.Patch) mp.preset &&
+    List.for_all (is_unchanged_change (module Max4LiveParam.Patch)) mp.params
+  | GroupPatch gp ->
+    is_unchanged_atomic_update gp.display_name &&
+    is_unchanged_update (module DeviceParam.Patch) gp.enabled &&
+    is_unchanged_change (module PresetRef.Patch) gp.preset &&
+    List.for_all is_unchanged_branch_change gp.branches &&
+    List.for_all (is_unchanged_change (module Macro.Patch)) gp.macros &&
+    List.for_all (is_unchanged_change (module Snapshot.Patch)) gp.snapshots
+
+(* ================== Initialize Forward References ================== *)
+(* Initialize all mutable references for is_empty functions.
+   This must come after the mutually recursive helpers are defined. *)
+
+(* Note: Patch.t and device_patch are nominally different types in OCaml,
+   so we need this wrapper to convert between them *)
+let () = Patch.is_empty_ref := (function
+  | Patch.RegularPatch p -> device_patch_is_empty (RegularPatch p)
+  | Patch.PluginPatch p -> device_patch_is_empty (PluginPatch p)
+  | Patch.Max4LivePatch p -> device_patch_is_empty (Max4LivePatch p)
+  | Patch.GroupPatch p -> device_patch_is_empty (GroupPatch p))
+
+let () = device_patch_is_empty_ref := device_patch_is_empty
+let () = branch_patch_is_empty_ref := branch_patch_is_empty
+let () = Branch.Patch.is_empty_ref := branch_patch_is_empty
+
+(* Initialize submodule is_empty references using centralized logic *)
+let () = RegularDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (RegularPatch p))
+let () = PluginDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (PluginPatch p))
+let () = Max4LiveDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (Max4LivePatch p))
+let () = GroupDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (GroupPatch p))
+
+
 
 let diff (old_device : t) (new_device : t) : Patch.t =
   match (old_device, new_device) with

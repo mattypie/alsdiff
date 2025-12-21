@@ -18,9 +18,9 @@ module TimeSignature = struct
       denom : int atomic_update;
     }
 
-    let is_empty = function
-      | { numer = `Unchanged; denom = `Unchanged } -> true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.numer &&
+      is_unchanged_atomic_update p.denom
   end
 
 
@@ -68,13 +68,12 @@ module MidiNote = struct
       note : int atomic_update;
     }
 
-    let is_empty = function
-      | { time = `Unchanged;
-          duration = `Unchanged;
-          velocity = `Unchanged;
-          off_velocity = `Unchanged;
-          note = `Unchanged } -> true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.time &&
+      is_unchanged_atomic_update p.duration &&
+      is_unchanged_atomic_update p.velocity &&
+      is_unchanged_atomic_update p.off_velocity &&
+      is_unchanged_atomic_update p.note
 
   end
 
@@ -142,9 +141,10 @@ module Loop = struct
       on : bool atomic_update;
     }
 
-    let is_empty = function
-      | { start_time = `Unchanged; end_time = `Unchanged; on = `Unchanged } -> true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.start_time &&
+      is_unchanged_atomic_update p.end_time &&
+      is_unchanged_atomic_update p.on
 
   end
 
@@ -214,19 +214,13 @@ module MidiClip = struct
       notes : note_change list;
     }
 
-    let is_empty = function
-      | { name = `Unchanged;
-          start_time = `Unchanged;
-          end_time = `Unchanged;
-          loop = `Unchanged;
-          signature = `Unchanged;
-          notes;
-        } ->
-        List.fold_right (fun x y ->
-            (match x with
-             | `Unchanged -> true
-             | _ -> false) && y) notes true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_atomic_update p.start_time &&
+      is_unchanged_atomic_update p.end_time &&
+      is_unchanged_update (module Loop.Patch) p.loop &&
+      is_unchanged_update (module TimeSignature.Patch) p.signature &&
+      List.for_all (is_unchanged_change (module MidiNote.Patch)) p.notes
   end
 
   let diff (old_clip : t) (new_clip : t) : Patch.t =
@@ -273,9 +267,10 @@ module SampleRef = struct
       last_modified_date : int64 atomic_update;
     }
 
-    let is_empty = function
-      | { file_path = `Unchanged; crc = `Unchanged; last_modified_date = `Unchanged } -> true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.file_path &&
+      is_unchanged_atomic_update p.crc &&
+      is_unchanged_atomic_update p.last_modified_date
   end
 
   let create (xml : Xml.t) : t =
@@ -348,13 +343,13 @@ module AudioClip = struct
       sample_ref : SampleRef.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.start_time = `Unchanged &&
-      patch.end_time = `Unchanged &&
-      patch.loop = `Unchanged &&
-      patch.signature = `Unchanged &&
-      patch.sample_ref = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_atomic_update p.start_time &&
+      is_unchanged_atomic_update p.end_time &&
+      is_unchanged_update (module Loop.Patch) p.loop &&
+      is_unchanged_update (module TimeSignature.Patch) p.signature &&
+      is_unchanged_update (module SampleRef.Patch) p.sample_ref
   end
 
 
