@@ -214,7 +214,7 @@ module Mixer = struct
       is_unchanged_update (module GenericParam.Patch) p.pan &&
       is_unchanged_update (module GenericParam.Patch) p.mute &&
       is_unchanged_update (module GenericParam.Patch) p.solo &&
-      List.for_all (function `Unchanged -> true | _ -> false) p.sends
+      List.for_all (is_unchanged_change (module Send.Patch)) p.sends
   end
 
   let diff (old_mixer : t) (new_mixer : t) : Patch.t =

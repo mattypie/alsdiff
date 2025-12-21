@@ -544,9 +544,9 @@ module PluginParam = struct
       base : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.index = `Unchanged &&
-      is_unchanged_update (module GenericParam.Patch) patch.base
+    let is_empty p =
+      is_unchanged_atomic_update p.index &&
+      is_unchanged_update (module GenericParam.Patch) p.base
   end
 
   let has_same_id a b = a.id = b.id
