@@ -1658,28 +1658,23 @@ and device_patch_is_empty = function
 (* Initialize all mutable references for is_empty functions.
    This must come after the mutually recursive helpers are defined. *)
 
-(* Helper to convert between Patch.t and device_patch for is_empty *)
-let patch_t_is_empty = function
+(* Note: Patch.t and device_patch are nominally different types in OCaml,
+   so we need this wrapper to convert between them *)
+let () = Patch.is_empty_ref := (function
   | Patch.RegularPatch p -> device_patch_is_empty (RegularPatch p)
   | Patch.PluginPatch p -> device_patch_is_empty (PluginPatch p)
   | Patch.Max4LivePatch p -> device_patch_is_empty (Max4LivePatch p)
-  | Patch.GroupPatch p -> device_patch_is_empty (GroupPatch p)
+  | Patch.GroupPatch p -> device_patch_is_empty (GroupPatch p))
 
-let () = Patch.is_empty_ref := patch_t_is_empty
 let () = device_patch_is_empty_ref := device_patch_is_empty
 let () = branch_patch_is_empty_ref := branch_patch_is_empty
 let () = Branch.Patch.is_empty_ref := branch_patch_is_empty
 
 (* Initialize submodule is_empty references using centralized logic *)
-let regular_device_patch_is_empty p = device_patch_is_empty (RegularPatch p)
-let plugin_device_patch_is_empty p = device_patch_is_empty (PluginPatch p)
-let max4live_device_patch_is_empty p = device_patch_is_empty (Max4LivePatch p)
-let group_device_patch_is_empty p = device_patch_is_empty (GroupPatch p)
-
-let () = RegularDevice.Patch.is_empty_ref := regular_device_patch_is_empty
-let () = PluginDevice.Patch.is_empty_ref := plugin_device_patch_is_empty
-let () = Max4LiveDevice.Patch.is_empty_ref := max4live_device_patch_is_empty
-let () = GroupDevice.Patch.is_empty_ref := group_device_patch_is_empty
+let () = RegularDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (RegularPatch p))
+let () = PluginDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (PluginPatch p))
+let () = Max4LiveDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (Max4LivePatch p))
+let () = GroupDevice.Patch.is_empty_ref := (fun p -> device_patch_is_empty (GroupPatch p))
 
 
 
