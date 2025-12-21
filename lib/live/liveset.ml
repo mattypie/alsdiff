@@ -27,9 +27,9 @@ module Locator = struct
       time : float atomic_update;
     }
 
-    let is_empty = function
-      | { name = `Unchanged; time = `Unchanged } -> true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_atomic_update p.time
   end
 
   let diff (old_locator : t) (new_locator : t) : Patch.t =
@@ -62,9 +62,10 @@ module Version = struct
       revision : string atomic_update;
     }
 
-    let is_empty = function
-      | { major = `Unchanged; minor = `Unchanged; revision = `Unchanged } -> true
-      | _ -> false
+    let is_empty p =
+      is_unchanged_atomic_update p.major &&
+      is_unchanged_atomic_update p.minor &&
+      is_unchanged_atomic_update p.revision
   end
 
   let diff (old_version : t) (new_version : t) : Patch.t =
@@ -280,13 +281,13 @@ module Patch = struct
     (* Note: pointees is derived from tracks, so we don't diff it directly *)
   }
 
-  let is_empty patch =
-    patch.name = `Unchanged &&
-    patch.version = `Unchanged &&
-    patch.creator = `Unchanged &&
-    List.for_all (function `Unchanged -> true | _ -> false) patch.tracks &&
-    List.for_all (function `Unchanged -> true | _ -> false) patch.returns &&
-    List.for_all (function `Unchanged -> true | _ -> false) patch.locators
+  let is_empty p =
+    is_unchanged_atomic_update p.name &&
+    is_unchanged_update (module Version.Patch) p.version &&
+    is_unchanged_atomic_update p.creator &&
+    List.for_all (is_unchanged_change (module Track.Patch)) p.tracks &&
+    List.for_all (is_unchanged_change (module Track.Patch)) p.returns &&
+    List.for_all (is_unchanged_change (module Locator.Patch)) p.locators
 end
 
 let diff (old_liveset : t) (new_liveset : t) : Patch.t =

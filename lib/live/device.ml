@@ -175,7 +175,10 @@ module MIDIMapping = struct
       high : int atomic_update;
     }
 
-    let is_empty p = p.channel = `Unchanged && p.low = `Unchanged && p.high = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.channel &&
+      is_unchanged_atomic_update p.low &&
+      is_unchanged_atomic_update p.high
   end
 
   let diff (old_mapping : t) (new_mapping : t) : Patch.t =
@@ -230,11 +233,11 @@ module GenericParam = struct
       modulation : int atomic_update;
     }
 
-    let is_empty t =
-      t.name = `Unchanged &&
-      t.value = `Unchanged &&
-      t.automation = `Unchanged &&
-      t.modulation = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_atomic_update p.value &&
+      is_unchanged_atomic_update p.automation &&
+      is_unchanged_atomic_update p.modulation
   end
 
   let diff (old_param : t) (new_param : t) : Patch.t =
@@ -376,13 +379,13 @@ module PresetRef = struct
       crc : int atomic_update;
     }
 
-    let is_empty patch =
-      patch.relative_path = `Unchanged &&
-      patch.path = `Unchanged &&
-      patch.pack_name = `Unchanged &&
-      patch.pack_id = `Unchanged &&
-      patch.file_size = `Unchanged &&
-      patch.crc = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.relative_path &&
+      is_unchanged_atomic_update p.path &&
+      is_unchanged_atomic_update p.pack_name &&
+      is_unchanged_atomic_update p.pack_id &&
+      is_unchanged_atomic_update p.file_size &&
+      is_unchanged_atomic_update p.crc
   end
 
   let diff (old_preset : t) (new_preset : t) : Patch.t =
@@ -470,14 +473,14 @@ module PatchRef = struct
       last_mod_date : int64 atomic_update;
     }
 
-    let is_empty patch =
-      patch.relative_path = `Unchanged &&
-      patch.path = `Unchanged &&
-      patch.pack_name = `Unchanged &&
-      patch.pack_id = `Unchanged &&
-      patch.file_size = `Unchanged &&
-      patch.crc = `Unchanged &&
-      patch.last_mod_date = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.relative_path &&
+      is_unchanged_atomic_update p.path &&
+      is_unchanged_atomic_update p.pack_name &&
+      is_unchanged_atomic_update p.pack_id &&
+      is_unchanged_atomic_update p.file_size &&
+      is_unchanged_atomic_update p.crc &&
+      is_unchanged_atomic_update p.last_mod_date
   end
 
   let diff (old_patch : t) (new_patch : t) : Patch.t =
@@ -754,11 +757,11 @@ module PluginDesc = struct
       state : string atomic_update;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      patch.uid = `Unchanged &&
-      patch.plugin_type = `Unchanged &&
-      patch.state = `Unchanged
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      is_unchanged_atomic_update p.uid &&
+      is_unchanged_atomic_update p.plugin_type &&
+      is_unchanged_atomic_update p.state
   end
 
   let diff (old_desc : t) (new_desc : t) : Patch.t =
@@ -846,7 +849,9 @@ module Max4LiveParam = struct
       base : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty patch = patch.index = `Unchanged && is_unchanged_update (module GenericParam.Patch) patch.base
+    let is_empty p =
+      is_unchanged_atomic_update p.index &&
+      is_unchanged_update (module GenericParam.Patch) p.base
   end
 
   let has_same_id a b = a.id = b.id
@@ -896,11 +901,11 @@ module MixerDevice = struct
       pan : DeviceParam.Patch.t structured_update;
     }
 
-    let is_empty patch =
-      patch.on = `Unchanged &&
-      patch.speaker = `Unchanged &&
-      patch.volume = `Unchanged &&
-      patch.pan = `Unchanged
+    let is_empty p =
+      is_unchanged_update (module DeviceParam.Patch) p.on &&
+      is_unchanged_update (module DeviceParam.Patch) p.speaker &&
+      is_unchanged_update (module DeviceParam.Patch) p.volume &&
+      is_unchanged_update (module DeviceParam.Patch) p.pan
   end
 
   (* MixerDevice doesn't have a natural ID, so use placeholder interface *)
@@ -1019,9 +1024,9 @@ module Snapshot = struct
       values : float atomic_change list;
     }
 
-    let is_empty patch =
-      patch.name = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.values
+    let is_empty p =
+      is_unchanged_atomic_update p.name &&
+      List.for_all is_unchanged_atomic_change p.values
   end
 
   let diff (old_snapshot : t) (new_snapshot : t) : Patch.t =
@@ -1247,19 +1252,30 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
       module Patch = struct
         type t = device_patch
         let is_empty = function
-          | RegularPatch rp -> rp.display_name = `Unchanged && rp.preset = `Unchanged &&
-                            List.for_all (function `Unchanged -> true | _ -> false) rp.params
-          | PluginPatch pp -> pp.display_name = `Unchanged && pp.enabled = `Unchanged &&
-                            pp.desc = `Unchanged && pp.preset = `Unchanged &&
-                            List.for_all (function `Unchanged -> true | _ -> false) pp.params
-          | Max4LivePatch mp -> mp.display_name = `Unchanged && mp.enabled = `Unchanged &&
-                             mp.patch_ref = `Unchanged && mp.preset = `Unchanged &&
-                             List.for_all (function `Unchanged -> true | _ -> false) mp.params
-          | GroupPatch gp -> gp.display_name = `Unchanged && gp.enabled = `Unchanged &&
-                             gp.preset = `Unchanged &&
-                             List.for_all (function `Unchanged -> true | _ -> false) gp.branches &&
-                             List.for_all (function `Unchanged -> true | _ -> false) gp.macros &&
-                             List.for_all (function `Unchanged -> true | _ -> false) gp.snapshots
+          | RegularPatch rp ->
+            is_unchanged_atomic_update rp.display_name &&
+            is_unchanged_change (module PresetRef.Patch) rp.preset &&
+            List.for_all (is_unchanged_change (module DeviceParam.Patch)) rp.params
+          | PluginPatch pp ->
+            is_unchanged_atomic_update pp.display_name &&
+            is_unchanged_update (module DeviceParam.Patch) pp.enabled &&
+            is_unchanged_update (module PluginDesc.Patch) pp.desc &&
+            is_unchanged_change (module PresetRef.Patch) pp.preset &&
+            List.for_all (is_unchanged_change (module PluginParam.Patch)) pp.params
+          | Max4LivePatch mp ->
+            is_unchanged_atomic_update mp.display_name &&
+            is_unchanged_update (module DeviceParam.Patch) mp.enabled &&
+            is_unchanged_change (module PatchRef.Patch) mp.patch_ref &&
+            is_unchanged_change (module PresetRef.Patch) mp.preset &&
+            List.for_all (is_unchanged_change (module Max4LiveParam.Patch)) mp.params
+          | GroupPatch gp ->
+            is_unchanged_atomic_update gp.display_name &&
+            is_unchanged_update (module DeviceParam.Patch) gp.enabled &&
+            is_unchanged_change (module PresetRef.Patch) gp.preset &&
+            (* Cannot use is_unchanged_change (module Branch.Patch) since Branch is defined later *)
+            List.for_all (function `Unchanged -> true | _ -> false) gp.branches &&
+            List.for_all (is_unchanged_change (module Macro.Patch)) gp.macros &&
+            List.for_all (is_unchanged_change (module Snapshot.Patch)) gp.snapshots
       end
 
       let diff old_dev new_dev =
@@ -1292,10 +1308,12 @@ and group_device_diff (old_group : group_device) (new_group : group_device) =
         let id_hash (t : t) = Hashtbl.hash t.id
         module Patch = struct
           type t = branch_patch
-          let is_empty patch =
-            patch.id = `Unchanged &&
-            patch.mixer = `Unchanged &&
-            List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+          (* Cannot use is_unchanged_change (module DeviceId.Patch) since DeviceId is
+             defined in branch_diff, not accessible from group_device_diff scope *)
+          let is_empty p =
+            is_unchanged_atomic_update p.id &&
+            is_unchanged_update (module MixerDevice.Patch) p.mixer &&
+            List.for_all (function `Unchanged -> true | _ -> false) p.devices
         end
         let diff = branch_diff
       end in
@@ -1363,10 +1381,10 @@ module RegularDevice = struct
   module Patch = struct
     type t = regular_device_patch
 
-    let is_empty (patch : t) =
-      patch.display_name = `Unchanged &&
-      patch.preset = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.params
+    let is_empty (p : t) =
+      is_unchanged_atomic_update p.display_name &&
+      is_unchanged_change (module PresetRef.Patch) p.preset &&
+      List.for_all (is_unchanged_change (module DeviceParam.Patch)) p.params
   end
 
   let diff (old_device : t) (new_device : t) : Patch.t =
@@ -1413,13 +1431,12 @@ module PluginDevice = struct
   module Patch = struct
     type t = plugin_device_patch
 
-    let is_empty (patch : t) =
-      patch.enabled = `Unchanged &&
-      patch.desc = `Unchanged &&
-      List.for_all (function
-          | `Unchanged -> true
-          | _ -> false
-        ) patch.params
+    let is_empty (p : t) =
+      is_unchanged_atomic_update p.display_name &&
+      is_unchanged_update (module DeviceParam.Patch) p.enabled &&
+      is_unchanged_update (module PluginDesc.Patch) p.desc &&
+      is_unchanged_change (module PresetRef.Patch) p.preset &&
+      List.for_all (is_unchanged_change (module PluginParam.Patch)) p.params
   end
 
   let has_same_id (a : t) (b : t) = a.id = b.id
@@ -1447,10 +1464,42 @@ module Branch = struct
 
   module Patch = struct
     type t = branch_patch
-    let is_empty patch =
-      patch.id = `Unchanged &&
-      patch.mixer = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.devices
+
+    (* Note: Cannot use is_unchanged_change (module Device.Patch) here since
+       Device module is defined later in the file. Using inline function. *)
+    let is_unchanged_device_change = function
+      | `Added _ | `Removed _ -> false
+      | `Unchanged -> true
+      | `Modified p -> match p with
+        | RegularPatch rp ->
+          is_unchanged_atomic_update rp.display_name &&
+          is_unchanged_change (module PresetRef.Patch) rp.preset &&
+          List.for_all (is_unchanged_change (module DeviceParam.Patch)) rp.params
+        | PluginPatch pp ->
+          is_unchanged_atomic_update pp.display_name &&
+          is_unchanged_update (module DeviceParam.Patch) pp.enabled &&
+          is_unchanged_update (module PluginDesc.Patch) pp.desc &&
+          is_unchanged_change (module PresetRef.Patch) pp.preset &&
+          List.for_all (is_unchanged_change (module PluginParam.Patch)) pp.params
+        | Max4LivePatch mp ->
+          is_unchanged_atomic_update mp.display_name &&
+          is_unchanged_update (module DeviceParam.Patch) mp.enabled &&
+          is_unchanged_change (module PatchRef.Patch) mp.patch_ref &&
+          is_unchanged_change (module PresetRef.Patch) mp.preset &&
+          List.for_all (is_unchanged_change (module Max4LiveParam.Patch)) mp.params
+        | GroupPatch gp ->
+          is_unchanged_atomic_update gp.display_name &&
+          is_unchanged_update (module DeviceParam.Patch) gp.enabled &&
+          is_unchanged_change (module PresetRef.Patch) gp.preset &&
+          (* Cannot recurse into branches here either, so use simple check *)
+          List.for_all (function `Unchanged -> true | _ -> false) gp.branches &&
+          List.for_all (is_unchanged_change (module Macro.Patch)) gp.macros &&
+          List.for_all (is_unchanged_change (module Snapshot.Patch)) gp.snapshots
+
+    let is_empty p =
+      is_unchanged_atomic_update p.id &&
+      is_unchanged_update (module MixerDevice.Patch) p.mixer &&
+      List.for_all is_unchanged_device_change p.devices
   end
 
   let diff = branch_diff
@@ -1510,13 +1559,13 @@ module GroupDevice = struct
   module Patch = struct
     type t = group_device_patch
 
-    let is_empty (patch : t) =
-      patch.display_name = `Unchanged &&
-      patch.enabled = `Unchanged &&
-      patch.preset = `Unchanged &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.branches &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.macros &&
-      List.for_all (function `Unchanged -> true | _ -> false) patch.snapshots
+    let is_empty (p : t) =
+      is_unchanged_atomic_update p.display_name &&
+      is_unchanged_update (module DeviceParam.Patch) p.enabled &&
+      is_unchanged_change (module PresetRef.Patch) p.preset &&
+      List.for_all (is_unchanged_change (module Branch.Patch)) p.branches &&
+      List.for_all (is_unchanged_change (module Macro.Patch)) p.macros &&
+      List.for_all (is_unchanged_change (module Snapshot.Patch)) p.snapshots
   end
 
   let diff = group_device_diff
@@ -1556,13 +1605,12 @@ module Max4LiveDevice = struct
   module Patch = struct
     type t = max4live_device_patch
 
-    let is_empty (patch : t) =
-      patch.enabled = `Unchanged &&
-      patch.patch_ref = `Unchanged &&
-      List.for_all (function
-          | `Unchanged -> true
-          | _ -> false
-        ) patch.params
+    let is_empty (p : t) =
+      is_unchanged_atomic_update p.display_name &&
+      is_unchanged_update (module DeviceParam.Patch) p.enabled &&
+      is_unchanged_change (module PatchRef.Patch) p.patch_ref &&
+      is_unchanged_change (module PresetRef.Patch) p.preset &&
+      List.for_all (is_unchanged_change (module Max4LiveParam.Patch)) p.params
   end
 
   let has_same_id (a : t) (b : t) = a.id = b.id
