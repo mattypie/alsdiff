@@ -127,6 +127,45 @@ let test_liveset_locators_parsing () =
       expected_time locator.Liveset.Locator.time
   ) expected_locators
 
+let test_liveset_main_track_parsing () =
+  (* Read and parse the XML file *)
+  let xml = read_file test_liveset_xml_path in
+  let liveset = Liveset.create xml test_liveset_xml_path in
+
+  (* 1. Verify MainTrack type detection *)
+  match liveset.main with
+  | Track.Main main_track ->
+      (* 2. Test basic MainTrack properties *)
+      Alcotest.(check string) "main track name" "Main" main_track.name;
+
+      (* 3. Test device count (from t4.xml we expect devices) *)
+      let device_count = List.length main_track.devices in
+      Alcotest.(check bool) "main track has devices" true (device_count > 0);
+
+      (* 4. Test automation count *)
+      let automation_count = List.length main_track.automations in
+      Alcotest.(check int) "automation count" 2 automation_count;
+
+      (* 5. Test MainMixer-specific properties *)
+      (match main_track.mixer.Alsdiff_live.Track.MainMixer.tempo.value with
+       | Alsdiff_live.Device.Int tempo_value ->
+           Alcotest.(check int) "tempo value" 120 tempo_value
+       | _ -> Alcotest.fail "expected Int tempo value");
+
+      (* 6. Test routing configuration *)
+      Alcotest.(check string) "audio out target" "AudioOut/External/S0"
+        main_track.routings.Alsdiff_live.Track.RoutingSet.audio_out.target;
+
+      (* 7. Verify MainTrack singleton behavior *)
+      Alcotest.(check bool) "MainTrack has_same_id returns true"
+        true (Alsdiff_live.Track.MainTrack.has_same_id main_track main_track);
+      (* Test that id_hash is consistent (same value for same instance) *)
+      let hash_value = Alsdiff_live.Track.MainTrack.id_hash main_track in
+      let hash_value2 = Alsdiff_live.Track.MainTrack.id_hash main_track in
+      Alcotest.(check int) "MainTrack id_hash consistent" hash_value hash_value2
+
+  | _ -> Alcotest.fail "Expected Track.Main type for main track"
+
 let () =
   Alcotest.run "Liveset" [
     "create", [
@@ -136,5 +175,6 @@ let () =
       Alcotest.test_case "track parsing" `Quick test_liveset_track_parsing;
       Alcotest.test_case "pointees table initialization" `Quick test_liveset_pointees_table;
       Alcotest.test_case "locators parsing" `Quick test_liveset_locators_parsing;
+      Alcotest.test_case "main track parsing" `Quick test_liveset_main_track_parsing;
     ];
   ]

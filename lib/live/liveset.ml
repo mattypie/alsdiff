@@ -99,6 +99,7 @@ type t = {
   creator : string;
   tracks : Track.t list;        (* for Audio, MIDI and Group tracks *)
   returns : Track.t list;       (* only Return tracks *)
+  main : Track.t;
   locators : Locator.t list;
   pointees : pointee IntHashtbl.t;
 }
@@ -176,7 +177,7 @@ let build_pointees_table (liveset : t) : unit =
     let devices = get_track_devices track in
     (* Use the recursive function instead of the flat one *)
     List.iter (process_device_recursive liveset.pointees) devices
-  ) liveset.tracks
+  ) (liveset.main :: liveset.tracks @ liveset.returns)
 
 
 let create (xml : Xml.t) (file_path : string) : t =
@@ -239,6 +240,10 @@ let create (xml : Xml.t) (file_path : string) : t =
         )
   in
 
+  let main =
+    Upath.find "/MainTrack" liveset_xml |> snd |> Track.create
+  in
+
   (* 7. Parse locators *)
   let locators =
     try
@@ -259,6 +264,7 @@ let create (xml : Xml.t) (file_path : string) : t =
     creator;
     tracks;
     returns;
+    main;
     locators;
     pointees = IntHashtbl.create 512  (* Initial size estimate *)
   } in
