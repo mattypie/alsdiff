@@ -98,40 +98,41 @@ let escape_xml s =
   ) s;
   Buffer.contents buf
 
+let pp_attrs fmt attrs =
+  List.iter (fun (k, v) -> Fmt.pf fmt " %s=\"%s\"" k (escape_xml v)) attrs
+
+(* Pretty printer with indentation and newlines. *)
+let pp fmt xml =
+  let rec pp_element depth = function
+    | Element {name; attrs; childs} ->
+      let indent = String.make (depth * 2) ' ' in
+      if childs = [] then
+        Fmt.pf fmt "%s<%s%a/>@," indent name pp_attrs attrs
+      else (
+        Fmt.pf fmt "%s<%s%a>@," indent name pp_attrs attrs;
+        List.iter (pp_element (depth + 1)) childs;
+        Fmt.pf fmt "%s</%s>@," indent name
+      )
+    | Data s ->
+      if s <> "" then Fmt.pf fmt "%s@," (escape_xml s)
+  in
+  Fmt.pf fmt "@[<v>%a@]" (fun _ () -> pp_element 0 xml) ()
+
 (* Compact pretty printer without indentation or newlines *)
-let rec pp fmt = function
+let rec pp_compact fmt = function
   | Element {name; attrs; childs} ->
-    Format.fprintf fmt "<%s" name;
-    List.iter (fun (k, v) ->
-      Format.fprintf fmt " %s=\"%s\"" k (escape_xml v)
-    ) attrs;
-    Format.fprintf fmt ">";
-
-    List.iter (fun child -> pp fmt child) childs;
-
-    Format.fprintf fmt "</%s>" name
+    if childs = [] then
+      Fmt.pf fmt "<%s%a/>" name pp_attrs attrs
+    else (
+      Fmt.pf fmt "<%s%a>" name pp_attrs attrs;
+      List.iter (fun child -> pp_compact fmt child) childs;
+      Fmt.pf fmt "</%s>" name
+    )
   | Data s ->
-    Format.fprintf fmt "%s" (escape_xml s)
-
-(* Pretty printer with indentation and newlines *)
-let rec pp_pretty fmt = function
-  | Element {name; attrs; childs} ->
-    (* @[<v 2> opens a vertical box with 2-space indentation *)
-    Format.fprintf fmt "@[<v 2><%s" name;
-    List.iter (fun (k, v) ->
-      Format.fprintf fmt " %s=\"%s\"" k (escape_xml v)
-    ) attrs;
-    Format.fprintf fmt ">";
-
-    (* @, adds a cut hint - newline if needed before each child *)
-    List.iter (fun child -> Format.fprintf fmt "@,%a" pp_pretty child) childs;
-
-    Format.fprintf fmt "@]</%s>" name
-  | Data s ->
-    if s <> "" then Format.fprintf fmt "%s" (escape_xml s)
+    Fmt.pf fmt "%s" (escape_xml s)
 
 let to_string xml =
-  Fmt.str "%a" pp_pretty xml
+  Fmt.str "%a" pp xml
 
 let pp_invalid_xml fmt (xml, msg) =
-  Fmt.pf fmt "%s@\nProblematic XML:\n%a@\n" msg pp_pretty xml
+  Fmt.pf fmt "%s@\nProblematic XML:\n%a@\n" msg pp xml
