@@ -34,7 +34,7 @@ module Routing = struct
       | "MidiOutputRouting" -> MidiOut
       | "AudioInputRouting" -> AudioIn
       | "AudioOutputRouting" -> AudioOut
-      | name -> failwith ("Invalid routing element: " ^ name)
+      | name -> raise (Xml.Invalid_Xml (xml, "Invalid routing element: " ^ name))
 
   (** [create xml] creates a routing object from an XML element *)
   let create (xml : Xml.t) : t =
@@ -47,7 +47,7 @@ module Routing = struct
 
       { route_type; target; upper_string; lower_string }
     | Xml.Data _ ->
-      failwith "Invalid XML element for creating Routing"
+      raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating Routing"))
 
   module Patch = struct
     type t = {
@@ -542,10 +542,12 @@ let create (xml : Xml.t) : t =
   | Xml.Element { name = "GroupTrack"; _ }
   | Xml.Element { name = "ReturnTrack"; _ } -> Audio (AudioTrack.create xml)
   | Xml.Element { name = "MainTrack"; _ } -> Main (MainTrack.create xml)
-  | _ -> failwith ("Unsupported track type: " ^
-                 match xml with
-                 | Xml.Element { name; _ } -> name
-                 | _ -> "non-element")
+  | _ ->
+      let name = match xml with
+        | Xml.Element { name; _ } -> name
+        | _ -> "non-element"
+      in
+      raise (Xml.Invalid_Xml (xml, "Unsupported track type: " ^ name))
 
 module Patch = struct
   type t =

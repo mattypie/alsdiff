@@ -39,16 +39,20 @@ let test_device_creation_with_invalid_xml () =
   let invalid_xml = Data "invalid" in
 
   (* This should raise an exception *)
-  Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating Device")
-    (fun () -> ignore (Device.RegularDevice.create invalid_xml))
+  (try ignore (Device.RegularDevice.create invalid_xml); false
+   with Alsdiff_base.Xml.Invalid_Xml (_, msg) when msg = "Invalid XML element for creating Device" -> true
+   | _ -> false)
+  |> Alcotest.(check bool) "invalid xml raises exception" true
 
 let test_param_creation_with_invalid_xml () =
   (* Create invalid XML (Data instead of Element) *)
   let invalid_xml = Data "invalid" in
 
   (* This should raise an exception *)
-  Alcotest.check_raises "invalid xml raises exception" (Failure "Invalid XML element for creating DeviceParam")
-    (fun () -> ignore (Device.DeviceParam.create "test" invalid_xml))
+  (try ignore (Device.DeviceParam.create "test" invalid_xml); false
+   with Alsdiff_base.Xml.Invalid_Xml (_, msg) when msg = "Invalid XML element for creating DeviceParam" -> true
+   | _ -> false)
+  |> Alcotest.(check bool) "invalid xml raises exception" true
 
 let test_device_param_with_continuous_macro_mapping () =
   (* Create a parameter XML structure with continuous macro mapping *)
