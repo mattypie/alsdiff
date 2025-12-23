@@ -10,4 +10,5 @@
    re
    angstrom
    camlzip
-   xmlm))
+   xmlm
+   fmt))
