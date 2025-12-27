@@ -1,0 +1,10 @@
+{
+  "name": "ocaml-lsp",
+  "version": "0.1.0",
+  "description": "LSP integration for OCaml via ocamllsp",
+  "author": {
+    "name": "krfantasy"
+  },
+  "keywords": ["ocaml", "lsp", "language-server", "ocamllsp"],
+  "lspServers": "./.lsp.json"
+}
