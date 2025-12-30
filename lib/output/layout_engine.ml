@@ -1,0 +1,215 @@
+open View_model
+
+type detail_level = None | Summary | Compact | Full
+
+type detail_config = {
+  added : detail_level;
+  removed : detail_level;
+  modified : detail_level;
+  unchanged : detail_level;
+
+  max_collection_items : int option;
+  show_unchanged_fields : bool;
+}
+
+(* Helper to get detail level for a change type *)
+let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
+  match ct with
+  | Unchanged -> cfg.unchanged
+  | Added -> cfg.added
+  | Removed -> cfg.removed
+  | Modified -> cfg.modified
+
+(* Helper to check if we should render based on detail level *)
+let should_render_level (level : detail_level) : bool =
+  match level with
+  | None -> false
+  | Summary | Compact | Full -> true
+
+(* Helper to check if we should show fields for an element *)
+let should_show_fields (cfg : detail_config) (elem : element_view) : bool =
+  let level = get_detail_level cfg elem.change in
+  level = Full && elem.fields <> []
+
+(* Helper to filter and limit collection elements *)
+let filter_collection_elements
+    (cfg : detail_config)
+    (col : collection_view)
+    : element_view list =
+  let level : detail_level = get_detail_level cfg col.change in
+  if not (should_render_level level) then []
+  else
+    let filtered : element_view list =
+      List.filter (fun (e : element_view) ->
+        let elem_level : detail_level = get_detail_level cfg e.change in
+        should_render_level elem_level
+      ) col.elements
+    in
+    match cfg.max_collection_items with
+    | None -> filtered
+    | Some n -> List.take n filtered
+
+(* Preset configurations for common use cases *)
+
+(* Legacy Compact equivalent: hide fields, show compact view *)
+let compact = {
+  added = Compact;
+  removed = Compact;
+  modified = Compact;
+  unchanged = None;
+  max_collection_items = None;
+  show_unchanged_fields = false;
+}
+
+(* Legacy Full equivalent: show all details *)
+let full = {
+  added = Full;
+  removed = Full;
+  modified = Full;
+  unchanged = None;
+  max_collection_items = None;
+  show_unchanged_fields = false;
+}
+
+(* MIDI-friendly: don't show details for removed clips *)
+let midi_friendly = {
+  added = Full;
+  removed = Summary;  (* Just show "MidiClip: Name" when deleted *)
+  modified = Full;
+  unchanged = None;
+  max_collection_items = Some 50;  (* Limit note output *)
+  show_unchanged_fields = false;
+}
+
+(* Quiet mode: minimal output *)
+let quiet = {
+  added = Summary;
+  removed = Summary;
+  modified = Compact;
+  unchanged = None;
+  max_collection_items = Some 10;
+  show_unchanged_fields = false;
+}
+
+(* Verbose mode: show everything including unchanged *)
+let verbose = {
+  added = Full;
+  removed = Full;
+  modified = Full;
+  unchanged = Full;
+  max_collection_items = None;
+  show_unchanged_fields = true;
+}
+
+(* Change type formatting with symbols *)
+let pp_change_type fmt = function
+  | Unchanged -> Fmt.pf fmt ""
+  | Added -> Fmt.pf fmt "+"
+  | Removed -> Fmt.pf fmt "-"
+  | Modified -> Fmt.pf fmt "~"
+
+(* Field value formatting *)
+let pp_field_value fmt = function
+  | Fint i -> Fmt.pf fmt "%d" i
+  | Ffloat f -> Fmt.pf fmt "%.2f" f
+  | Fbool b -> Fmt.pf fmt "%b" b
+  | Fstring s -> Fmt.pf fmt "%s" s
+
+(* Field view rendering *)
+let pp_field fmt (field : field_view) =
+  (* Always render if called - filtering happens at parent level *)
+  Fmt.pf fmt "@[<h>  %a %s: " pp_change_type field.change field.name;
+  match field.oldval, field.newval with
+  | Some old_v, Some new_v ->
+    Fmt.pf fmt "%a -> %a@]" pp_field_value old_v pp_field_value new_v
+  | Some old_v, None ->
+    Fmt.pf fmt "%a (Removed)@]" pp_field_value old_v
+  | None, Some new_v ->
+    Fmt.pf fmt "%a (New)@]" pp_field_value new_v
+  | None, None -> Fmt.pf fmt "@]"
+
+(* Element view rendering *)
+let pp_element cfg fmt (elem : element_view) =
+  let level = get_detail_level cfg elem.change in
+  if not (should_render_level level) then ()
+  else
+    (* Summary mode: name only, no change symbol *)
+    if level = Summary then
+      Fmt.pf fmt "@[%s@]" elem.name
+    (* Compact mode: name + change symbol *)
+    else if level = Compact then
+      Fmt.pf fmt "@[%a %s@]" pp_change_type elem.change elem.name
+    (* Full mode: name + symbol + fields *)
+    else
+      Fmt.pf fmt "@[<v>%a %s" pp_change_type elem.change elem.name;
+      if should_show_fields cfg elem then (
+        Fmt.cut fmt ();
+        Fmt.list ~sep:Fmt.cut pp_field fmt elem.fields
+      );
+      Fmt.pf fmt "@]"
+
+(* Collection view rendering *)
+let pp_collection cfg fmt (col : collection_view) =
+  let level = get_detail_level cfg col.change in
+  if not (should_render_level level) then ()
+  else
+    let elements = filter_collection_elements cfg col in
+    if elements = [] then ()
+    else
+      (* Summary mode: collection name only *)
+      if level = Summary then
+        Fmt.pf fmt "@[%s@]" col.name
+      (* Compact mode: name + symbol, elements names + symbols *)
+      else if level = Compact then
+        Fmt.pf fmt "@[%a %s@]" pp_change_type col.change col.name
+      (* Full mode: show all elements with their details *)
+      else
+        Fmt.pf fmt "@[<v 2>%a %s" pp_change_type col.change col.name;
+        List.iter (fun e ->
+          Fmt.cut fmt ();
+          pp_element cfg fmt e
+        ) elements;
+        Fmt.pf fmt "@]"
+
+(* Section view rendering *)
+let rec pp_section cfg fmt (section : section_view) =
+  let level = get_detail_level cfg section.change in
+  if not (should_render_level level) then ()
+  else
+    (* Filter sub_views based on show_unchanged_fields and detail levels *)
+    let sub_views = if cfg.show_unchanged_fields
+      then section.sub_views
+      else List.filter (fun v ->
+        match v with
+        | Field f -> f.change <> Unchanged
+        | Element e -> e.change <> Unchanged
+        | Collection c -> c.change <> Unchanged
+        | Section s -> s.change <> Unchanged
+      ) section.sub_views
+    in
+    if level = Summary then
+      Fmt.pf fmt "@[%s@]" section.name
+    else if level = Compact then
+      Fmt.pf fmt "@[%a %s@]" pp_change_type section.change section.name
+    else
+      Fmt.pf fmt "@[<v 2>%a %s" pp_change_type section.change section.name;
+      List.iter (fun view ->
+        Fmt.cut fmt ();
+        pp_view cfg fmt view
+      ) sub_views;
+      Fmt.pf fmt "@]"
+
+(* Main view rendering function *)
+and pp_view cfg fmt = function
+  | Field field -> pp_field fmt field
+  | Element elem -> pp_element cfg fmt elem
+  | Collection col -> pp_collection cfg fmt col
+  | Section sect -> pp_section cfg fmt sect
+
+(* Top-level pp function - main entry point *)
+let pp cfg fmt view =
+  pp_view cfg fmt view
+
+(* Top-level render function for string output *)
+let render_to_string cfg view =
+  Fmt.str "%a" (pp_view cfg) view

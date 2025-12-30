@@ -4,3 +4,10 @@
  (modules main)
  (modes byte exe)
  (libraries alsdiff_lib eio_main))
+
+(executable
+ (public_name layout_print)
+ (name layout_print)
+ (modules layout_print)
+ (modes byte exe)
+ (libraries alsdiff_lib eio_main))

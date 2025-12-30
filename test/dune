@@ -138,3 +138,8 @@
  (modules test_main_track)
  (libraries alsdiff_lib alcotest test_utils)
  (deps main_track.xml))
+
+(test
+ (name test_layout_engine)
+ (modules test_layout_engine)
+ (libraries alsdiff_lib alcotest test_utils))
