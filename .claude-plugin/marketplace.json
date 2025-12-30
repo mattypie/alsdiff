@@ -52,6 +52,17 @@
       "source": "./plugins/zen-code-reviewer",
       "category": "development",
       "tags": ["code-review", "quality", "analysis", "best-practices"]
+    },
+    {
+      "name": "ocaml-lsp",
+      "description": "LSP integration for OCaml via ocamllsp",
+      "version": "0.1.0",
+      "author": {
+        "name": "krfantasy"
+      },
+      "source": "./plugins/ocaml-lsp",
+      "category": "development",
+      "tags": ["ocaml", "lsp", "language-server", "ocamllsp"]
     }
   ]
 }

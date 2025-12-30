@@ -198,7 +198,13 @@ struct
 end
 
 
-(** the search engine *)
+(* the search engine *)
+exception Path_not_found of string * Xml.t (* (path, xml) *)
+
+let pp_path_not_found fmt (path, xml) =
+  Fmt.pf fmt "Couldn't find %s in @[%a@]" path Xml.pp xml
+
+
 let match_attributes (tree : Xml.t) (pattrs : attribute list) : bool =
   match tree with
   | Xml.Element { attrs; _ } ->
@@ -410,11 +416,11 @@ let find_opt (path : string) (tree : Xml.t) : (string * Xml.t) option =
 
 
 (** Find the first XML element in [tree] that match the [path].
-    @raise Not_found when no XML element found *)
+    @raise Path_not_found when no XML element found *)
 let find (path : string) (tree : Xml.t) : string * Xml.t =
   match find_opt path tree with
   | Some result -> result
-  | _ -> raise Not_found
+  | _ -> raise (Path_not_found (path, tree))
 
 
 (** Find a XML element that path match [path], and return the attribute [attr] value of it.
@@ -455,11 +461,11 @@ let find_attr_opt (path : string) (attr : string) (tree : Xml.t) : (string * str
 
 (** Find a XML element that path match [path], and return the attribute [attr] value of it.
     @raise Invalid_argument if [path] is invalid, like wildcards path or indexes path.
-    @raise Not_found when no XML element found *)
+    @raise Path_not_found when no XML element found *)
 let find_attr (path : string) (attr : string) (tree : Xml.t) : string * string =
   match find_attr_opt path attr tree with
   | Some result -> result
-  | _ -> raise Not_found
+  | _ -> raise (Path_not_found (path, tree))
 
 
 let get_attr_opt path attr tree = find_attr_opt path attr tree |> Option.map snd

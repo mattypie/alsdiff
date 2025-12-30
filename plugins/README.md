@@ -28,6 +28,12 @@ This directory contains custom Claude Code plugins for the ALSDiff project, prov
 - **Use Case**: Thorough analysis of code changes and improvements
 - **Agent**: `zen-code-reviewer`
 
+### 🔧 ocaml-lsp
+- **Purpose**: LSP integration for OCaml via ocamllsp
+- **Category**: Development
+- **Use Case**: Real-time code intelligence for OCaml files
+- **LSP Server**: `ocamllsp`
+
 ## Installation
 
 These plugins are automatically installed when team members trust the ALSDiff repository folder in Claude Code.
@@ -47,6 +53,7 @@ If automatic installation doesn't work:
    /plugin install ableton-test-generator@alsdiff-tools
    /plugin install security-data-leak-scanner@alsdiff-tools
    /plugin install zen-code-reviewer@alsdiff-tools
+   /plugin install ocaml-lsp@alsdiff-tools
    ```
 
 ## Usage Examples
@@ -69,6 +76,12 @@ Check if there are any personal data references in my recent changes
 ### Code Review
 ```
 Review my recent changes to the device diffing module
+```
+
+### OCaml LSP
+```
+Show me the type information for this function
+Go to definition of the Xml.read_file function
 ```
 
 ## Configuration
@@ -117,3 +130,6 @@ For issues or questions about these plugins:
   - Ableton Test Generator
   - Security Data Leak Scanner
   - Zen Code Reviewer
+
+- **v1.1.0**: Added OCaml LSP integration
+  - ocaml-lsp plugin for real-time OCaml code intelligence
