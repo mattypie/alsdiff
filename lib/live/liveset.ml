@@ -318,3 +318,20 @@ let diff (old_liveset : t) (new_liveset : t) : Patch.t =
     returns = returns_changes;
     locators = locators_changes;
   }
+
+let find_track name liveset =
+  match name with
+  | "Main" -> Some liveset.main
+  | _ ->
+    let re = Re.Pcre.re name |> Re.compile in
+    let rec find = function
+      | [] -> None
+      | x :: _ when Re.execp re (Track.get_name x) -> Some x
+      | _ :: xs -> find xs
+    in
+    let ( <|> ) op1 op2 =
+      match op1 with
+      | Some _ -> op1
+      | None -> op2
+    in
+    find liveset.tracks <|> find liveset.returns

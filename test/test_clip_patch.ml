@@ -16,7 +16,7 @@ let test_identical_clips () =
   (* Check that the patch is empty by checking individual fields *)
   let is_empty =
     match patch with
-    | { name = `Unchanged; start_time = `Unchanged; end_time = `Unchanged;
+    | { id = _; name = `Unchanged; start_time = `Unchanged; end_time = `Unchanged;
         loop = `Unchanged; signature = `Unchanged; sample_ref = `Unchanged } -> true
     | _ -> false
   in

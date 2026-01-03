@@ -456,12 +456,12 @@ let create_midi_clip_view
   let change_type = ViewBuilder.change_type_of c in
 
   let section_name = match c with
-    | `Added clip -> "MidiClip: " ^ clip.Clip.MidiClip.name
-    | `Removed clip -> "MidiClip: " ^ clip.Clip.MidiClip.name
+    | `Added clip -> Printf.sprintf "MidiClip: %s #%d" clip.Clip.MidiClip.name clip.Clip.MidiClip.id
+    | `Removed clip -> Printf.sprintf "MidiClip: %s #%d" clip.Clip.MidiClip.name clip.Clip.MidiClip.id
     | `Modified patch ->
         (match patch.name with
-         | `Modified { newval; _ } -> "MidiClip: " ^ newval
-         | `Unchanged -> "MidiClip")
+         | `Modified { newval; _ } -> Printf.sprintf "MidiClip: %s #%d" newval patch.Clip.MidiClip.Patch.id
+         | `Unchanged -> Printf.sprintf "MidiClip #%d" patch.Clip.MidiClip.Patch.id)
     | `Unchanged -> "MidiClip"
   in
 
@@ -562,12 +562,12 @@ let create_audio_clip_view
   let change_type = ViewBuilder.change_type_of c in
 
   let section_name = match c with
-    | `Added clip -> "AudioClip: " ^ clip.Clip.AudioClip.name
-    | `Removed clip -> "AudioClip: " ^ clip.Clip.AudioClip.name
+    | `Added clip -> Printf.sprintf "AudioClip: %s #%d" clip.Clip.AudioClip.name clip.Clip.AudioClip.id
+    | `Removed clip -> Printf.sprintf "AudioClip: %s #%d" clip.Clip.AudioClip.name clip.Clip.AudioClip.id
     | `Modified patch ->
         (match patch.name with
-         | `Modified { newval; _ } -> "AudioClip: " ^ newval
-         | `Unchanged -> "AudioClip")
+         | `Modified { newval; _ } -> Printf.sprintf "AudioClip: %s #%d" newval patch.Clip.AudioClip.Patch.id
+         | `Unchanged -> Printf.sprintf "AudioClip #%d" patch.Clip.AudioClip.Patch.id)
     | `Unchanged -> "AudioClip"
   in
 
@@ -1443,29 +1443,68 @@ let create_automation_element_view
     (c : (Automation.t, Automation.Patch.t) structured_change)
     : element_view =
   let open Automation in
-  (* For immutable fields, return Unchanged in patch - they never change *)
-  let field_descs = [
-    FieldDesc {
-      name = "Id";
-      of_parent_value = (fun x -> x.id);
-      of_parent_patch = (fun _ -> `Unchanged);
-      wrapper = int_value;
-    };
-    FieldDesc {
-      name = "Target";
-      of_parent_value = (fun x -> x.target);
-      of_parent_patch = (fun _ -> `Unchanged);
-      wrapper = int_value;
-    };
-  ]
-  in
+  let change_type = ViewBuilder.change_type_of c in
   let automation_name = match c with
     | `Added a -> Printf.sprintf "Automation (id=%d, target=%d)" a.id a.target
     | `Removed r -> Printf.sprintf "Automation (id=%d, target=%d)" r.id r.target
     | `Modified patch -> Printf.sprintf "Automation (id=%d, target=%d)" patch.id patch.target
     | `Unchanged -> "Automation"
   in
-  ViewBuilder.build_element_view c ~name:automation_name ~field_descs
+
+  (* Build event field views for Modified automation *)
+  let event_fields = match c with
+    | `Modified patch ->
+        (* Build a map of event_id to event_change for Modified events (which don't have id directly) *)
+        (* We'll use index since events are ordered by id *)
+        patch.events |> List.mapi (fun i event_change ->
+          let event_id = match event_change with
+            | `Added e -> e.Automation.EnvelopeEvent.id
+            | `Removed e -> e.Automation.EnvelopeEvent.id
+            | `Modified _ -> i (* Use index as placeholder, will show as "Event[i]" *)
+            | `Unchanged -> -1
+          in
+          let prefix = Printf.sprintf "Event[%d]" event_id in
+
+          (match event_change with
+          | `Added e ->
+              Some { name = prefix ^ " Added"; change = Added; oldval = None;
+                     newval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%.2f" e.Automation.EnvelopeEvent.time e.Automation.EnvelopeEvent.value)) }
+          | `Removed e ->
+              Some { name = prefix ^ " Removed"; change = Removed;
+                     oldval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%.2f" e.Automation.EnvelopeEvent.time e.Automation.EnvelopeEvent.value));
+                     newval = None }
+          | `Modified ep ->
+              (* Create fields for modified events showing time and/or value changes *)
+              let time_field = match ep.Automation.EnvelopeEvent.Patch.time with
+                | `Unchanged -> None
+                | `Modified { oldval; newval } ->
+                    Some { name = prefix ^ " Time"; change = Modified;
+                           oldval = Some (Ffloat oldval); newval = Some (Ffloat newval) }
+              in
+              let value_field = match ep.Automation.EnvelopeEvent.Patch.value with
+                | `Unchanged -> None
+                | `Modified { oldval; newval } ->
+                    Some { name = prefix ^ " Value"; change = Modified;
+                           oldval = Some (Ffloat oldval); newval = Some (Ffloat newval) }
+              in
+              (* Combine both fields if they exist *)
+              (match time_field, value_field with
+              | None, None -> None
+              | Some tf, None -> Some tf
+              | None, Some vf -> Some vf
+              | Some tf, Some vf -> Some { name = prefix; change = Modified;
+                                          oldval = Some (Fstring (Printf.sprintf "Time: %.2f->%.2f Value: %.2f->%.2f"
+                                            (match tf.oldval with Some (Ffloat f) -> f | _ -> 0.)
+                                            (match tf.newval with Some (Ffloat f) -> f | _ -> 0.)
+                                            (match vf.oldval with Some (Ffloat f) -> f | _ -> 0.)
+                                            (match vf.newval with Some (Ffloat f) -> f | _ -> 0.)));
+                                          newval = None })
+          | `Unchanged -> None)
+        ) |> List.filter_map Fun.id
+    | `Added _ | `Removed _ | `Unchanged -> []
+  in
+
+  { name = automation_name; change = change_type; fields = event_fields }
 
 
 (** [create_device_element_view] builds an [element_view] for a device change.
@@ -1486,28 +1525,38 @@ let create_device_element_view
     | Device.Max4Live d -> d.device_name
     | Device.Group d -> d.device_name
   in
-  (* For immutable fields, return Unchanged in patch - they never change *)
-  let field_descs = [
-    FieldDesc {
-      name = "Id";
-      of_parent_value = get_device_id;
-      of_parent_patch = (fun _ -> `Unchanged);
-      wrapper = int_value;
-    };
-    FieldDesc {
-      name = "Name";
-      of_parent_value = get_device_name;
-      of_parent_patch = (fun _ -> `Unchanged);
-      wrapper = string_value;
-    };
-  ]
+  (* Extract identity from patches *)
+  let get_id_from_patch = function
+    | Device.Patch.RegularPatch p -> p.id
+    | Device.Patch.PluginPatch p -> p.id
+    | Device.Patch.Max4LivePatch p -> p.id
+    | Device.Patch.GroupPatch p -> p.id
   in
+  let get_name_from_patch = function
+    | Device.Patch.RegularPatch p -> p.device_name
+    | Device.Patch.PluginPatch p -> p.device_name
+    | Device.Patch.Max4LivePatch p -> p.device_name
+    | Device.Patch.GroupPatch p -> p.device_name
+  in
+
+  (* Field descriptors exclude identity fields (no Id, Name) *)
+  let field_descs = [] (* Empty - identity shown in name instead *)
+  in
+
+  (* Format device name with identity inline: "device_name #id (device_name)" *)
   let device_name = match c with
-    | `Added d -> get_device_name d
-    | `Removed d -> get_device_name d
-    | `Modified _ -> "Device"
+    | `Added d ->
+        let name = get_device_name d in
+        Printf.sprintf "%s #%d (%s)" name (get_device_id d) name
+    | `Removed d ->
+        let name = get_device_name d in
+        Printf.sprintf "%s #%d (%s)" name (get_device_id d) name
+    | `Modified patch ->
+        let name = get_name_from_patch patch in
+        Printf.sprintf "%s #%d (%s)" name (get_id_from_patch patch) name
     | `Unchanged -> "Device"
   in
+
   ViewBuilder.build_element_view c ~name:device_name ~field_descs
 
 
@@ -1693,22 +1742,21 @@ let create_main_mixer_section_view
 (* ==================== Track View Template Infrastructure ==================== *)
 
 (** [build_track_section_name] generates the section name for a track.
-    Format: "TrackType: name" when available, just "TrackType" otherwise.
+    Format: "TrackType: name #id" when available, just "TrackType #id" otherwise.
 *)
 let build_track_section_name
   (type track patch)
   ~(track_type_name : string)
   ~(get_name : track -> string)
-  ~(get_name_patch : patch -> string atomic_update)
+  ~(get_current_name_patch : patch -> string)
+  ~(get_id : track -> int)
+  ~(get_id_patch : patch -> int)
   (c : (track, patch) structured_change)
   : string =
   match c with
-  | `Added t -> track_type_name ^ ": " ^ get_name t
-  | `Removed t -> track_type_name ^ ": " ^ get_name t
-  | `Modified patch ->
-      (match get_name_patch patch with
-       | `Modified { newval; _ } -> track_type_name ^ ": " ^ newval
-       | `Unchanged -> track_type_name)
+  | `Added t -> Printf.sprintf "%s: %s #%d" track_type_name (get_name t) (get_id t)
+  | `Removed t -> Printf.sprintf "%s: %s #%d" track_type_name (get_name t) (get_id t)
+  | `Modified patch -> Printf.sprintf "%s: %s #%d" track_type_name (get_current_name_patch patch) (get_id_patch patch)
   | `Unchanged -> track_type_name
 
 
@@ -1803,6 +1851,9 @@ let build_track_view
   ~(track_type_name : string)
   ~(get_name : track -> string)
   ~(get_name_patch : patch -> string atomic_update)
+  ~(get_current_name_patch : patch -> string)
+  ~(get_id : track -> int)
+  ~(get_id_patch : patch -> int)
   ?(clips_config : (track, patch) device_section_config option)
   ~mixer_config
   ~(extra_sections : (track, patch) device_section_config list)
@@ -1814,7 +1865,9 @@ let build_track_view
   let section_name = build_track_section_name
     ~track_type_name
     ~get_name
-    ~get_name_patch
+    ~get_current_name_patch
+    ~get_id
+    ~get_id_patch
     c
   in
 
@@ -1896,6 +1949,9 @@ let create_midi_track_view
     ~track_type_name:"MidiTrack"
     ~get_name:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.name)
     ~get_name_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.name)
+    ~get_current_name_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.current_name)
+    ~get_id:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.id)
+    ~get_id_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.id)
     ~clips_config
     ~mixer_config
     ~extra_sections:[automations_config; devices_config; routings_config]
@@ -1950,6 +2006,9 @@ let create_audio_track_view
     ~track_type_name:"AudioTrack"
     ~get_name:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.name)
     ~get_name_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.name)
+    ~get_current_name_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.current_name)
+    ~get_id:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.id)
+    ~get_id_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.id)
     ~clips_config
     ~mixer_config
     ~extra_sections:[automations_config; devices_config; routings_config]
@@ -1999,6 +2058,9 @@ let create_main_track_view
     ~track_type_name:"MainTrack"
     ~get_name:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.name)
     ~get_name_patch:(fun (p : Track.MainTrack.Patch.t) -> p.name)
+    ~get_current_name_patch:(fun (p : Track.MainTrack.Patch.t) -> p.current_name)
+    ~get_id:(fun (_ : Track.MainTrack.t) -> 0)
+    ~get_id_patch:(fun (_ : Track.MainTrack.Patch.t) -> 0)
     ~mixer_config
     ~extra_sections:[automations_config; devices_config; routings_config]
     c

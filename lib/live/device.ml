@@ -1108,6 +1108,8 @@ type device_patch =
   | GroupPatch of group_device_patch
 
 and regular_device_patch = {
+  id : int;                    (* immutable identity *)
+  device_name : string;         (* immutable identity *)
   display_name : string atomic_update;
 
   (* parameters can be added or removed due to Ableton updates on their built-in devices,
@@ -1118,6 +1120,8 @@ and regular_device_patch = {
 }
 
 and plugin_device_patch = {
+  id : int;                    (* immutable identity *)
+  device_name : string;         (* immutable identity *)
   display_name : string atomic_update;
   enabled : DeviceParam.Patch.t structured_update;
   desc : PluginDesc.Patch.t structured_update;
@@ -1126,6 +1130,8 @@ and plugin_device_patch = {
 }
 
 and max4live_device_patch = {
+  id : int;                    (* immutable identity *)
+  device_name : string;         (* immutable identity *)
   display_name : string atomic_update;
   enabled : DeviceParam.Patch.t structured_update;
   patch_ref : (PatchRef.t, PatchRef.Patch.t) structured_change;
@@ -1139,6 +1145,8 @@ and branch_patch = {
   mixer : MixerDevice.Patch.t structured_update;
 }
 and group_device_patch = {
+  id : int;                    (* immutable identity *)
+  device_name : string;         (* immutable identity *)
   display_name : string atomic_update;
   enabled : DeviceParam.Patch.t structured_update;
 
@@ -1171,6 +1179,8 @@ let rec regular_device_diff (old_device : regular_device) (new_device : regular_
       diff_list_id (module DeviceParam) old_device.params new_device.params
     in
     {
+      id = new_device.id;
+      device_name = new_device.device_name;
       display_name = display_name_change;
       preset = preset_change;
       params = params_changes;
@@ -1200,6 +1210,8 @@ and plugin_device_diff (old_device : plugin_device) (new_device : plugin_device)
     in
 
     {
+      id = new_device.id;
+      device_name = new_device.device_name;
       display_name = display_name_change;
       enabled = enabled_change;
       desc = desc_change;
@@ -1228,6 +1240,8 @@ and max4live_device_diff (old_device : max4live_device) (new_device : max4live_d
       diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset
     in
     {
+      id = new_device.id;
+      device_name = new_device.device_name;
       display_name = display_name_change;
       enabled = enabled_change;
       patch_ref = patch_ref_change;
@@ -1310,6 +1324,8 @@ and group_device_diff (old_group : group_device) (new_group : group_device) =
       diff_list_id (module Snapshot) old_group.snapshots new_group.snapshots
     in
     {
+      id = new_group.id;
+      device_name = new_group.device_name;
       display_name = display_name_change;
       enabled = enabled_change;
       preset = preset_change;

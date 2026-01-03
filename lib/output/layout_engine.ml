@@ -1,6 +1,11 @@
 open View_model
 
-type detail_level = None | Summary | Compact | Full
+(** How much detail to show for a particular diff item. *)
+type detail_level =
+  | None     (** Completely hide the item - not rendered at all *)
+  | Summary  (** Show only the name, and count of sub-views *)
+  | Compact  (** Show name + change symbol, but no field details *)
+  | Full     (** Show name + change symbol + all fields/sub-views *)
 
 type detail_config = {
   added : detail_level;
@@ -10,6 +15,12 @@ type detail_config = {
 
   max_collection_items : int option;
   show_unchanged_fields : bool;
+
+  (* Customizable prefixes for each change type *)
+  prefix_added : string;
+  prefix_removed : string;
+  prefix_modified : string;
+  prefix_unchanged : string;
 }
 
 (* Helper to get detail level for a change type *)
@@ -59,6 +70,10 @@ let compact = {
   unchanged = None;
   max_collection_items = None;
   show_unchanged_fields = false;
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "";
 }
 
 (* Legacy Full equivalent: show all details *)
@@ -69,6 +84,10 @@ let full = {
   unchanged = None;
   max_collection_items = None;
   show_unchanged_fields = false;
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "";
 }
 
 (* MIDI-friendly: don't show details for removed clips *)
@@ -79,16 +98,24 @@ let midi_friendly = {
   unchanged = None;
   max_collection_items = Some 50;  (* Limit note output *)
   show_unchanged_fields = false;
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "";
 }
 
 (* Quiet mode: minimal output *)
 let quiet = {
   added = Summary;
   removed = Summary;
-  modified = Compact;
+  modified = Summary;           (* Compact *)
   unchanged = None;
   max_collection_items = Some 10;
   show_unchanged_fields = false;
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "";
 }
 
 (* Verbose mode: show everything including unchanged *)
@@ -99,14 +126,28 @@ let verbose = {
   unchanged = Full;
   max_collection_items = None;
   show_unchanged_fields = true;
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "";
 }
 
-(* Change type formatting with symbols *)
-let pp_change_type fmt = function
-  | Unchanged -> Fmt.pf fmt ""
-  | Added -> Fmt.pf fmt "+"
-  | Removed -> Fmt.pf fmt "-"
-  | Modified -> Fmt.pf fmt "~"
+(* Helper to create a config with custom prefixes *)
+let with_prefixes ~(added:string) ~(removed:string) ~(modified:string) ~(unchanged:string)
+    (cfg : detail_config) : detail_config =
+  { cfg with
+    prefix_added = added;
+    prefix_removed = removed;
+    prefix_modified = modified;
+    prefix_unchanged = unchanged;
+  }
+
+(* Change type formatting with customizable symbols *)
+let pp_change_type cfg fmt = function
+  | Unchanged -> Fmt.pf fmt "%s" cfg.prefix_unchanged
+  | Added -> Fmt.pf fmt "%s" cfg.prefix_added
+  | Removed -> Fmt.pf fmt "%s" cfg.prefix_removed
+  | Modified -> Fmt.pf fmt "%s" cfg.prefix_modified
 
 (* Field value formatting *)
 let pp_field_value fmt = function
@@ -116,16 +157,16 @@ let pp_field_value fmt = function
   | Fstring s -> Fmt.pf fmt "%s" s
 
 (* Field view rendering *)
-let pp_field fmt (field : field_view) =
+let pp_field cfg fmt (field : field_view) =
   (* Always render if called - filtering happens at parent level *)
-  Fmt.pf fmt "@[<h>  %a %s: " pp_change_type field.change field.name;
+  Fmt.pf fmt "@[<h>  %a %s: " (pp_change_type cfg) field.change field.name;
   match field.oldval, field.newval with
   | Some old_v, Some new_v ->
     Fmt.pf fmt "%a -> %a@]" pp_field_value old_v pp_field_value new_v
   | Some old_v, None ->
-    Fmt.pf fmt "%a (Removed)@]" pp_field_value old_v
+    Fmt.pf fmt "%a@]" pp_field_value old_v
   | None, Some new_v ->
-    Fmt.pf fmt "%a (New)@]" pp_field_value new_v
+    Fmt.pf fmt "%a@]" pp_field_value new_v
   | None, None -> Fmt.pf fmt "@]"
 
 (* Element view rendering *)
@@ -138,13 +179,13 @@ let pp_element cfg fmt (elem : element_view) =
       Fmt.pf fmt "@[%s@]" elem.name
     (* Compact mode: name + change symbol *)
     else if level = Compact then
-      Fmt.pf fmt "@[%a %s@]" pp_change_type elem.change elem.name
+      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
     (* Full mode: name + symbol + fields *)
     else
-      Fmt.pf fmt "@[<v>%a %s" pp_change_type elem.change elem.name;
+      Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
       if should_show_fields cfg elem then (
         Fmt.cut fmt ();
-        Fmt.list ~sep:Fmt.cut pp_field fmt elem.fields
+        Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt elem.fields
       );
       Fmt.pf fmt "@]"
 
@@ -161,12 +202,12 @@ let pp_collection cfg fmt (col : collection_view) =
         Fmt.pf fmt "@[%s@]" col.name
       (* Compact mode: name + symbol, elements names + symbols *)
       else if level = Compact then
-        Fmt.pf fmt "@[%a %s@]" pp_change_type col.change col.name
+        Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
       (* Full mode: show all elements with their details *)
       else
-        Fmt.pf fmt "@[<v 2>%a %s" pp_change_type col.change col.name;
+        Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) col.change col.name;
         List.iter (fun e ->
-          Fmt.cut fmt ();
+          Fmt.pf fmt "@\n";
           pp_element cfg fmt e
         ) elements;
         Fmt.pf fmt "@]"
@@ -190,18 +231,18 @@ let rec pp_section cfg fmt (section : section_view) =
     if level = Summary then
       Fmt.pf fmt "@[%s@]" section.name
     else if level = Compact then
-      Fmt.pf fmt "@[%a %s@]" pp_change_type section.change section.name
+      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
     else
-      Fmt.pf fmt "@[<v 2>%a %s" pp_change_type section.change section.name;
+      Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name;
       List.iter (fun view ->
-        Fmt.cut fmt ();
+        Fmt.pf fmt "@\n";
         pp_view cfg fmt view
       ) sub_views;
       Fmt.pf fmt "@]"
 
 (* Main view rendering function *)
 and pp_view cfg fmt = function
-  | Field field -> pp_field fmt field
+  | Field field -> pp_field cfg fmt field
   | Element elem -> pp_element cfg fmt elem
   | Collection col -> pp_collection cfg fmt col
   | Section sect -> pp_section cfg fmt sect

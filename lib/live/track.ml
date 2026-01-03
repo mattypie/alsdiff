@@ -270,6 +270,8 @@ module MidiTrack = struct
 
   module Patch = struct
     type t = {
+      id : int;
+      current_name : string;
       name : string atomic_update;
       clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
@@ -304,6 +306,8 @@ module MidiTrack = struct
       let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
+        id = new_track.id;
+        current_name = new_track.name;
         Patch.name = name_change;
         clips = clips_changes;
         automations = automations_changes;
@@ -349,6 +353,8 @@ module AudioTrack = struct
 
   module Patch = struct
     type t = {
+      id : int;
+      current_name : string;
       name : string atomic_update;
       clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
@@ -383,6 +389,8 @@ module AudioTrack = struct
       let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
+        id = new_track.id;
+        current_name = new_track.name;
         Patch.name = name_change;
         clips = clips_changes;
         automations = automations_changes;
@@ -478,6 +486,7 @@ module MainTrack = struct
 
   module Patch = struct
     type t = {
+      current_name : string;
       name : string atomic_update;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
       devices : (Device.t, Device.Patch.t) structured_change list;
@@ -504,6 +513,7 @@ module MainTrack = struct
     let mixer_change = diff_complex_value (module MainMixer) old_track.mixer new_track.mixer in
     let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
     {
+      current_name = new_track.name;
       Patch.name = name_change;
       automations = automations_changes;
       devices = devices_changes;
@@ -543,11 +553,11 @@ let create (xml : Xml.t) : t =
   | Xml.Element { name = "ReturnTrack"; _ } -> Audio (AudioTrack.create xml)
   | Xml.Element { name = "MainTrack"; _ } -> Main (MainTrack.create xml)
   | _ ->
-      let name = match xml with
-        | Xml.Element { name; _ } -> name
-        | _ -> "non-element"
-      in
-      raise (Xml.Invalid_Xml (xml, "Unsupported track type: " ^ name))
+    let name = match xml with
+      | Xml.Element { name; _ } -> name
+      | _ -> "non-element"
+    in
+    raise (Xml.Invalid_Xml (xml, "Unsupported track type: " ^ name))
 
 module Patch = struct
   type t =
@@ -576,3 +586,10 @@ let diff (old_track : t) (new_track : t) : Patch.t =
     Patch.MainPatch main_patch
   | _ ->
     failwith "cannot diff tracks of different types (e.g. MidiTrack vs AudioTrack)"
+
+let get_name = function
+  | Midi a -> a.name
+  | Audio a -> a.name
+  | Group a -> a.name
+  | Return a -> a.name
+  | Main _ -> "Main"

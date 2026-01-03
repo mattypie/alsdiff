@@ -206,6 +206,7 @@ module MidiClip = struct
     type note_change = (MidiNote.t, MidiNote.Patch.t) structured_change
 
     type t = {
+      id : int;
       name : string atomic_update;
       start_time : float atomic_update;
       end_time : float atomic_update;
@@ -243,6 +244,7 @@ module MidiClip = struct
     let loop_change = diff_complex_value (module Loop) old_loop new_loop in
 
     {
+      id = new_id;
       name = name_change;
       start_time = start_time_change;
       end_time = end_time_change;
@@ -335,6 +337,7 @@ module AudioClip = struct
 
   module Patch = struct
     type t = {
+      id : int;
       name : string atomic_update;
       start_time : float atomic_update;
       end_time : float atomic_update;
@@ -368,6 +371,7 @@ module AudioClip = struct
       let signature_change = diff_complex_value (module TimeSignature) old_sig new_sig in
       let sample_ref_change = diff_complex_value (module SampleRef) old_sample new_sample in
       {
+        id = new_id;
         name = name_change;
         start_time = start_time_change;
         end_time = end_time_change;
