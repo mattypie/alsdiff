@@ -13,6 +13,7 @@ let get_config () =
      | "midi" -> Layout_engine.midi_friendly
      | "quiet" -> Layout_engine.quiet
      | "verbose" -> Layout_engine.verbose
+     | "track_only" -> Layout_engine.track_only
      | _ -> Fmt.epr "Unknown mode: %s@." mode; exit 1)
   | _ -> Layout_engine.midi_friendly  (* Default *)
 
@@ -46,7 +47,7 @@ let render_views config (views : View_model.view list) : string =
 let main ~domain_mgr =
   if Array.length Sys.argv < 3 then (
     Fmt.epr "Usage: %s <file1.als> <file2.als> [mode]@." Sys.argv.(0);
-    Fmt.epr "Modes: compact, full, midi (default), quiet, verbose@.";
+    Fmt.epr "Modes: compact, full, midi (default), quiet, verbose, track_only@.";
     exit 1
   );
 

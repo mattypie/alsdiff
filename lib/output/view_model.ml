@@ -25,6 +25,28 @@ type change_type =
   | Removed
   | Modified
 
+type domain_type =
+  | DTLiveset
+  | DTTrack
+  | DTDevice
+  | DTClip
+  | DTAutomation
+  | DTMixer
+  | DTRouting
+  | DTLocator
+  | DTParam
+  | DTNote
+  | DTEvent
+  | DTSend
+  | DTPreset
+  | DTMacro
+  | DTSnapshot
+  | DTLoop
+  | DTSignature
+  | DTSampleRef
+  | DTVersion
+  | DTOther
+
 
 type view =
   | Field of field_view
@@ -35,6 +57,7 @@ type view =
 and field_view = {
   name : string;
   change : change_type;
+  domain_type : domain_type;
   oldval : field_value option;
   newval : field_value option;
 }
@@ -42,18 +65,21 @@ and field_view = {
 and element_view = {
   name : string;
   change : change_type;
+  domain_type : domain_type;
   fields : field_view list;
 }
 
 and collection_view = {
   name : string;
   change : change_type;
+  domain_type : domain_type;
   elements : element_view list;
 }
 
 and section_view = {
   name : string;
   change : change_type;
+  domain_type : domain_type;
   sub_views : view list;
 }
 
@@ -100,10 +126,12 @@ module ViewBuilder = struct
   (** [build_field_view c fd] build a [field_view] from the element change [c] with given field descriptor [fd].
       @param c the element change [('a, 'p) change]
       @param fd the field descriptor
+      @param domain_type the domain type for this field
   *)
   let build_field_view
       (c : ('a, 'p) structured_change)
       (FieldDesc fd : ('a, 'p) field_descriptor)
+      ~(domain_type : domain_type)
       : field_view =
 
     let name = fd.name in
@@ -118,17 +146,18 @@ module ViewBuilder = struct
          | `Unchanged -> (Unchanged, None, None))
       | `Unchanged -> (Unchanged, None, None)
     in
-    { name; change = change_type; oldval; newval }
+    { name; change = change_type; domain_type; oldval; newval }
 
 
   let build_element_view
     (c : ('a, 'p) structured_change)
     ~(name : string)
+    ~(domain_type : domain_type)
     ~(field_descs : ('a, 'p) field_descriptor list)
     : element_view =
     let change_type = change_type_of c in
-    let fields = field_descs |> List.map (build_field_view c) in
-    { name; change = change_type; fields }
+    let fields = field_descs |> List.map (fun fd -> build_field_view c fd ~domain_type) in
+    { name; change = change_type; domain_type; fields }
 
 
   (** [build_nested_section_view c ~name ~of_value ~of_patch ~build_value_fields ~build_patch_fields]
@@ -145,6 +174,7 @@ module ViewBuilder = struct
       @param of_patch extracts the nested update from the parent patch
       @param build_value_fields builds view list from nested value and change type
       @param build_patch_fields builds view list from nested patch
+      @param domain_type the domain type for this section
       @return Some section_view if there are changes, None otherwise
   *)
   let build_nested_section_view
@@ -154,29 +184,30 @@ module ViewBuilder = struct
       ~(of_patch : 'pp -> 'np structured_update)
       ~(build_value_fields : change_type -> 'nested -> view list)
       ~(build_patch_fields : 'np -> view list)
+      ~(domain_type : domain_type)
       : section_view option =
     match c with
     | `Added parent ->
         let nested_val = of_value parent in
         let sub_views = build_value_fields Added nested_val in
         if sub_views = [] then None
-        else Some { name; change = Added; sub_views }
+        else Some { name; change = Added; domain_type; sub_views }
     | `Removed parent ->
         let nested_val = of_value parent in
         let sub_views = build_value_fields Removed nested_val in
         if sub_views = [] then None
-        else Some { name; change = Removed; sub_views }
+        else Some { name; change = Removed; domain_type; sub_views }
     | `Modified patch ->
         (match of_patch patch with
          | `Unchanged ->
              (* Nested content is unchanged but parent is Modified.
                 Create a placeholder section with empty sub_views - the rendering layer
                 will decide whether to show it based on the preset. *)
-             Some { name; change = Unchanged; sub_views = [] }
+             Some { name; change = Unchanged; domain_type; sub_views = [] }
          | `Modified np ->
              let sub_views = build_patch_fields np in
              if sub_views = [] then None
-             else Some { name; change = Modified; sub_views })
+             else Some { name; change = Modified; domain_type; sub_views })
     | `Unchanged ->
         (* Parent is unchanged - we don't have access to the value to extract nested content.
            This is a fundamental limitation - unchanged items don't carry their values. *)
@@ -195,6 +226,7 @@ module ViewBuilder = struct
       @param of_patch extracts the nested change from the parent patch
       @param build_value_fields builds view list from nested value and change type
       @param build_patch_fields builds view list from nested patch
+      @param domain_type the domain type for this section
       @return Some section_view if there are changes, None otherwise
   *)
   let build_nested_section_view_with_change
@@ -205,6 +237,7 @@ module ViewBuilder = struct
       ~(of_patch : pp -> (nested_actual, np) structured_change)
       ~(build_value_fields : change_type -> nested_actual -> view list)
       ~(build_patch_fields : np -> view list)
+      ~(domain_type : domain_type)
       : section_view option =
     match c with
     | `Added parent ->
@@ -213,29 +246,29 @@ module ViewBuilder = struct
          | Some nested_val ->
              let sub_views = build_value_fields Added nested_val in
              if sub_views = [] then None
-             else Some { name; change = Added; sub_views })
+             else Some { name; change = Added; domain_type; sub_views })
     | `Removed parent ->
         (match of_value parent with
          | None -> None
          | Some nested_val ->
              let sub_views = build_value_fields Removed nested_val in
              if sub_views = [] then None
-             else Some { name; change = Removed; sub_views })
+             else Some { name; change = Removed; domain_type; sub_views })
     | `Modified patch ->
         (match of_patch patch with
          | `Unchanged -> None
          | `Added nested_val ->
              let sub_views = build_value_fields Added nested_val in
              if sub_views = [] then None
-             else Some { name; change = Modified; sub_views }
+             else Some { name; change = Modified; domain_type; sub_views }
          | `Removed nested_val ->
              let sub_views = build_value_fields Removed nested_val in
              if sub_views = [] then None
-             else Some { name; change = Modified; sub_views }
+             else Some { name; change = Modified; domain_type; sub_views }
          | `Modified np ->
              let sub_views = build_patch_fields np in
              if sub_views = [] then None
-             else Some { name; change = Modified; sub_views })
+             else Some { name; change = Modified; domain_type; sub_views })
     | `Unchanged -> None
 
 
@@ -247,6 +280,7 @@ module ViewBuilder = struct
       @param of_value extracts the item list from the parent value
       @param of_patch extracts the change list from the parent patch
       @param build_element builds an element_view from an item change
+      @param domain_type the domain type for this collection
       @return Some collection_view if there are elements, None otherwise
   *)
   let build_collection_view
@@ -255,6 +289,7 @@ module ViewBuilder = struct
       ~(of_value : 'parent -> 'item list)
       ~(of_patch : 'pp -> ('item, 'ip) structured_change list)
       ~(build_element : ('item, 'ip) structured_change -> element_view)
+      ~(domain_type : domain_type)
       : collection_view option =
     let change_type = change_type_of c in
     let elements = match c with
@@ -269,7 +304,7 @@ module ViewBuilder = struct
     (* Filter out placeholder elements (for unchanged items where we don't have values) *)
     let elements = List.filter (fun (e : element_view) -> e.name <> "") elements in
     if elements = [] then None
-    else Some { name; change = change_type; elements }
+    else Some { name; change = change_type; domain_type; elements }
 
 end
 
@@ -278,11 +313,13 @@ end
     Returns [None] for unchanged fields.
     @param name the field name
     @param wrapper function to convert value to [field_value]
+    @param domain_type the domain type for this field
     @param update the atomic update
 *)
 let atomic_update_to_field_view
     ~(name : string)
     ~(wrapper : 'a -> field_value)
+    ~(domain_type : domain_type)
     (update : 'a atomic_update)
     : field_view option =
   match update with
@@ -291,6 +328,7 @@ let atomic_update_to_field_view
       Some {
         name;
         change = Modified;
+        domain_type;
         oldval = Some (wrapper _patch.oldval);
         newval = Some (wrapper _patch.newval)
       }
@@ -328,16 +366,19 @@ type ('value, 'patch) unified_field_spec = {
     @param specs the list of unified field specs
     @param change_type the type of change (Added or Removed)
     @param value the parent value
+    @param domain_type the domain type for these fields
 *)
 let build_value_field_views
     (specs : ('v, 'p) unified_field_spec list)
     (change_type : change_type)
     (value : 'v)
+    ~(domain_type : domain_type)
     : view list =
   specs |> List.map (fun spec ->
     Field {
       name = spec.name;
       change = change_type;
+      domain_type;
       oldval = (if change_type = Removed then Some (spec.get_value value) else None);
       newval = (if change_type = Added then Some (spec.get_value value) else None);
     })
@@ -347,10 +388,12 @@ let build_value_field_views
     Used for Modified cases. Only returns fields that have actually changed.
     @param specs the list of unified field specs
     @param patch the parent patch
+    @param domain_type the domain type for these fields
 *)
 let build_patch_field_views
     (specs : ('v, 'p) unified_field_spec list)
     (patch : 'p)
+    ~(domain_type : domain_type)
     : view list =
   specs
   |> List.filter_map (fun spec ->
@@ -361,6 +404,7 @@ let build_patch_field_views
           Some (Field {
             name = spec.name;
             change = Modified;
+            domain_type;
             oldval = Some oldval;
             newval = Some newval;
           }))
@@ -379,8 +423,8 @@ let loop_field_specs : (Clip.Loop.t, Clip.Loop.Patch.t) unified_field_spec list 
     get_patch = (fun p -> ViewBuilder.map_atomic_update bool_value p.on) };
 ]
 
-let create_loop_fields = build_value_field_views loop_field_specs
-let create_loop_patch_fields = build_patch_field_views loop_field_specs
+let create_loop_fields = build_value_field_views loop_field_specs ~domain_type:DTLoop
+let create_loop_patch_fields = build_patch_field_views loop_field_specs ~domain_type:DTLoop
 
 
 (** TimeSignature field specifications *)
@@ -393,8 +437,8 @@ let signature_field_specs : (Clip.TimeSignature.t, Clip.TimeSignature.Patch.t) u
     get_patch = (fun p -> ViewBuilder.map_atomic_update int_value p.denom) };
 ]
 
-let create_signature_fields = build_value_field_views signature_field_specs
-let create_signature_patch_fields = build_patch_field_views signature_field_specs
+let create_signature_fields = build_value_field_views signature_field_specs ~domain_type:DTSignature
+let create_signature_patch_fields = build_patch_field_views signature_field_specs ~domain_type:DTSignature
 
 
 (** [create_note_element_view] builds an [element_view] for a single note change.
@@ -443,7 +487,7 @@ let create_note_element_view
     | `Modified _ -> "Note"
     | `Unchanged -> "Note"
   in
-  ViewBuilder.build_element_view c ~name:note_name ~field_descs
+  ViewBuilder.build_element_view c ~name:note_name ~domain_type:DTNote ~field_descs
 
 
 (** [create_midi_clip_view] creates a [section_view] from a MidiClip structured change.
@@ -490,9 +534,9 @@ let create_midi_clip_view
   (* Build atomic field views *)
   let atomic_field_views =
     [
-      ViewBuilder.build_field_view c name_field_desc;
-      ViewBuilder.build_field_view c start_time_field_desc;
-      ViewBuilder.build_field_view c end_time_field_desc;
+      ViewBuilder.build_field_view c name_field_desc ~domain_type:DTClip;
+      ViewBuilder.build_field_view c start_time_field_desc ~domain_type:DTClip;
+      ViewBuilder.build_field_view c end_time_field_desc ~domain_type:DTClip;
     ]
     |> List.filter (fun fv -> fv.change <> Unchanged)
     |> List.map (fun fv -> Field fv)
@@ -505,6 +549,7 @@ let create_midi_clip_view
     ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.loop)
     ~build_value_fields:create_loop_fields
     ~build_patch_fields:create_loop_patch_fields
+    ~domain_type:DTLoop
   in
 
   (* Build TimeSignature section using the new combinator *)
@@ -514,6 +559,7 @@ let create_midi_clip_view
     ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.signature)
     ~build_value_fields:create_signature_fields
     ~build_patch_fields:create_signature_patch_fields
+    ~domain_type:DTSignature
   in
 
   (* Build Notes collection using the new combinator *)
@@ -522,6 +568,7 @@ let create_midi_clip_view
     ~of_value:(fun (clip : Clip.MidiClip.t) -> clip.notes)
     ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.notes)
     ~build_element:create_note_element_view
+    ~domain_type:DTNote
   in
 
   (* Build sub_views list *)
@@ -532,7 +579,7 @@ let create_midi_clip_view
     @ (notes_collection |> Option.map (fun c -> Collection c) |> option_to_list)
   in
 
-  { name = section_name; change = change_type; sub_views }
+  { name = section_name; change = change_type; domain_type = DTClip; sub_views }
 
 
 (** SampleRef field specifications *)
@@ -548,8 +595,8 @@ let sample_ref_field_specs : (Clip.SampleRef.t, Clip.SampleRef.Patch.t) unified_
     get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> int_value (Int64.to_int x)) p.last_modified_date) };
 ]
 
-let create_sample_ref_fields = build_value_field_views sample_ref_field_specs
-let create_sample_ref_patch_fields = build_patch_field_views sample_ref_field_specs
+let create_sample_ref_fields = build_value_field_views sample_ref_field_specs ~domain_type:DTSampleRef
+let create_sample_ref_patch_fields = build_patch_field_views sample_ref_field_specs ~domain_type:DTSampleRef
 
 
 (** [create_audio_clip_view] creates a [section_view] from an AudioClip structured change.
@@ -596,9 +643,9 @@ let create_audio_clip_view
   (* Build atomic field views *)
   let atomic_field_views =
     [
-      ViewBuilder.build_field_view c name_field_desc;
-      ViewBuilder.build_field_view c start_time_field_desc;
-      ViewBuilder.build_field_view c end_time_field_desc;
+      ViewBuilder.build_field_view c name_field_desc ~domain_type:DTClip;
+      ViewBuilder.build_field_view c start_time_field_desc ~domain_type:DTClip;
+      ViewBuilder.build_field_view c end_time_field_desc ~domain_type:DTClip;
     ]
     |> List.filter (fun fv -> fv.change <> Unchanged)
     |> List.map (fun fv -> Field fv)
@@ -611,6 +658,7 @@ let create_audio_clip_view
     ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.loop)
     ~build_value_fields:create_loop_fields
     ~build_patch_fields:create_loop_patch_fields
+    ~domain_type:DTLoop
   in
 
   (* Build TimeSignature section *)
@@ -620,6 +668,7 @@ let create_audio_clip_view
     ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.signature)
     ~build_value_fields:create_signature_fields
     ~build_patch_fields:create_signature_patch_fields
+    ~domain_type:DTSignature
   in
 
   (* Build SampleRef section - replaces Notes collection from MidiClip *)
@@ -629,6 +678,7 @@ let create_audio_clip_view
     ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.sample_ref)
     ~build_value_fields:create_sample_ref_fields
     ~build_patch_fields:create_sample_ref_patch_fields
+    ~domain_type:DTSampleRef
   in
 
   (* Build sub_views list *)
@@ -639,7 +689,7 @@ let create_audio_clip_view
     @ (sample_ref_section |> Option.map (fun s -> Section s) |> option_to_list)
   in
 
-  { name = section_name; change = change_type; sub_views }
+  { name = section_name; change = change_type; domain_type = DTClip; sub_views }
 
 
 let create_events_element_view
@@ -663,11 +713,12 @@ let create_events_element_view
   in
   let fields =
     field_descs
-    |> List.map @@ ViewBuilder.build_field_view c
+    |> List.map (fun fd -> ViewBuilder.build_field_view c fd ~domain_type:DTEvent)
   in
   {
     name = "EnvelopeEvent";
     change = Modified;
+    domain_type = DTEvent;
     fields
   }
 
@@ -785,7 +836,7 @@ let create_device_param_element_view
     ~get_base ~get_base_patch ~include_name:true
   in
   let param_name = get_param_name_from_change ~get_base ~default_name:"Parameter" c in
-  ViewBuilder.build_element_view c ~name:param_name ~field_descs
+  ViewBuilder.build_element_view c ~name:param_name ~domain_type:DTParam ~field_descs
 
 
 (** PresetRef field specifications *)
@@ -801,8 +852,8 @@ let preset_ref_field_specs : (Device.PresetRef.t, Device.PresetRef.Patch.t) unif
     get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.pack_name) };
 ]
 
-let create_preset_ref_fields = build_value_field_views preset_ref_field_specs
-let create_preset_ref_patch_fields = build_patch_field_views preset_ref_field_specs
+let create_preset_ref_fields = build_value_field_views preset_ref_field_specs ~domain_type:DTPreset
+let create_preset_ref_patch_fields = build_patch_field_views preset_ref_field_specs ~domain_type:DTPreset
 
 
 (** PatchRef field specifications *)
@@ -821,8 +872,8 @@ let patch_ref_field_specs : (Device.PatchRef.t, Device.PatchRef.Patch.t) unified
     get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> int_value (Int64.to_int x)) p.last_mod_date) };
 ]
 
-let create_patch_ref_fields = build_value_field_views patch_ref_field_specs
-let create_patch_ref_patch_fields = build_patch_field_views patch_ref_field_specs
+let create_patch_ref_fields = build_value_field_views patch_ref_field_specs ~domain_type:DTPreset
+let create_patch_ref_patch_fields = build_patch_field_views patch_ref_field_specs ~domain_type:DTPreset
 
 
 (** [create_plugin_param_element_view] builds an [element_view] for a plugin parameter change. *)
@@ -843,7 +894,7 @@ let create_plugin_param_element_view
   in
   let field_descs = index_field :: base_field_descs in
   let param_name = get_param_name_from_change ~get_base ~default_name:"PluginParam" c in
-  ViewBuilder.build_element_view c ~name:param_name ~field_descs
+  ViewBuilder.build_element_view c ~name:param_name ~domain_type:DTParam ~field_descs
 
 
 (** [create_m4l_param_element_view] builds an [element_view] for a Max4Live parameter change. *)
@@ -864,7 +915,7 @@ let create_m4l_param_element_view
   in
   let field_descs = index_field :: base_field_descs in
   let param_name = get_param_name_from_change ~get_base ~default_name:"M4LParam" c in
-  ViewBuilder.build_element_view c ~name:param_name ~field_descs
+  ViewBuilder.build_element_view c ~name:param_name ~domain_type:DTParam ~field_descs
 
 
 (** [create_macro_element_view] builds an [element_view] for a Macro change. *)
@@ -877,7 +928,7 @@ let create_macro_element_view
   let field_descs = make_generic_param_field_descs
     ~get_base ~get_base_patch ~include_name:false
   in
-  ViewBuilder.build_element_view c ~name:"Macro" ~field_descs
+  ViewBuilder.build_element_view c ~name:"Macro" ~domain_type:DTMacro ~field_descs
 
 
 (** [create_snapshot_element_view] builds an [element_view] for a Snapshot change. *)
@@ -900,7 +951,7 @@ let create_snapshot_element_view
     | `Modified _ -> "Snapshot"
     | `Unchanged -> "Snapshot"
   in
-  ViewBuilder.build_element_view c ~name:snapshot_name ~field_descs
+  ViewBuilder.build_element_view c ~name:snapshot_name ~domain_type:DTSnapshot ~field_descs
 
 
 (* ==================== Device View Template Infrastructure ==================== *)
@@ -938,6 +989,7 @@ let build_display_name_field
   (type device patch)
   ~(get_display_name : device -> string)
   ~(get_display_name_patch : patch -> string atomic_update)
+  ~(domain_type : domain_type)
   (c : (device, patch) structured_change)
   : view option =
   let field_desc = FieldDesc {
@@ -946,7 +998,7 @@ let build_display_name_field
     of_parent_patch = get_display_name_patch;
     wrapper = string_value;
   } in
-  let field_view = ViewBuilder.build_field_view c field_desc in
+  let field_view = ViewBuilder.build_field_view c field_desc ~domain_type in
   if field_view.change = Unchanged then None
   else Some (Field field_view)
 
@@ -975,6 +1027,7 @@ let create_collection_section_config
   ~(of_value : device -> item list)
   ~(of_patch : patch -> (item, item_patch) structured_change list)
   ~(build_element : (item, item_patch) structured_change -> element_view)
+  ~(domain_type : domain_type)
   : (device, patch) device_section_config =
   {
     name;
@@ -984,6 +1037,7 @@ let create_collection_section_config
         ~of_value
         ~of_patch
         ~build_element
+        ~domain_type
       |> Option.map (fun col -> Collection col)
     );
   }
@@ -996,6 +1050,7 @@ let create_preset_section_config
   (type device patch)
   ~(of_value : device -> Device.PresetRef.t option)
   ~(of_patch : patch -> (Device.PresetRef.t, Device.PresetRef.Patch.t) structured_change)
+  ~(domain_type : domain_type)
   : (device, patch) device_section_config =
   {
     name = "Preset";
@@ -1006,6 +1061,7 @@ let create_preset_section_config
         ~of_patch
         ~build_value_fields:create_preset_ref_fields
         ~build_patch_fields:create_preset_ref_patch_fields
+        ~domain_type
       |> Option.map (fun s -> Section s)
     );
   }
@@ -1019,6 +1075,7 @@ let create_preset_section_config
     @param get_display_name_patch Extract display_name update from patch
     @param preset_config Optional preset section configuration
     @param custom_sections List of custom device-specific sections
+    @param domain_type The domain type for this device
     @param c The device structured change
     @return A section_view for the device
 *)
@@ -1028,8 +1085,9 @@ let build_device_view
   ~(get_device_name : device -> string)
   ~(get_display_name : device -> string)
   ~(get_display_name_patch : patch -> string atomic_update)
-  ?(preset_config : (device, patch) device_section_config option)
+  ~(preset_config : (device, patch) device_section_config option)
   ~(custom_sections : (device, patch) device_section_config list)
+  ~(domain_type : domain_type)
   (c : (device, patch) structured_change)
   : section_view =
   let change_type = ViewBuilder.change_type_of c in
@@ -1046,6 +1104,7 @@ let build_device_view
   let display_name_view = build_display_name_field
     ~get_display_name
     ~get_display_name_patch
+    ~domain_type
     c
     |> option_to_list
   in
@@ -1064,7 +1123,7 @@ let build_device_view
   (* Combine all sub-views *)
   let sub_views = display_name_view @ preset_view @ custom_views in
 
-  { name = section_name; change = change_type; sub_views }
+  { name = section_name; change = change_type; domain_type; sub_views }
 
 
 (* ==================== Device View Functions ==================== *)
@@ -1079,6 +1138,7 @@ let create_regular_device_view
     ~of_value:(fun (d : Device.RegularDevice.t) -> d.params)
     ~of_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.params)
     ~build_element:create_device_param_element_view
+    ~domain_type:DTParam
   in
 
   build_device_view
@@ -1086,10 +1146,9 @@ let create_regular_device_view
     ~get_device_name:(fun (d : Device.RegularDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.RegularDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.display_name)
-    ~preset_config:(create_preset_section_config
-      ~of_value:(fun (d : Device.RegularDevice.t) -> d.preset)
-      ~of_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.preset))
+    ~preset_config:None
     ~custom_sections:[params_config]
+    ~domain_type:DTDevice
     c
 
 
@@ -1103,6 +1162,7 @@ let create_plugin_device_view
     ~of_value:(fun (d : Device.PluginDevice.t) -> d.params)
     ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.params)
     ~build_element:create_plugin_param_element_view
+    ~domain_type:DTParam
   in
 
   (* Custom enabled section builder - for nested GenericParam handling *)
@@ -1124,6 +1184,7 @@ let create_plugin_device_view
                         | Device.Int i -> Fint i
                         | Device.Bool b -> Fbool b
                         | Device.Enum (e, _) -> Fint e)
+                      ~domain_type:DTParam
                       gpp.value
                     in
                     match value_field with
@@ -1131,6 +1192,7 @@ let create_plugin_device_view
                     | Some fv -> Some (Section {
                         name = "Enabled";
                         change = Modified;
+                        domain_type = DTParam;
                         sub_views = [Field fv]
                       })))
       | _ -> None);
@@ -1141,10 +1203,12 @@ let create_plugin_device_view
     ~get_device_name:(fun (d : Device.PluginDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.PluginDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.display_name)
-    ~preset_config:(create_preset_section_config
+    ~preset_config:(Some (create_preset_section_config
       ~of_value:(fun (d : Device.PluginDevice.t) -> d.preset)
-      ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.preset))
+      ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.preset)
+      ~domain_type:DTPreset))
     ~custom_sections:[enabled_config; params_config]
+    ~domain_type:DTDevice
     c
 
 
@@ -1158,6 +1222,7 @@ let create_max4live_device_view
     ~of_value:(fun (d : Device.Max4LiveDevice.t) -> d.params)
     ~of_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.params)
     ~build_element:create_m4l_param_element_view
+    ~domain_type:DTParam
   in
 
   (* Custom patch_ref section builder - manual handling because patch_ref uses structured_change *)
@@ -1168,26 +1233,26 @@ let create_max4live_device_view
       | `Added d ->
           let fields = create_patch_ref_fields Added d.patch_ref in
           if fields = [] then None
-          else Some (Section { name = "PatchRef"; change = Added; sub_views = fields })
+          else Some (Section { name = "PatchRef"; change = Added; domain_type = DTPreset; sub_views = fields })
       | `Removed d ->
           let fields = create_patch_ref_fields Removed d.patch_ref in
           if fields = [] then None
-          else Some (Section { name = "PatchRef"; change = Removed; sub_views = fields })
+          else Some (Section { name = "PatchRef"; change = Removed; domain_type = DTPreset; sub_views = fields })
       | `Modified patch ->
           (match patch.patch_ref with
            | `Unchanged -> None
            | `Added pr ->
                let fields = create_patch_ref_fields Added pr in
                if fields = [] then None
-               else Some (Section { name = "PatchRef"; change = Modified; sub_views = fields })
+               else Some (Section { name = "PatchRef"; change = Modified; domain_type = DTPreset; sub_views = fields })
            | `Removed pr ->
                let fields = create_patch_ref_fields Removed pr in
                if fields = [] then None
-               else Some (Section { name = "PatchRef"; change = Modified; sub_views = fields })
+               else Some (Section { name = "PatchRef"; change = Modified; domain_type = DTPreset; sub_views = fields })
            | `Modified pr_patch ->
                let fields = create_patch_ref_patch_fields pr_patch in
                if fields = [] then None
-               else Some (Section { name = "PatchRef"; change = Modified; sub_views = fields }))
+               else Some (Section { name = "PatchRef"; change = Modified; domain_type = DTPreset; sub_views = fields }))
       | `Unchanged -> None);
   } in
 
@@ -1196,10 +1261,12 @@ let create_max4live_device_view
     ~get_device_name:(fun (d : Device.Max4LiveDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.Max4LiveDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.display_name)
-    ~preset_config:(create_preset_section_config
+    ~preset_config:(Some (create_preset_section_config
       ~of_value:(fun (d : Device.Max4LiveDevice.t) -> d.preset)
-      ~of_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.preset))
+      ~of_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.preset)
+      ~domain_type:DTPreset))
     ~custom_sections:[patch_ref_config; params_config]
+    ~domain_type:DTDevice
     c
 
 
@@ -1213,6 +1280,7 @@ let create_group_device_view
     ~of_value:(fun (d : Device.GroupDevice.t) -> d.macros)
     ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.macros)
     ~build_element:create_macro_element_view
+    ~domain_type:DTMacro
   in
 
   let snapshots_config = create_collection_section_config
@@ -1220,6 +1288,7 @@ let create_group_device_view
     ~of_value:(fun (d : Device.GroupDevice.t) -> d.snapshots)
     ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.snapshots)
     ~build_element:create_snapshot_element_view
+    ~domain_type:DTSnapshot
   in
 
   build_device_view
@@ -1227,10 +1296,12 @@ let create_group_device_view
     ~get_device_name:(fun (d : Device.GroupDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.GroupDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.display_name)
-    ~preset_config:(create_preset_section_config
+    ~preset_config:(Some (create_preset_section_config
       ~of_value:(fun (d : Device.GroupDevice.t) -> d.preset)
-      ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.preset))
+      ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.preset)
+      ~domain_type:DTPreset))
     ~custom_sections:[macros_config; snapshots_config]
+    ~domain_type:DTDevice
     c
 
 
@@ -1249,8 +1320,8 @@ let generic_param_field_specs : (Device.GenericParam.t, Device.GenericParam.Patc
     get_patch = (fun p -> ViewBuilder.map_atomic_update int_value p.modulation) };
 ]
 
-let create_generic_param_fields = build_value_field_views generic_param_field_specs
-let create_generic_param_patch_fields = build_patch_field_views generic_param_field_specs
+let create_generic_param_fields = build_value_field_views generic_param_field_specs ~domain_type:DTParam
+let create_generic_param_patch_fields = build_patch_field_views generic_param_field_specs ~domain_type:DTParam
 
 
 (** Routing field specifications *)
@@ -1270,8 +1341,8 @@ let routing_field_specs : (Track.Routing.t, Track.Routing.Patch.t) unified_field
       get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.target) };
   ]
 
-let create_routing_fields = build_value_field_views routing_field_specs
-let create_routing_patch_fields = build_patch_field_views routing_field_specs
+let create_routing_fields = build_value_field_views routing_field_specs ~domain_type:DTRouting
+let create_routing_patch_fields = build_patch_field_views routing_field_specs ~domain_type:DTRouting
 
 
 (** [create_routing_set_fields] creates field views from a RoutingSet value.
@@ -1284,21 +1355,25 @@ let create_routing_set_fields (change_type : change_type) (routings : Track.Rout
     Section {
       name = "Audio In";
       change = change_type;
+      domain_type = DTRouting;
       sub_views = create_routing_fields change_type routings.audio_in;
     };
     Section {
       name = "Audio Out";
       change = change_type;
+      domain_type = DTRouting;
       sub_views = create_routing_fields change_type routings.audio_out;
     };
     Section {
       name = "Midi In";
       change = change_type;
+      domain_type = DTRouting;
       sub_views = create_routing_fields change_type routings.midi_in;
     };
     Section {
       name = "Midi Out";
       change = change_type;
+      domain_type = DTRouting;
       sub_views = create_routing_fields change_type routings.midi_out;
     };
   ]
@@ -1315,7 +1390,7 @@ let create_routing_set_patch_fields (patch : Track.RoutingSet.Patch.t) : view li
     | `Modified routing_patch ->
         let fields = create_routing_patch_fields routing_patch in
         if fields = [] then None
-        else Some { name; change = Modified; sub_views = fields }
+        else Some { name; change = Modified; domain_type = DTRouting; sub_views = fields }
   in
   [
     make_section "Audio In" patch.audio_in;
@@ -1337,10 +1412,10 @@ let create_routing_set_patch_fields (patch : Track.RoutingSet.Patch.t) : view li
 let build_mixer_value_fields (ct : change_type) (m : Track.Mixer.t) : view list =
   let open Track.Mixer in
   [
-    Section { name = "Volume"; change = ct; sub_views = create_generic_param_fields ct m.volume };
-    Section { name = "Pan"; change = ct; sub_views = create_generic_param_fields ct m.pan };
-    Section { name = "Mute"; change = ct; sub_views = create_generic_param_fields ct m.mute };
-    Section { name = "Solo"; change = ct; sub_views = create_generic_param_fields ct m.solo };
+    Section { name = "Volume"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct m.volume };
+    Section { name = "Pan"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct m.pan };
+    Section { name = "Mute"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct m.mute };
+    Section { name = "Solo"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct m.solo };
   ]
 
 
@@ -1354,7 +1429,7 @@ let build_mixer_patch_fields (mp : Track.Mixer.Patch.t) : view list =
     | `Modified p ->
         let views = create_generic_param_patch_fields p in
         if views = [] then None
-        else Some (Section { name; change = Modified; sub_views = views })
+        else Some (Section { name; change = Modified; domain_type = DTMixer; sub_views = views })
     | `Unchanged -> None
   in
   [
@@ -1374,10 +1449,10 @@ let build_mixer_patch_fields (mp : Track.Mixer.Patch.t) : view list =
 let build_main_mixer_value_fields (ct : change_type) (mm : Track.MainMixer.t) : view list =
   let base_views = build_mixer_value_fields ct mm.base in
   let global_views = [
-    Section { name = "Tempo"; change = ct; sub_views = create_generic_param_fields ct mm.tempo };
-    Section { name = "Time Signature"; change = ct; sub_views = create_generic_param_fields ct mm.time_signature };
-    Section { name = "Crossfade"; change = ct; sub_views = create_generic_param_fields ct mm.crossfade };
-    Section { name = "Global Groove"; change = ct; sub_views = create_generic_param_fields ct mm.global_groove };
+    Section { name = "Tempo"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct mm.tempo };
+    Section { name = "Time Signature"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct mm.time_signature };
+    Section { name = "Crossfade"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct mm.crossfade };
+    Section { name = "Global Groove"; change = ct; domain_type = DTMixer; sub_views = create_generic_param_fields ct mm.global_groove };
   ] in
   base_views @ global_views
 
@@ -1396,7 +1471,7 @@ let build_main_mixer_patch_fields (mmp : Track.MainMixer.Patch.t) : view list =
     | `Modified p ->
         let views = create_generic_param_patch_fields p in
         if views = [] then None
-        else Some (Section { name; change = Modified; sub_views = views })
+        else Some (Section { name; change = Modified; domain_type = DTMixer; sub_views = views })
     | `Unchanged -> None
   in
   let global_views = [
@@ -1433,7 +1508,7 @@ let create_send_element_view
     | `Modified _ -> "Send"
     | `Unchanged -> "Send"
   in
-  ViewBuilder.build_element_view c ~name:send_name ~field_descs
+  ViewBuilder.build_element_view c ~name:send_name ~field_descs ~domain_type:DTSend
 
 
 (** [create_automation_element_view] builds an [element_view] for an automation change.
@@ -1467,10 +1542,10 @@ let create_automation_element_view
 
           (match event_change with
           | `Added e ->
-              Some { name = prefix ^ " Added"; change = Added; oldval = None;
+              Some { name = prefix ^ " Added"; change = Added; domain_type = DTEvent; oldval = None;
                      newval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%.2f" e.Automation.EnvelopeEvent.time e.Automation.EnvelopeEvent.value)) }
           | `Removed e ->
-              Some { name = prefix ^ " Removed"; change = Removed;
+              Some { name = prefix ^ " Removed"; change = Removed; domain_type = DTEvent;
                      oldval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%.2f" e.Automation.EnvelopeEvent.time e.Automation.EnvelopeEvent.value));
                      newval = None }
           | `Modified ep ->
@@ -1478,13 +1553,13 @@ let create_automation_element_view
               let time_field = match ep.Automation.EnvelopeEvent.Patch.time with
                 | `Unchanged -> None
                 | `Modified { oldval; newval } ->
-                    Some { name = prefix ^ " Time"; change = Modified;
+                    Some { name = prefix ^ " Time"; change = Modified; domain_type = DTEvent;
                            oldval = Some (Ffloat oldval); newval = Some (Ffloat newval) }
               in
               let value_field = match ep.Automation.EnvelopeEvent.Patch.value with
                 | `Unchanged -> None
                 | `Modified { oldval; newval } ->
-                    Some { name = prefix ^ " Value"; change = Modified;
+                    Some { name = prefix ^ " Value"; change = Modified; domain_type = DTEvent;
                            oldval = Some (Ffloat oldval); newval = Some (Ffloat newval) }
               in
               (* Combine both fields if they exist *)
@@ -1492,7 +1567,7 @@ let create_automation_element_view
               | None, None -> None
               | Some tf, None -> Some tf
               | None, Some vf -> Some vf
-              | Some tf, Some vf -> Some { name = prefix; change = Modified;
+              | Some tf, Some vf -> Some { name = prefix; change = Modified; domain_type = DTEvent;
                                           oldval = Some (Fstring (Printf.sprintf "Time: %.2f->%.2f Value: %.2f->%.2f"
                                             (match tf.oldval with Some (Ffloat f) -> f | _ -> 0.)
                                             (match tf.newval with Some (Ffloat f) -> f | _ -> 0.)
@@ -1504,7 +1579,7 @@ let create_automation_element_view
     | `Added _ | `Removed _ | `Unchanged -> []
   in
 
-  { name = automation_name; change = change_type; fields = event_fields }
+  { name = automation_name; change = change_type; domain_type = DTAutomation; fields = event_fields }
 
 
 (** [create_device_element_view] builds an [element_view] for a device change.
@@ -1557,7 +1632,7 @@ let create_device_element_view
     | `Unchanged -> "Device"
   in
 
-  ViewBuilder.build_element_view c ~name:device_name ~field_descs
+  ViewBuilder.build_element_view c ~name:device_name ~field_descs ~domain_type:DTDevice
 
 
 (** [create_midi_clip_element_view] builds an [element_view] for a MIDI clip change.
@@ -1580,9 +1655,10 @@ let create_midi_clip_element_view
   {
     name = section.name;
     change = section.change;
+    domain_type = DTClip;
     fields = match name_field with
       | Some fv -> [fv]
-      | None -> [{ name = "Name"; change = section.change; oldval = None; newval = None }];
+      | None -> [{ name = "Name"; change = section.change; domain_type = DTClip; oldval = None; newval = None }];
   }
 
 
@@ -1606,9 +1682,10 @@ let create_audio_clip_element_view
   {
     name = section.name;
     change = section.change;
+    domain_type = DTClip;
     fields = match name_field with
       | Some fv -> [fv]
-      | None -> [{ name = "Name"; change = section.change; oldval = None; newval = None }];
+      | None -> [{ name = "Name"; change = section.change; domain_type = DTClip; oldval = None; newval = None }];
   }
 
 
@@ -1628,6 +1705,7 @@ let create_mixer_section_view
     ~of_patch:(fun p -> p.volume)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let pan_section = ViewBuilder.build_nested_section_view c
@@ -1636,6 +1714,7 @@ let create_mixer_section_view
     ~of_patch:(fun p -> p.pan)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let mute_section = ViewBuilder.build_nested_section_view c
@@ -1644,6 +1723,7 @@ let create_mixer_section_view
     ~of_patch:(fun p -> p.mute)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let solo_section = ViewBuilder.build_nested_section_view c
@@ -1652,6 +1732,7 @@ let create_mixer_section_view
     ~of_patch:(fun p -> p.solo)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let sends_collection = ViewBuilder.build_collection_view c
@@ -1659,6 +1740,7 @@ let create_mixer_section_view
     ~of_value:(fun m -> m.sends)
     ~of_patch:(fun p -> p.sends)
     ~build_element:create_send_element_view
+    ~domain_type:DTSend
   in
 
   let sub_views =
@@ -1670,7 +1752,7 @@ let create_mixer_section_view
   in
 
   if sub_views = [] then None
-  else Some { name = "Mixer"; change = ViewBuilder.change_type_of c; sub_views }
+  else Some { name = "Mixer"; change = ViewBuilder.change_type_of c; domain_type = DTMixer; sub_views }
 
 
 (** [create_main_mixer_section_view] creates a [section_view] from a MainMixer structured change.
@@ -1693,6 +1775,7 @@ let create_main_mixer_section_view
       create_generic_param_fields ct vol)
     ~build_patch_fields:(fun vol_patch ->
       create_generic_param_patch_fields vol_patch)
+    ~domain_type:DTMixer
   in
 
   let tempo_section = ViewBuilder.build_nested_section_view c
@@ -1701,6 +1784,7 @@ let create_main_mixer_section_view
     ~of_patch:(fun p -> p.tempo)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let time_sig_section = ViewBuilder.build_nested_section_view c
@@ -1709,6 +1793,7 @@ let create_main_mixer_section_view
     ~of_patch:(fun p -> p.time_signature)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let crossfade_section = ViewBuilder.build_nested_section_view c
@@ -1717,6 +1802,7 @@ let create_main_mixer_section_view
     ~of_patch:(fun p -> p.crossfade)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let groove_section = ViewBuilder.build_nested_section_view c
@@ -1725,6 +1811,7 @@ let create_main_mixer_section_view
     ~of_patch:(fun p -> p.global_groove)
     ~build_value_fields:create_generic_param_fields
     ~build_patch_fields:create_generic_param_patch_fields
+    ~domain_type:DTMixer
   in
 
   let sub_views =
@@ -1736,7 +1823,7 @@ let create_main_mixer_section_view
   in
 
   if sub_views = [] then None
-  else Some { name = "Main Mixer"; change = ViewBuilder.change_type_of c; sub_views }
+  else Some { name = "Main Mixer"; change = ViewBuilder.change_type_of c; domain_type = DTMixer; sub_views }
 
 
 (* ==================== Track View Template Infrastructure ==================== *)
@@ -1775,7 +1862,7 @@ let build_name_field
     of_parent_patch = get_name_patch;
     wrapper = string_value;
   } in
-  let field_view = ViewBuilder.build_field_view c field_desc in
+  let field_view = ViewBuilder.build_field_view c field_desc ~domain_type:DTTrack in
   if field_view.change = Unchanged then None
   else Some (Field field_view)
 
@@ -1792,6 +1879,7 @@ let create_track_collection_config
   ~(of_value : track -> item list)
   ~(of_patch : patch -> (item, item_patch) structured_change list)
   ~(build_element : (item, item_patch) structured_change -> element_view)
+  ~domain_type
   : (track, patch) device_section_config =
   {
     name;
@@ -1801,6 +1889,7 @@ let create_track_collection_config
         ~of_value
         ~of_patch
         ~build_element
+        ~domain_type
       |> Option.map (fun col -> Collection col)
     );
   }
@@ -1820,6 +1909,7 @@ let create_track_mixer_config
   ~(of_patch : patch -> np structured_update)
   ~(build_value_fields : change_type -> nested_actual -> view list)
   ~(build_patch_fields : np -> view list)
+  ~domain_type
   : (track, patch) device_section_config =
   {
     name;
@@ -1830,6 +1920,7 @@ let create_track_mixer_config
         ~of_patch
         ~build_value_fields
         ~build_patch_fields
+        ~domain_type
       |> Option.map (fun s -> Section s)
     );
   }
@@ -1896,7 +1987,7 @@ let build_track_view
   (* Combine all sub-views *)
   let sub_views = name_view @ clips_view @ mixer_view @ extra_views in
 
-  { name = section_name; change = change_type; sub_views }
+  { name = section_name; change = change_type; domain_type = DTTrack; sub_views }
 
 
 (* ==================== Full Track Views ==================== *)
@@ -1913,6 +2004,7 @@ let create_midi_track_view
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.clips)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.clips)
     ~build_element:create_midi_clip_element_view
+    ~domain_type:DTClip
   in
 
   let mixer_config = create_track_mixer_config
@@ -1921,6 +2013,7 @@ let create_midi_track_view
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.mixer)
     ~build_value_fields:build_mixer_value_fields
     ~build_patch_fields:build_mixer_patch_fields
+    ~domain_type:DTMixer
   in
 
   let automations_config = create_track_collection_config
@@ -1928,6 +2021,7 @@ let create_midi_track_view
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.automations)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.automations)
     ~build_element:create_automation_element_view
+    ~domain_type:DTAutomation
   in
 
   let devices_config = create_track_collection_config
@@ -1935,6 +2029,7 @@ let create_midi_track_view
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.devices)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.devices)
     ~build_element:create_device_element_view
+    ~domain_type:DTDevice
   in
 
   let routings_config = create_track_mixer_config
@@ -1943,6 +2038,7 @@ let create_midi_track_view
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.routings)
     ~build_value_fields:create_routing_set_fields
     ~build_patch_fields:create_routing_set_patch_fields
+    ~domain_type:DTRouting
   in
 
   build_track_view
@@ -1970,6 +2066,7 @@ let create_audio_track_view
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.clips)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.clips)
     ~build_element:create_audio_clip_element_view
+    ~domain_type:DTClip
   in
 
   let mixer_config = create_track_mixer_config
@@ -1978,6 +2075,7 @@ let create_audio_track_view
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.mixer)
     ~build_value_fields:build_mixer_value_fields
     ~build_patch_fields:build_mixer_patch_fields
+    ~domain_type:DTMixer
   in
 
   let automations_config = create_track_collection_config
@@ -1985,6 +2083,7 @@ let create_audio_track_view
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.automations)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.automations)
     ~build_element:create_automation_element_view
+    ~domain_type:DTAutomation
   in
 
   let devices_config = create_track_collection_config
@@ -1992,6 +2091,7 @@ let create_audio_track_view
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.devices)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.devices)
     ~build_element:create_device_element_view
+    ~domain_type:DTDevice
   in
 
   let routings_config = create_track_mixer_config
@@ -2000,6 +2100,7 @@ let create_audio_track_view
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.routings)
     ~build_value_fields:create_routing_set_fields
     ~build_patch_fields:create_routing_set_patch_fields
+    ~domain_type:DTRouting
   in
 
   build_track_view
@@ -2030,6 +2131,7 @@ let create_main_track_view
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.mixer)
     ~build_value_fields:build_main_mixer_value_fields
     ~build_patch_fields:build_main_mixer_patch_fields
+    ~domain_type:DTMixer
   in
 
   let automations_config = create_track_collection_config
@@ -2037,6 +2139,7 @@ let create_main_track_view
     ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.automations)
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.automations)
     ~build_element:create_automation_element_view
+    ~domain_type:DTAutomation
   in
 
   let devices_config = create_track_collection_config
@@ -2044,6 +2147,7 @@ let create_main_track_view
     ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.devices)
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.devices)
     ~build_element:create_device_element_view
+    ~domain_type:DTDevice
   in
 
   let routings_config = create_track_mixer_config
@@ -2052,6 +2156,7 @@ let create_main_track_view
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.routings)
     ~build_value_fields:create_routing_set_fields
     ~build_patch_fields:create_routing_set_patch_fields
+    ~domain_type:DTRouting
   in
 
   build_track_view
@@ -2101,7 +2206,7 @@ let create_locator_element_view
     | `Modified _ -> "Locator"
     | `Unchanged -> "Locator"
   in
-  ViewBuilder.build_element_view c ~name:locator_name ~field_descs
+  ViewBuilder.build_element_view c ~name:locator_name ~field_descs ~domain_type:DTLocator
 
 
 (** Version field specifications *)
@@ -2117,8 +2222,8 @@ let version_field_specs : (Liveset.Version.t, Liveset.Version.Patch.t) unified_f
     get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.revision) };
 ]
 
-let create_version_fields = build_value_field_views version_field_specs
-let create_version_patch_fields = build_patch_field_views version_field_specs
+let create_version_fields = build_value_field_views version_field_specs ~domain_type:DTVersion
+let create_version_patch_fields = build_patch_field_views version_field_specs ~domain_type:DTVersion
 
 
 (** [create_liveset_view] creates a [section_view] from a Liveset structured change.
@@ -2158,8 +2263,8 @@ let create_liveset_view
 
   let atomic_field_views =
     [
-      ViewBuilder.build_field_view c name_field_desc;
-      ViewBuilder.build_field_view c creator_field_desc;
+      ViewBuilder.build_field_view c name_field_desc ~domain_type:DTLiveset;
+      ViewBuilder.build_field_view c creator_field_desc ~domain_type:DTLiveset;
     ]
     |> List.filter (fun fv -> fv.change <> Unchanged)
     |> List.map (fun fv -> Field fv)
@@ -2172,6 +2277,7 @@ let create_liveset_view
     ~of_patch:(fun (p : Liveset.Patch.t) -> p.version)
     ~build_value_fields:create_version_fields
     ~build_patch_fields:create_version_patch_fields
+    ~domain_type:DTVersion
   in
 
   (* Build Main Track section - special handling for singleton track *)
@@ -2201,6 +2307,7 @@ let create_liveset_view
         | Modified -> failwith "Invalid change type for value"))])
     ~build_patch_fields:(fun pt ->
       [Section (create_main_track_view (`Modified pt))])
+    ~domain_type:DTTrack
   in
 
   (* Build Tracks sections - added directly as sections, not wrapped in a collection *)
@@ -2293,6 +2400,7 @@ let create_liveset_view
     ~of_value:(fun (ls : Liveset.t) -> ls.Liveset.locators)
     ~of_patch:(fun (p : Liveset.Patch.t) -> p.locators)
     ~build_element:create_locator_element_view
+    ~domain_type:DTLocator
   in
 
   (* Combine all sub-views *)
@@ -2305,4 +2413,4 @@ let create_liveset_view
     @ (locators_collection |> Option.map (fun c -> Collection c) |> option_to_list)
   in
 
-  { name = section_name; change = change_type; sub_views }
+  { name = section_name; change = change_type; domain_type = DTLiveset; sub_views }

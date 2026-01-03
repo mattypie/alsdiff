@@ -13,6 +13,10 @@ type detail_config = {
   modified : detail_level;
   unchanged : detail_level;
 
+  (* NEW: type-based control - list of (domain_type, detail_level) pairs *)
+  (* Empty list means no type overrides - use change-type defaults *)
+  type_modes : (domain_type * detail_level) list;
+
   max_collection_items : int option;
   show_unchanged_fields : bool;
 
@@ -23,13 +27,27 @@ type detail_config = {
   prefix_unchanged : string;
 }
 
-(* Helper to get detail level for a change type *)
-let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
+(* Helper to get detail level for a change type (legacy, no type override) *)
+let get_detail_level_by_change (cfg : detail_config) (ct : change_type) : detail_level =
   match ct with
   | Unchanged -> cfg.unchanged
   | Added -> cfg.added
   | Removed -> cfg.removed
   | Modified -> cfg.modified
+
+(* Helper to get effective detail level considering type-based overrides *)
+(* Type-based control takes precedence over change-type control *)
+let get_effective_detail (cfg : detail_config) (ct : change_type) (dt : domain_type) : detail_level =
+  (* Step 1: Check type-specific override via list lookup *)
+  match List.assoc_opt dt cfg.type_modes with
+  | Some level -> level           (* Type mode found, use it *)
+  | None ->
+      (* Step 2: Fall back to change-type control *)
+      get_detail_level_by_change cfg ct
+
+(* Backward-compatible helper - defaults to DTOther for views without domain_type consideration *)
+let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
+  get_detail_level_by_change cfg ct
 
 (* Helper to check if we should render based on detail level *)
 let should_render_level (level : detail_level) : bool =
@@ -39,7 +57,7 @@ let should_render_level (level : detail_level) : bool =
 
 (* Helper to check if we should show fields for an element *)
 let should_show_fields (cfg : detail_config) (elem : element_view) : bool =
-  let level = get_detail_level cfg elem.change in
+  let level = get_effective_detail cfg elem.change elem.domain_type in
   level = Full && elem.fields <> []
 
 (* Helper to filter and limit collection elements *)
@@ -47,12 +65,12 @@ let filter_collection_elements
     (cfg : detail_config)
     (col : collection_view)
     : element_view list =
-  let level : detail_level = get_detail_level cfg col.change in
+  let level : detail_level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then []
   else
     let filtered : element_view list =
       List.filter (fun (e : element_view) ->
-        let elem_level : detail_level = get_detail_level cfg e.change in
+        let elem_level : detail_level = get_effective_detail cfg e.change e.domain_type in
         should_render_level elem_level
       ) col.elements
     in
@@ -68,6 +86,7 @@ let compact = {
   removed = Compact;
   modified = Compact;
   unchanged = None;
+  type_modes = [];
   max_collection_items = None;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -82,6 +101,7 @@ let full = {
   removed = Full;
   modified = Full;
   unchanged = None;
+  type_modes = [];
   max_collection_items = None;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -96,6 +116,7 @@ let midi_friendly = {
   removed = Summary;  (* Just show "MidiClip: Name" when deleted *)
   modified = Full;
   unchanged = None;
+  type_modes = [];
   max_collection_items = Some 50;  (* Limit note output *)
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -110,6 +131,7 @@ let quiet = {
   removed = Summary;
   modified = Summary;           (* Compact *)
   unchanged = None;
+  type_modes = [];
   max_collection_items = Some 10;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -124,12 +146,68 @@ let verbose = {
   removed = Full;
   modified = Full;
   unchanged = Full;
+  type_modes = [];
   max_collection_items = None;
   show_unchanged_fields = true;
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
+}
+
+(* ==================== Type-Based Presets ==================== *)
+
+(* Device-focused: detailed devices/params, summary clips *)
+let device_focused = {
+  midi_friendly with
+  type_modes = [
+    (DTDevice, Full);
+    (DTParam, Full);
+    (DTClip, Summary);
+    (DTNote, None);
+  ];
+}
+
+(* Producer: detailed tracks/devices, compact params *)
+let producer = {
+  midi_friendly with
+  type_modes = [
+    (DTTrack, Full);
+    (DTDevice, Full);
+    (DTParam, Compact);
+    (DTClip, Summary);
+  ];
+}
+
+(* No clips: hide clips and notes entirely *)
+let no_clips = {
+  midi_friendly with
+  type_modes = [
+    (DTClip, None);
+    (DTNote, None);
+  ];
+}
+
+(* Track-only: show only changes down to Track level, hide everything below (devices, clips, etc.) *)
+let track_only = {
+  midi_friendly with
+  type_modes = [
+    (DTDevice, None);
+    (DTClip, None);
+    (DTNote, None);
+    (DTParam, None);
+    (DTAutomation, None);
+    (DTMixer, None);
+    (DTRouting, None);
+    (DTSend, None);
+    (DTPreset, None);
+    (DTMacro, None);
+    (DTSnapshot, None);
+    (DTLoop, None);
+    (DTSignature, None);
+    (DTSampleRef, None);
+    (DTEvent, None);
+  ];
 }
 
 (* Helper to create a config with custom prefixes *)
@@ -171,7 +249,7 @@ let pp_field cfg fmt (field : field_view) =
 
 (* Element view rendering *)
 let pp_element cfg fmt (elem : element_view) =
-  let level = get_detail_level cfg elem.change in
+  let level = get_effective_detail cfg elem.change elem.domain_type in
   if not (should_render_level level) then ()
   else
     (* Summary mode: name only, no change symbol *)
@@ -191,7 +269,7 @@ let pp_element cfg fmt (elem : element_view) =
 
 (* Collection view rendering *)
 let pp_collection cfg fmt (col : collection_view) =
-  let level = get_detail_level cfg col.change in
+  let level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then ()
   else
     let elements = filter_collection_elements cfg col in
@@ -214,7 +292,7 @@ let pp_collection cfg fmt (col : collection_view) =
 
 (* Section view rendering *)
 let rec pp_section cfg fmt (section : section_view) =
-  let level = get_detail_level cfg section.change in
+  let level = get_effective_detail cfg section.change section.domain_type in
   if not (should_render_level level) then ()
   else
     (* Filter sub_views based on show_unchanged_fields and detail levels *)
@@ -228,6 +306,18 @@ let rec pp_section cfg fmt (section : section_view) =
         | Section s -> s.change <> Unchanged
       ) section.sub_views
     in
+    (* Further filter to remove views that will render nothing due to type_modes *)
+    let sub_views = List.filter (fun v ->
+      match v with
+      | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
+      | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
+      | Collection c ->
+          let col_level = get_effective_detail cfg c.change c.domain_type in
+          should_render_level col_level &&
+          (* Also check if any elements would render *)
+          (filter_collection_elements cfg c) <> []
+      | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
+    ) sub_views in
     if level = Summary then
       Fmt.pf fmt "@[%s@]" section.name
     else if level = Compact then
