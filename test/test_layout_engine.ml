@@ -88,8 +88,8 @@ let test_removed_summary () =
   pp midi_friendly ppf view;  (* midi_friendly has removed = Summary *)
   Format.pp_print_flush ppf ();
   let output = Buffer.contents buffer in
-  (* Summary mode shows name only, no change symbol *)
-  Alcotest.(check string) "removed summary" "MidiClip" (String.trim output)
+  (* Summary mode shows name with change symbol *)
+  Alcotest.(check string) "removed summary" "- MidiClip" (String.trim output)
 
 (* New test: Collection item limiting *)
 let test_collection_limit () =

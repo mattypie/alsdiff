@@ -3,8 +3,8 @@ open View_model
 (** How much detail to show for a particular diff item. *)
 type detail_level =
   | None     (** Completely hide the item - not rendered at all *)
-  | Summary  (** Show only the name, and count of sub-views *)
-  | Compact  (** Show name + change symbol, but no field details *)
+  | Summary  (** Show name + change symbol, but no field details *)
+  | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
   | Full     (** Show name + change symbol + all fields/sub-views *)
 
 type detail_config = {
@@ -42,8 +42,8 @@ let get_effective_detail (cfg : detail_config) (ct : change_type) (dt : domain_t
   match List.assoc_opt dt cfg.type_modes with
   | Some level -> level           (* Type mode found, use it *)
   | None ->
-      (* Step 2: Fall back to change-type control *)
-      get_detail_level_by_change cfg ct
+    (* Step 2: Fall back to change-type control *)
+    get_detail_level_by_change cfg ct
 
 (* Backward-compatible helper - defaults to DTOther for views without domain_type consideration *)
 let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
@@ -64,15 +64,15 @@ let should_show_fields (cfg : detail_config) (elem : element_view) : bool =
 let filter_collection_elements
     (cfg : detail_config)
     (col : collection_view)
-    : element_view list =
+  : element_view list =
   let level : detail_level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then []
   else
     let filtered : element_view list =
       List.filter (fun (e : element_view) ->
-        let elem_level : detail_level = get_effective_detail cfg e.change e.domain_type in
-        should_render_level elem_level
-      ) col.elements
+          let elem_level : detail_level = get_effective_detail cfg e.change e.domain_type in
+          should_render_level elem_level
+        ) col.elements
     in
     match cfg.max_collection_items with
     | None -> filtered
@@ -131,7 +131,7 @@ let quiet = {
   removed = Summary;
   modified = Summary;           (* Compact *)
   unchanged = None;
-  type_modes = [];
+  type_modes = [(DTLiveset, Compact)];  (* Show LiveSet sub-views, but children stay in Summary *)
   max_collection_items = Some 10;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -190,7 +190,7 @@ let no_clips = {
 
 (* Track-only: show only changes down to Track level, hide everything below (devices, clips, etc.) *)
 let track_only = {
-  midi_friendly with
+  quiet with
   type_modes = [
     (DTDevice, None);
     (DTClip, None);
@@ -252,20 +252,20 @@ let pp_element cfg fmt (elem : element_view) =
   let level = get_effective_detail cfg elem.change elem.domain_type in
   if not (should_render_level level) then ()
   else
-    (* Summary mode: name only, no change symbol *)
-    if level = Summary then
-      Fmt.pf fmt "@[%s@]" elem.name
+    (* Summary mode: name + change symbol *)
+  if level = Summary then
+    Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
     (* Compact mode: name + change symbol *)
-    else if level = Compact then
-      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
+  else if level = Compact then
+    Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
     (* Full mode: name + symbol + fields *)
-    else
-      Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
-      if should_show_fields cfg elem then (
-        Fmt.cut fmt ();
-        Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt elem.fields
-      );
-      Fmt.pf fmt "@]"
+  else
+    Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
+  if should_show_fields cfg elem then (
+    Fmt.cut fmt ();
+    Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt elem.fields
+  );
+  Fmt.pf fmt "@]"
 
 (* Collection view rendering *)
 let pp_collection cfg fmt (col : collection_view) =
@@ -275,20 +275,20 @@ let pp_collection cfg fmt (col : collection_view) =
     let elements = filter_collection_elements cfg col in
     if elements = [] then ()
     else
-      (* Summary mode: collection name only *)
-      if level = Summary then
-        Fmt.pf fmt "@[%s@]" col.name
+      (* Summary mode: name + change symbol *)
+    if level = Summary then
+      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
       (* Compact mode: name + symbol, elements names + symbols *)
-      else if level = Compact then
-        Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
+    else if level = Compact then
+      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
       (* Full mode: show all elements with their details *)
-      else
-        Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) col.change col.name;
-        List.iter (fun e ->
-          Fmt.pf fmt "@\n";
-          pp_element cfg fmt e
-        ) elements;
-        Fmt.pf fmt "@]"
+    else
+      Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) col.change col.name;
+    List.iter (fun e ->
+        Fmt.pf fmt "@\n";
+        pp_element cfg fmt e
+      ) elements;
+    Fmt.pf fmt "@]"
 
 (* Section view rendering *)
 let rec pp_section cfg fmt (section : section_view) =
@@ -299,36 +299,42 @@ let rec pp_section cfg fmt (section : section_view) =
     let sub_views = if cfg.show_unchanged_fields
       then section.sub_views
       else List.filter (fun v ->
-        match v with
-        | Field f -> f.change <> Unchanged
-        | Element e -> e.change <> Unchanged
-        | Collection c -> c.change <> Unchanged
-        | Section s -> s.change <> Unchanged
-      ) section.sub_views
+          match v with
+          | Field f -> f.change <> Unchanged
+          | Element e -> e.change <> Unchanged
+          | Collection c -> c.change <> Unchanged
+          | Section s -> s.change <> Unchanged
+        ) section.sub_views
     in
     (* Further filter to remove views that will render nothing due to type_modes *)
     let sub_views = List.filter (fun v ->
-      match v with
-      | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
-      | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
-      | Collection c ->
+        match v with
+        | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
+        | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
+        | Collection c ->
           let col_level = get_effective_detail cfg c.change c.domain_type in
           should_render_level col_level &&
           (* Also check if any elements would render *)
           (filter_collection_elements cfg c) <> []
-      | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
-    ) sub_views in
-    if level = Summary then
-      Fmt.pf fmt "@[%s@]" section.name
-    else if level = Compact then
-      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
-    else
-      Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name;
+        | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
+      ) sub_views in
+    (* Render section header *)
+    begin
+      if level = Summary then
+        Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
+      else if level = Compact then
+        Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
+      else
+        Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
+    end;
+    (* Render sub-views for Compact and Full modes *)
+    if level <> Summary then (
       List.iter (fun view ->
-        Fmt.pf fmt "@\n";
-        pp_view cfg fmt view
-      ) sub_views;
+          Fmt.pf fmt "@\n";
+          pp_view cfg fmt view
+        ) sub_views;
       Fmt.pf fmt "@]"
+    )
 
 (* Main view rendering function *)
 and pp_view cfg fmt = function
