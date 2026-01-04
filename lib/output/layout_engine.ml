@@ -7,15 +7,28 @@ type detail_level =
   | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
   | Full     (** Show name + change symbol + all fields/sub-views *)
 
+(* Per-change-type override for domain types *)
+(* None means use the base change_type default *)
+type per_change_override = {
+  added : detail_level option;
+  removed : detail_level option;
+  modified : detail_level option;
+  unchanged : detail_level option;
+}
+
 type detail_config = {
   added : detail_level;
   removed : detail_level;
   modified : detail_level;
   unchanged : detail_level;
 
-  (* NEW: type-based control - list of (domain_type, detail_level) pairs *)
-  (* Empty list means no type overrides - use change-type defaults *)
-  type_modes : (domain_type * detail_level) list;
+  (* Type-based overrides with per-change control.
+     Each domain type can optionally override detail levels for specific change types.
+     Use `uniform_override level` to set all changes to the same level (preserves legacy behavior).
+     Use `override ~added:Full ~removed:Summary ()` for fine-grained control.
+     None means use the base change_type default.
+   *)
+  type_overrides : (domain_type * per_change_override) list;
 
   max_collection_items : int option;
   show_unchanged_fields : bool;
@@ -25,6 +38,32 @@ type detail_config = {
   prefix_removed : string;
   prefix_modified : string;
   prefix_unchanged : string;
+}
+
+(* Helper: Create a per_change_override with all fields set to None *)
+let no_override () = {
+  added = None;
+  removed = None;
+  modified = None;
+  unchanged = None;
+}
+
+(* Helper: Create a per_change_override with specific values *)
+(* Use optional arguments with None as default *)
+let override ?(added:(detail_level option)=None) ?(removed:(detail_level option)=None) ?(modified:(detail_level option)=None) ?(unchanged:(detail_level option)=None) () = {
+  added;
+  removed;
+  modified;
+  unchanged;
+}
+
+(* Helper: Create a uniform override (same level for all changes) *)
+(* Preserves current type_modes behavior *)
+let uniform_override level = {
+  added = Some level;
+  removed = Some level;
+  modified = Some level;
+  unchanged = Some level;
 }
 
 (* Helper to get detail level for a change type (legacy, no type override) *)
@@ -38,11 +77,30 @@ let get_detail_level_by_change (cfg : detail_config) (ct : change_type) : detail
 (* Helper to get effective detail level considering type-based overrides *)
 (* Type-based control takes precedence over change-type control *)
 let get_effective_detail (cfg : detail_config) (ct : change_type) (dt : domain_type) : detail_level =
-  (* Step 1: Check type-specific override via list lookup *)
-  match List.assoc_opt dt cfg.type_modes with
-  | Some level -> level           (* Type mode found, use it *)
+  (* Step 1: Check type-specific override *)
+  match List.assoc_opt dt cfg.type_overrides with
+  | Some overrides ->
+    (* Step 2: Check for change-specific override within this type *)
+    (match ct with
+     | Added -> begin match overrides.added with
+       | Some level -> level
+       | None -> cfg.added
+       end
+     | Removed -> begin match overrides.removed with
+       | Some level -> level
+       | None -> cfg.removed
+       end
+     | Modified -> begin match overrides.modified with
+       | Some level -> level
+       | None -> cfg.modified
+       end
+     | Unchanged -> begin match overrides.unchanged with
+       | Some level -> level
+       | None -> cfg.unchanged
+       end
+    )
   | None ->
-    (* Step 2: Fall back to change-type control *)
+    (* Step 3: Fall back to change-type base default *)
     get_detail_level_by_change cfg ct
 
 (* Backward-compatible helper - defaults to DTOther for views without domain_type consideration *)
@@ -86,7 +144,7 @@ let compact = {
   removed = Compact;
   modified = Compact;
   unchanged = None;
-  type_modes = [];
+  type_overrides = [];
   max_collection_items = None;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -101,7 +159,7 @@ let full = {
   removed = Full;
   modified = Full;
   unchanged = None;
-  type_modes = [];
+  type_overrides = [];
   max_collection_items = None;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -116,7 +174,7 @@ let midi_friendly = {
   removed = Summary;  (* Just show "MidiClip: Name" when deleted *)
   modified = Full;
   unchanged = None;
-  type_modes = [];
+  type_overrides = [];
   max_collection_items = Some 50;  (* Limit note output *)
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -131,7 +189,7 @@ let quiet = {
   removed = Summary;
   modified = Summary;           (* Compact *)
   unchanged = None;
-  type_modes = [(DTLiveset, Compact)];  (* Show LiveSet sub-views, but children stay in Summary *)
+  type_overrides = [(DTLiveset, uniform_override Compact)];  (* Show LiveSet sub-views, but children stay in Summary *)
   max_collection_items = Some 10;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -146,7 +204,7 @@ let verbose = {
   removed = Full;
   modified = Full;
   unchanged = Full;
-  type_modes = [];
+  type_overrides = [];
   max_collection_items = None;
   show_unchanged_fields = true;
   prefix_added = "+";
@@ -160,53 +218,84 @@ let verbose = {
 (* Device-focused: detailed devices/params, summary clips *)
 let device_focused = {
   midi_friendly with
-  type_modes = [
-    (DTDevice, Full);
-    (DTParam, Full);
-    (DTClip, Summary);
-    (DTNote, None);
+  type_overrides = [
+    (DTDevice, uniform_override Full);
+    (DTParam, uniform_override Full);
+    (DTClip, uniform_override Summary);
+    (DTNote, uniform_override None);
   ];
 }
 
 (* Producer: detailed tracks/devices, compact params *)
 let producer = {
   midi_friendly with
-  type_modes = [
-    (DTTrack, Full);
-    (DTDevice, Full);
-    (DTParam, Compact);
-    (DTClip, Summary);
+  type_overrides = [
+    (DTTrack, uniform_override Full);
+    (DTDevice, uniform_override Full);
+    (DTParam, uniform_override Compact);
+    (DTClip, uniform_override Summary);
   ];
 }
 
 (* No clips: hide clips and notes entirely *)
 let no_clips = {
   midi_friendly with
-  type_modes = [
-    (DTClip, None);
-    (DTNote, None);
+  type_overrides = [
+    (DTClip, uniform_override None);
+    (DTNote, uniform_override None);
   ];
 }
 
 (* Track-only: show only changes down to Track level, hide everything below (devices, clips, etc.) *)
 let track_only = {
   quiet with
-  type_modes = [
-    (DTDevice, None);
-    (DTClip, None);
-    (DTNote, None);
-    (DTParam, None);
-    (DTAutomation, None);
-    (DTMixer, None);
-    (DTRouting, None);
-    (DTSend, None);
-    (DTPreset, None);
-    (DTMacro, None);
-    (DTSnapshot, None);
-    (DTLoop, None);
-    (DTSignature, None);
-    (DTSampleRef, None);
-    (DTEvent, None);
+  type_overrides = [
+    (DTDevice, uniform_override None);
+    (DTClip, uniform_override None);
+    (DTNote, uniform_override None);
+    (DTParam, uniform_override None);
+    (DTAutomation, uniform_override None);
+    (DTMixer, uniform_override None);
+    (DTRouting, uniform_override None);
+    (DTSend, uniform_override None);
+    (DTPreset, uniform_override None);
+    (DTMacro, uniform_override None);
+    (DTSnapshot, uniform_override None);
+    (DTLoop, uniform_override None);
+    (DTSignature, uniform_override None);
+    (DTSampleRef, uniform_override None);
+    (DTEvent, uniform_override None);
+  ];
+}
+
+(* NEW: Device-aware preset - demonstrates per-change control *)
+(* Full details for added/modified devices, summary for removed *)
+let device_aware = {
+  midi_friendly with
+  type_overrides = [
+    (DTDevice, override
+      ~added:(Some Full)
+      ~removed:(Some Summary)
+      ~modified:(Some Full)
+      ());
+    (DTParam, override
+      ~added:(Some Full)
+      ~removed:None
+      ~modified:(Some Full)
+      ());
+  ];
+}
+
+(* Clip change-aware preset *)
+(* Full for added clips (new content), summary for removed (just knowing they're gone) *)
+let clip_change_aware = {
+  midi_friendly with
+  type_overrides = [
+    (DTClip, override
+      ~added:(Some Full)
+      ~removed:(Some Summary)
+      ~modified:(Some Full)
+      ());
   ];
 }
 
@@ -219,6 +308,62 @@ let with_prefixes ~(added:string) ~(removed:string) ~(modified:string) ~(unchang
     prefix_modified = modified;
     prefix_unchanged = unchanged;
   }
+
+(* Builder: Start from a preset and modify type overrides *)
+(* Merges with existing override if present *)
+(* Note: Pass None (not passing the argument) to preserve existing value *)
+let with_type_override cfg dt
+    ~(added:detail_level option option) ~(removed:detail_level option option) ~(modified:detail_level option option) ~(unchanged:detail_level option option) =
+  let existing = match List.assoc_opt dt cfg.type_overrides with
+    | Some ov -> ov
+    | None -> no_override ()
+  in
+  (* Merge options: Some (Some v) means set to v, Some None means set to None, None means keep existing *)
+  let new_override = override
+    ~added:(match added with Some (Some v) -> Some v | Some None -> None | None -> existing.added)
+    ~removed:(match removed with Some (Some v) -> Some v | Some None -> None | None -> existing.removed)
+    ~modified:(match modified with Some (Some v) -> Some v | Some None -> None | None -> existing.modified)
+    ~unchanged:(match unchanged with Some (Some v) -> Some v | Some None -> None | None -> existing.unchanged)
+    ()
+  in
+  (* Remove old entry if exists, add new one *)
+  let filtered = List.filter (fun (d, _) -> d <> dt) cfg.type_overrides in
+  { cfg with type_overrides = (dt, new_override) :: filtered }
+
+(* Helper: Convert domain_type to string for debugging/validation *)
+let domain_type_to_string (dt : domain_type) : string =
+  match dt with
+  | DTLiveset -> "Liveset"
+  | DTTrack -> "Track"
+  | DTDevice -> "Device"
+  | DTClip -> "Clip"
+  | DTAutomation -> "Automation"
+  | DTMixer -> "Mixer"
+  | DTRouting -> "Routing"
+  | DTLocator -> "Locator"
+  | DTParam -> "Param"
+  | DTNote -> "Note"
+  | DTEvent -> "Event"
+  | DTSend -> "Send"
+  | DTPreset -> "Preset"
+  | DTMacro -> "Macro"
+  | DTSnapshot -> "Snapshot"
+  | DTLoop -> "Loop"
+  | DTSignature -> "Signature"
+  | DTSampleRef -> "SampleRef"
+  | DTVersion -> "Version"
+  | DTOther -> "Other"
+
+(* Validate config - check for suspicious patterns *)
+(* Returns list of warning messages *)
+let validate_config (cfg : detail_config) : string list =
+  cfg.type_overrides
+  |> List.filter_map (fun ((dt : domain_type), (ov : per_change_override)) ->
+      if ov.added = None && ov.removed = None && ov.modified = None && ov.unchanged = None then
+        Some (Printf.sprintf "Type override for %s has all None values (no effect)"
+          (domain_type_to_string dt))
+      else
+        None)
 
 (* Change type formatting with customizable symbols *)
 let pp_change_type cfg fmt = function
@@ -306,7 +451,7 @@ let rec pp_section cfg fmt (section : section_view) =
           | Section s -> s.change <> Unchanged
         ) section.sub_views
     in
-    (* Further filter to remove views that will render nothing due to type_modes *)
+    (* Further filter to remove views that will render nothing due to type_overrides *)
     let sub_views = List.filter (fun v ->
         match v with
         | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
@@ -327,8 +472,8 @@ let rec pp_section cfg fmt (section : section_view) =
       else
         Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
     end;
-    (* Render sub-views for Compact and Full modes *)
-    if level <> Summary then (
+    (* Render sub-views for Compact and Full modes, OR for LiveSet in Summary mode *)
+    if level <> Summary || section.domain_type = DTLiveset then (
       List.iter (fun view ->
           Fmt.pf fmt "@\n";
           pp_view cfg fmt view
