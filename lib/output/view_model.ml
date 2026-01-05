@@ -500,12 +500,12 @@ let create_midi_clip_view
   let change_type = ViewBuilder.change_type_of c in
 
   let section_name = match c with
-    | `Added clip -> Printf.sprintf "MidiClip: %s #%d" clip.Clip.MidiClip.name clip.Clip.MidiClip.id
-    | `Removed clip -> Printf.sprintf "MidiClip: %s #%d" clip.Clip.MidiClip.name clip.Clip.MidiClip.id
+    | `Added clip -> Printf.sprintf "MidiClip (#%d): %s" clip.Clip.MidiClip.id clip.Clip.MidiClip.name
+    | `Removed clip -> Printf.sprintf "MidiClip (#%d): %s" clip.Clip.MidiClip.id clip.Clip.MidiClip.name
     | `Modified patch ->
         (match patch.name with
-         | `Modified { newval; _ } -> Printf.sprintf "MidiClip: %s #%d" newval patch.Clip.MidiClip.Patch.id
-         | `Unchanged -> Printf.sprintf "MidiClip #%d" patch.Clip.MidiClip.Patch.id)
+         | `Modified { newval; _ } -> Printf.sprintf "MidiClip (#%d): %s" patch.Clip.MidiClip.Patch.id newval
+         | `Unchanged -> Printf.sprintf "MidiClip (#%d)" patch.Clip.MidiClip.Patch.id)
     | `Unchanged -> "MidiClip"
   in
 
@@ -609,12 +609,12 @@ let create_audio_clip_view
   let change_type = ViewBuilder.change_type_of c in
 
   let section_name = match c with
-    | `Added clip -> Printf.sprintf "AudioClip: %s #%d" clip.Clip.AudioClip.name clip.Clip.AudioClip.id
-    | `Removed clip -> Printf.sprintf "AudioClip: %s #%d" clip.Clip.AudioClip.name clip.Clip.AudioClip.id
+    | `Added clip -> Printf.sprintf "AudioClip (#%d): %s" clip.Clip.AudioClip.id clip.Clip.AudioClip.name
+    | `Removed clip -> Printf.sprintf "AudioClip (#%d): %s" clip.Clip.AudioClip.id clip.Clip.AudioClip.name
     | `Modified patch ->
         (match patch.name with
-         | `Modified { newval; _ } -> Printf.sprintf "AudioClip: %s #%d" newval patch.Clip.AudioClip.Patch.id
-         | `Unchanged -> Printf.sprintf "AudioClip #%d" patch.Clip.AudioClip.Patch.id)
+         | `Modified { newval; _ } -> Printf.sprintf "AudioClip (#%d): %s" patch.Clip.AudioClip.Patch.id newval
+         | `Unchanged -> Printf.sprintf "AudioClip (#%d)" patch.Clip.AudioClip.Patch.id)
     | `Unchanged -> "AudioClip"
   in
 
@@ -1600,6 +1600,12 @@ let create_device_element_view
     | Device.Max4Live d -> d.device_name
     | Device.Group d -> d.device_name
   in
+  let get_display_name = function
+    | Device.Regular d -> d.display_name
+    | Device.Plugin d -> d.display_name
+    | Device.Max4Live d -> d.display_name
+    | Device.Group d -> d.display_name
+  in
   (* Extract identity from patches *)
   let get_id_from_patch = function
     | Device.Patch.RegularPatch p -> p.id
@@ -1613,22 +1619,39 @@ let create_device_element_view
     | Device.Patch.Max4LivePatch p -> p.device_name
     | Device.Patch.GroupPatch p -> p.device_name
   in
+  let get_display_name_from_patch = function
+    | Device.Patch.RegularPatch p ->
+        (match p.display_name with
+         | `Modified { newval; _ } -> newval
+         | `Unchanged -> "")
+    | Device.Patch.PluginPatch p ->
+        (match p.display_name with
+         | `Modified { newval; _ } -> newval
+         | `Unchanged -> "")
+    | Device.Patch.Max4LivePatch p ->
+        (match p.display_name with
+         | `Modified { newval; _ } -> newval
+         | `Unchanged -> "")
+    | Device.Patch.GroupPatch p ->
+        (match p.display_name with
+         | `Modified { newval; _ } -> newval
+         | `Unchanged -> "")
+  in
 
   (* Field descriptors exclude identity fields (no Id, Name) *)
   let field_descs = [] (* Empty - identity shown in name instead *)
   in
 
-  (* Format device name with identity inline: "device_name #id (device_name)" *)
+  (* Format device name with identity inline: "device_name (#id): display_name" *)
   let device_name = match c with
     | `Added d ->
-        let name = get_device_name d in
-        Printf.sprintf "%s #%d (%s)" name (get_device_id d) name
+        Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d) (get_display_name d)
     | `Removed d ->
-        let name = get_device_name d in
-        Printf.sprintf "%s #%d (%s)" name (get_device_id d) name
+        Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d) (get_display_name d)
     | `Modified patch ->
-        let name = get_name_from_patch patch in
-        Printf.sprintf "%s #%d (%s)" name (get_id_from_patch patch) name
+        let display = get_display_name_from_patch patch in
+        let display_name = if display = "" then get_name_from_patch patch else display in
+        Printf.sprintf "%s (#%d): %s" (get_name_from_patch patch) (get_id_from_patch patch) display_name
     | `Unchanged -> "Device"
   in
 
@@ -1841,9 +1864,9 @@ let build_track_section_name
   (c : (track, patch) structured_change)
   : string =
   match c with
-  | `Added t -> Printf.sprintf "%s: %s #%d" track_type_name (get_name t) (get_id t)
-  | `Removed t -> Printf.sprintf "%s: %s #%d" track_type_name (get_name t) (get_id t)
-  | `Modified patch -> Printf.sprintf "%s: %s #%d" track_type_name (get_current_name_patch patch) (get_id_patch patch)
+  | `Added t -> Printf.sprintf "%s (#%d): %s" track_type_name (get_id t) (get_name t)
+  | `Removed t -> Printf.sprintf "%s (#%d): %s" track_type_name (get_id t) (get_name t)
+  | `Modified patch -> Printf.sprintf "%s (#%d): %s" track_type_name (get_id_patch patch) (get_current_name_patch patch)
   | `Unchanged -> track_type_name
 
 
