@@ -7,6 +7,13 @@ type detail_level =
   | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
   | Full     (** Show name + change symbol + all fields/sub-views *)
 
+(** Breakdown of changes by type for Summary mode *)
+type change_breakdown = {
+  added: int;
+  removed: int;
+  modified: int;
+}
+
 (* Per-change-type override for domain types *)
 (* None means use the base change_type default *)
 type per_change_override = {
@@ -172,6 +179,76 @@ let count_changed_sub_views (cfg : detail_config) (section : section_view) : int
     ) sub_views
   in
   List.length sub_views
+
+(* ==================== Change Breakdown for Summary Mode ==================== *)
+
+(* Calculate total from a breakdown *)
+let total_breakdown (b : change_breakdown) : int =
+  b.added + b.removed + b.modified
+
+(* Format breakdown as string, omitting zero counts *)
+let format_breakdown (breakdown : change_breakdown) : string =
+  let parts = [
+    if breakdown.added > 0 then Some (Printf.sprintf "%d Added" breakdown.added) else None;
+    if breakdown.removed > 0 then Some (Printf.sprintf "%d Removed" breakdown.removed) else None;
+    if breakdown.modified > 0 then Some (Printf.sprintf "%d Modified" breakdown.modified) else None;
+  ] |> List.filter_map Fun.id in
+  match parts with
+  | [] -> ""
+  | parts -> "(" ^ String.concat ", " parts ^ ")"
+
+(* Increment the appropriate counter based on change_type *)
+let increment_breakdown (acc : change_breakdown) (ct : change_type) : change_breakdown =
+  match ct with
+  | Added -> { acc with added = acc.added + 1 }
+  | Removed -> { acc with removed = acc.removed + 1 }
+  | Modified -> { acc with modified = acc.modified + 1 }
+  | Unchanged -> acc
+
+(* Count fields by change type *)
+let count_fields_breakdown (elem : element_view) : change_breakdown =
+  List.fold_left (fun (acc : change_breakdown) (f : field_view) -> increment_breakdown acc f.change)
+    ({ added = 0; removed = 0; modified = 0 } : change_breakdown) elem.fields
+
+(* Count filtered elements by change type *)
+let count_elements_breakdown (cfg : detail_config) (col : collection_view) : change_breakdown =
+  let filtered = filter_collection_elements cfg col in
+  List.fold_left (fun (acc : change_breakdown) (e : element_view) -> increment_breakdown acc e.change)
+    ({ added = 0; removed = 0; modified = 0 } : change_breakdown) filtered
+
+(* Count filtered sub-views by change type *)
+let count_sub_views_breakdown (cfg : detail_config) (section : section_view) : change_breakdown =
+  (* First filter: remove unchanged if show_unchanged_fields is false *)
+  let sub_views = if cfg.show_unchanged_fields
+    then section.sub_views
+    else List.filter (fun v ->
+        match v with
+        | Field f -> f.change <> Unchanged
+        | Element e -> e.change <> Unchanged
+        | Collection c -> c.change <> Unchanged
+        | Section s -> s.change <> Unchanged
+      ) section.sub_views
+  in
+  (* Second filter: remove views that won't render due to type_overrides *)
+  let sub_views = List.filter (fun v ->
+      match v with
+      | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
+      | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
+      | Collection c ->
+        let col_level = get_effective_detail cfg c.change c.domain_type in
+        should_render_level col_level &&
+        (filter_collection_elements cfg c) <> []
+      | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
+    ) sub_views
+  in
+  (* Count by change type using helper *)
+  List.fold_left (fun (acc : change_breakdown) v ->
+    match v with
+    | Field f -> increment_breakdown acc f.change
+    | Element e -> increment_breakdown acc e.change
+    | Collection c -> increment_breakdown acc c.change
+    | Section s -> increment_breakdown acc s.change
+  ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) sub_views
 
 (* Preset configurations for common use cases *)
 
@@ -409,6 +486,15 @@ let pp_change_type cfg fmt = function
   | Removed -> Fmt.pf fmt "%s" cfg.prefix_removed
   | Modified -> Fmt.pf fmt "%s" cfg.prefix_modified
 
+(* Render a breakdown in Summary mode format *)
+let render_summary_breakdown cfg fmt breakdown name_symbol change_type =
+  let total = total_breakdown breakdown in
+  if total > 0 then
+    let count_str = format_breakdown breakdown in
+    Fmt.pf fmt "@[%a %s %s@]" (pp_change_type cfg) change_type name_symbol count_str
+  else
+    Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) change_type name_symbol
+
 (* Field value formatting *)
 let pp_field_value fmt = function
   | Fint i -> Fmt.pf fmt "%d" i
@@ -436,12 +522,7 @@ let pp_element cfg fmt (elem : element_view) =
   else
     (* Summary mode: name + change symbol *)
   if level = Summary then
-    let field_count = count_changed_fields elem in
-    if field_count > 0 then
-      Fmt.pf fmt "@[%a %s (%d Changed)@]"
-        (pp_change_type cfg) elem.change elem.name field_count
-    else
-      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
+    render_summary_breakdown cfg fmt (count_fields_breakdown elem) elem.name elem.change
     (* Compact mode: name + change symbol *)
   else if level = Compact then
     Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
@@ -464,12 +545,7 @@ let pp_collection cfg fmt (col : collection_view) =
     else
       (* Summary mode: name + change symbol *)
     if level = Summary then
-      let elem_count = count_changed_elements cfg col in
-      if elem_count > 0 then
-        Fmt.pf fmt "@[%a %s (%d Changed)@]"
-          (pp_change_type cfg) col.change col.name elem_count
-      else
-        Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
+      render_summary_breakdown cfg fmt (count_elements_breakdown cfg col) col.name col.change
       (* Compact mode: name + symbol, elements names + symbols *)
     else if level = Compact then
       Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
@@ -515,12 +591,7 @@ let rec pp_section cfg fmt (section : section_view) =
       if level = Summary then
         (* Don't show count for LiveSet - it shows sub-views in Summary mode *)
         if section.domain_type <> DTLiveset then (
-          let sub_view_count = count_changed_sub_views cfg section in
-          if sub_view_count > 0 then
-            Fmt.pf fmt "@[%a %s (%d Changed)@]"
-              (pp_change_type cfg) section.change section.name sub_view_count
-          else
-            Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
+          render_summary_breakdown cfg fmt (count_sub_views_breakdown cfg section) section.name section.change
         ) else (
           Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
         )
