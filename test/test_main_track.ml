@@ -73,8 +73,8 @@ let test_main_track_mixer () =
 
   (* Test MainMixer-specific parameters *)
   let tempo_value = match main_track.mixer.tempo.Device.GenericParam.value with
-    | Device.Int i -> i
-    | _ -> 0
+    | Device.Float f -> f
+    | _ -> 0.0
   in
   let time_signature_value = match main_track.mixer.time_signature.Device.GenericParam.value with
     | Device.Int i -> i
@@ -90,7 +90,7 @@ let test_main_track_mixer () =
   in
 
   (* Test MainMixer parameters against XML values *)
-  Alcotest.(check int) "tempo value" 120 tempo_value;
+  Alcotest.(check (float 0.001)) "tempo value" 120.0 tempo_value;
   Alcotest.(check int) "time signature value" 201 time_signature_value;
   Alcotest.(check int) "crossfade value" 0 crossfade_value;
   Alcotest.(check (float 0.001)) "global groove value" 100.0 global_groove_value;
@@ -162,10 +162,10 @@ let test_main_track_comprehensive () =
 
   (* Verify MainMixer tempo value *)
   let tempo_value = match main_track.mixer.tempo.Device.GenericParam.value with
-    | Device.Int i -> i
-    | _ -> 0
+    | Device.Float f -> f
+    | _ -> 0.0
   in
-  Alcotest.(check int) "tempo value" 120 tempo_value
+  Alcotest.(check (float 0.001)) "tempo value" 120.0 tempo_value
 
 let test_main_track_edge_case_empty () =
   (* Create a minimal main track XML with no automations or devices *)

@@ -148,9 +148,9 @@ let test_liveset_main_track_parsing () =
 
       (* 5. Test MainMixer-specific properties *)
       (match main_track.mixer.Alsdiff_live.Track.MainMixer.tempo.value with
-       | Alsdiff_live.Device.Int tempo_value ->
-           Alcotest.(check int) "tempo value" 120 tempo_value
-       | _ -> Alcotest.fail "expected Int tempo value");
+       | Alsdiff_live.Device.Float tempo_value ->
+           Alcotest.(check (float 0.001)) "tempo value" 120.0 tempo_value
+       | _ -> Alcotest.fail "expected Float tempo value");
 
       (* 6. Test routing configuration *)
       Alcotest.(check string) "audio out target" "AudioOut/External/S0"

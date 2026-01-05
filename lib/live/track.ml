@@ -404,9 +404,9 @@ module MainMixer = struct
 
   let create (xml : Xml.t) : t =
     let base = Mixer.create xml in
-    let tempo = Upath.find "/Tempo" xml |> snd |> GenericParam.create_int_manual in
+    let tempo = Upath.find "/Tempo" xml |> snd |> GenericParam.create_float_manual in
     let time_signature = Upath.find "/TimeSignature" xml |> snd |> GenericParam.create_int_manual in
-    let crossfade = Upath.find "/CrossFade" xml |> snd |> GenericParam.create_int_manual in
+    let crossfade = Upath.find "/CrossFade" xml |> snd |> GenericParam.create_float_manual in
     let global_groove = Upath.find "/GlobalGrooveAmount" xml |> snd |> GenericParam.create_float_manual in
     { base; tempo; time_signature; crossfade; global_groove; }
 
