@@ -81,8 +81,8 @@ let () =
     Eio_main.run @@ fun env ->
     main ~domain_mgr:(Eio.Stdenv.domain_mgr env)
   with
-  | Xml.Invalid_Xml (xml, msg) ->
-      Fmt.epr "Invalid XML: %a@." Xml.pp_invalid_xml (xml, msg)
+  | Xml.Xml_error (xml, msg) ->
+    Fmt.epr "Invalid XML: %a@." Xml.pp_xml_error (xml, msg)
   | e ->
-      Fmt.epr "Error: %s@." (Printexc.to_string e);
-      raise e
+    Fmt.epr "Error: %s@." (Printexc.to_string e);
+    raise e

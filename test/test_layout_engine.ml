@@ -89,7 +89,7 @@ let test_removed_summary () =
   Format.pp_print_flush ppf ();
   let output = Buffer.contents buffer in
   (* Summary mode shows name with change symbol *)
-  Alcotest.(check string) "removed summary" "- MidiClip" (String.trim output)
+  Alcotest.(check string) "removed summary" "- MidiClip (1 Changed)" (String.trim output)
 
 (* New test: Collection item limiting *)
 let test_collection_limit () =

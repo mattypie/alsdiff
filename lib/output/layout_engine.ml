@@ -3,7 +3,7 @@ open View_model
 (** How much detail to show for a particular diff item. *)
 type detail_level =
   | None     (** Completely hide the item - not rendered at all *)
-  | Summary  (** Show name + change symbol, but no field details *)
+  | Summary  (** Show name + change symbol + count of changed items (no field details) *)
   | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
   | Full     (** Show name + change symbol + all fields/sub-views *)
 
@@ -135,6 +135,43 @@ let filter_collection_elements
     match cfg.max_collection_items with
     | None -> filtered
     | Some n -> List.take n filtered
+
+(* Count changed fields in an element *)
+let count_changed_fields (elem : element_view) : int =
+  List.filter (fun (f : field_view) -> f.change <> Unchanged) elem.fields
+  |> List.length
+
+(* Count filtered elements in a collection *)
+let count_changed_elements (cfg : detail_config) (col : collection_view) : int =
+  let filtered = filter_collection_elements cfg col in
+  List.length filtered
+
+(* Count filtered sub-views in a section *)
+let count_changed_sub_views (cfg : detail_config) (section : section_view) : int =
+  (* First filter: remove unchanged if show_unchanged_fields is false *)
+  let sub_views = if cfg.show_unchanged_fields
+    then section.sub_views
+    else List.filter (fun v ->
+        match v with
+        | Field f -> f.change <> Unchanged
+        | Element e -> e.change <> Unchanged
+        | Collection c -> c.change <> Unchanged
+        | Section s -> s.change <> Unchanged
+      ) section.sub_views
+  in
+  (* Second filter: remove views that won't render due to type_overrides *)
+  let sub_views = List.filter (fun v ->
+      match v with
+      | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
+      | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
+      | Collection c ->
+        let col_level = get_effective_detail cfg c.change c.domain_type in
+        should_render_level col_level &&
+        (filter_collection_elements cfg c) <> []
+      | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
+    ) sub_views
+  in
+  List.length sub_views
 
 (* Preset configurations for common use cases *)
 
@@ -399,7 +436,12 @@ let pp_element cfg fmt (elem : element_view) =
   else
     (* Summary mode: name + change symbol *)
   if level = Summary then
-    Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
+    let field_count = count_changed_fields elem in
+    if field_count > 0 then
+      Fmt.pf fmt "@[%a %s (%d Changed)@]"
+        (pp_change_type cfg) elem.change elem.name field_count
+    else
+      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
     (* Compact mode: name + change symbol *)
   else if level = Compact then
     Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
@@ -422,7 +464,12 @@ let pp_collection cfg fmt (col : collection_view) =
     else
       (* Summary mode: name + change symbol *)
     if level = Summary then
-      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
+      let elem_count = count_changed_elements cfg col in
+      if elem_count > 0 then
+        Fmt.pf fmt "@[%a %s (%d Changed)@]"
+          (pp_change_type cfg) col.change col.name elem_count
+      else
+        Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
       (* Compact mode: name + symbol, elements names + symbols *)
     else if level = Compact then
       Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
@@ -466,7 +513,17 @@ let rec pp_section cfg fmt (section : section_view) =
     (* Render section header *)
     begin
       if level = Summary then
-        Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
+        (* Don't show count for LiveSet - it shows sub-views in Summary mode *)
+        if section.domain_type <> DTLiveset then (
+          let sub_view_count = count_changed_sub_views cfg section in
+          if sub_view_count > 0 then
+            Fmt.pf fmt "@[%a %s (%d Changed)@]"
+              (pp_change_type cfg) section.change section.name sub_view_count
+          else
+            Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
+        ) else (
+          Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
+        )
       else if level = Compact then
         Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
       else
