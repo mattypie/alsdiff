@@ -137,7 +137,7 @@ let test_plugin_parameter_invalid_type_raises_exception () =
 
   (* Should raise an exception *)
   (try ignore (PluginParam.create xml); false
-   with Alsdiff_base.Xml.Invalid_Xml (_, msg) when msg = "Invalid parameter type InvalidParameterType" -> true
+   with Alsdiff_base.Xml.Xml_error (_, msg) when msg = "Invalid parameter type InvalidParameterType" -> true
    | _ -> false)
   |> Alcotest.(check bool) "invalid parameter type raises exception" true
 

@@ -40,7 +40,7 @@ let test_device_creation_with_invalid_xml () =
 
   (* This should raise an exception *)
   (try ignore (Device.RegularDevice.create invalid_xml); false
-   with Alsdiff_base.Xml.Invalid_Xml (_, msg) when msg = "Invalid XML element for creating Device" -> true
+   with Alsdiff_base.Xml.Xml_error (_, msg) when msg = "Invalid XML element for creating Device" -> true
    | _ -> false)
   |> Alcotest.(check bool) "invalid xml raises exception" true
 
@@ -50,7 +50,7 @@ let test_param_creation_with_invalid_xml () =
 
   (* This should raise an exception *)
   (try ignore (Device.DeviceParam.create "test" invalid_xml); false
-   with Alsdiff_base.Xml.Invalid_Xml (_, msg) when msg = "Invalid XML element for creating DeviceParam" -> true
+   with Alsdiff_base.Xml.Xml_error (_, msg) when msg = "Invalid XML element for creating DeviceParam" -> true
    | _ -> false)
   |> Alcotest.(check bool) "invalid xml raises exception" true
 

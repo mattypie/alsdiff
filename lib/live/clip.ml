@@ -10,7 +10,7 @@ module TimeSignature = struct
       let numer = Upath.get_int_attr "/Numerator" "Value" xml in
       let denom = Upath.get_int_attr "/Denominator" "Value" xml in
       { numer; denom }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating TimeSignature"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating TimeSignature"))
 
   module Patch = struct
     type t = {
@@ -56,7 +56,7 @@ module MidiNote = struct
       let velocity = Xml.get_int_attr "Velocity" xml in
       let off_velocity = Xml.get_int_attr "OffVelocity" xml in
       { id; note; time; duration; velocity; off_velocity }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating MidiNote"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating MidiNote"))
 
 
   module Patch = struct
@@ -131,7 +131,7 @@ module Loop = struct
       let end_ = Upath.get_float_attr "/LoopEnd" "Value" xml in
       let on = Upath.get_bool_attr "/LoopOn" "Value" xml in
       { start_time = start; end_time = end_; on; }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating Loop"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating Loop"))
 
 
   module Patch = struct
@@ -196,7 +196,7 @@ module MidiClip = struct
       in
 
       { id; name; start_time; end_time; loop; signature; notes }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Expected MidiClip element"))
+    | _ -> raise (Xml.Xml_error (xml, "Expected MidiClip element"))
 
   let has_same_id a b = a.id = b.id
   let id_hash t = Hashtbl.hash t.id
@@ -282,7 +282,7 @@ module SampleRef = struct
       let file_path = Upath.get_attr "FileRef/Path" "Value" xml in
       let crc = Upath.get_attr "FileRef/OriginalCrc" "Value" xml in
       { file_path; crc; last_modified_date }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating SampleRef"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating SampleRef"))
 
 
   let diff (old_sample_ref : t) (new_sample_ref : t) : Patch.t =
@@ -329,7 +329,7 @@ module AudioClip = struct
       (* Extract sample reference *)
       let sample_ref = Upath.find "/SampleRef" xml |> snd |> SampleRef.create in
       { id; name; start_time; end_time; loop; signature; sample_ref }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Expected AudioClip element"))
+    | _ -> raise (Xml.Xml_error (xml, "Expected AudioClip element"))
 
   let has_same_id a b = a.id = b.id
   let id_hash t = Hashtbl.hash t.id
