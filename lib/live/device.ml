@@ -143,7 +143,7 @@ module MIDIMapping = struct
 
   let create (xml : Xml.t) : t =
     if not (has_macro_mapping xml) then
-      raise (Xml.Invalid_Xml (xml, "It's not a MIDIMapping"))
+      raise (Xml.Xml_error (xml, "It's not a MIDIMapping"))
     else
       let target = Upath.get_int_attr "/KeyMidi/NoteOrController" "Value" xml in
       let channel = Upath.get_int_attr "/KeyMidi/Channel" "Value" xml in
@@ -152,7 +152,7 @@ module MIDIMapping = struct
       let (low, high, kind) = match (continuous, onoff) with
         | Some (l, h), None -> (l, h, Continuous)
         | None, Some (l, h) -> (l, h, OnOff)
-        | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML for creating a MIDIMapping"))
+        | _ -> raise (Xml.Xml_error (xml, "Invalid XML for creating a MIDIMapping"))
       in
       { target; channel; kind; low; high }
 
@@ -287,7 +287,7 @@ module DeviceParam = struct
       let base = GenericParam.create ~parse_value xml in
       let name_updated_base = { base with name } in
       { base = name_updated_base }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating DeviceParam"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating DeviceParam"))
 
   let create_from_upath_find (path, xml) = create path xml
 
@@ -337,7 +337,7 @@ module PresetRef = struct
         match tag with
         | "FilePresetRef" -> UserPreset
         | "AbletonDefaultPresetRef" -> DefaultPreset
-        | _ -> raise (Xml.Invalid_Xml (xml, "Unknown PresetRef type" ^ tag))
+        | _ -> raise (Xml.Xml_error (xml, "Unknown PresetRef type" ^ tag))
       in
 
       (* Extract FileRef element *)
@@ -345,7 +345,7 @@ module PresetRef = struct
         try List.find (function
           | Xml.Element { name = "FileRef"; _ } -> true
           | _ -> false) childs
-        with Not_found -> raise (Xml.Invalid_Xml (xml, "FileRef element not found in PresetRef"))
+        with Not_found -> raise (Xml.Xml_error (xml, "FileRef element not found in PresetRef"))
       in
 
       (* Extract all the required fields from FileRef *)
@@ -366,7 +366,7 @@ module PresetRef = struct
       let crc = Upath.get_int_attr_opt "/OriginalCrc" "Value" file_ref_xml |> Option.value ~default:0 in
 
       { id; name; preset_type; relative_path; path; pack_name; pack_id; file_size; crc }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating PresetRef"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating PresetRef"))
 
   module Patch = struct
     type t = {
@@ -439,7 +439,7 @@ module PatchRef = struct
         try List.find (function
           | Xml.Element { name = "FileRef"; _ } -> true
           | _ -> false) childs
-        with Not_found -> raise (Xml.Invalid_Xml (xml, "FileRef element not found in MxPatchRef"))
+        with Not_found -> raise (Xml.Xml_error (xml, "FileRef element not found in MxPatchRef"))
       in
 
       (* Extract all the required fields from FileRef *)
@@ -460,7 +460,7 @@ module PatchRef = struct
       let crc = Upath.get_int_attr_opt "/OriginalCrc" "Value" file_ref_xml |> Option.value ~default:0 in
 
       { id; name; preset_type; relative_path; path; pack_name; pack_id; file_size; crc; last_mod_date }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating PatchRef (expected MxPatchRef)"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating PatchRef (expected MxPatchRef)"))
 
   module Patch = struct
     type t = {
@@ -531,7 +531,7 @@ module PluginParam = struct
       | "PluginEnumParameter" ->
         (* failwith "PluginEnumParameter parsing not yet implemented - needs further analysis of Ableton Live XML format" *)
         Float (Upath.get_float_attr "/Manual" "Value" val_xml)  (* FIXME: Temporary fallback *)
-      | _ -> raise (Xml.Invalid_Xml (xml, "Invalid parameter type " ^ param_type))
+      | _ -> raise (Xml.Xml_error (xml, "Invalid parameter type " ^ param_type))
     in
     let base = Upath.find "/ParameterValue" xml |> snd |> GenericParam.create ~parse_value in
     let name = Upath.get_attr "/ParameterName" "Value" xml in
@@ -737,7 +737,7 @@ module PluginDesc = struct
       | "Vst3PluginInfo" -> Vst3
       | "VstPluginInfo" -> Vst2
       | "AuPluginInfo" -> Auv2
-      | name -> raise (Xml.Invalid_Xml (plugin_info_xml, "Unsupported plugin type: " ^ name))
+      | name -> raise (Xml.Xml_error (plugin_info_xml, "Unsupported plugin type: " ^ name))
     in
 
     let (name, uid, state) =
@@ -832,8 +832,8 @@ module Max4LiveParam = struct
         let enum_desc_opt = extract_enum_desc xml in
         (match enum_desc_opt with
          | Some enum_desc  -> Enum (enum_value, enum_desc)
-         | None -> raise (Xml.Invalid_Xml (xml, "Haven't found enum definitions")))
-      | _ -> raise (Xml.Invalid_Xml (xml, "Invalid M4L parameter type: " ^ param_type))
+         | None -> raise (Xml.Xml_error (xml, "Haven't found enum definitions")))
+      | _ -> raise (Xml.Xml_error (xml, "Invalid M4L parameter type: " ^ param_type))
     in
 
     let name = Upath.get_attr "/Name" "Value" xml in
@@ -891,7 +891,7 @@ module MixerDevice = struct
       let volume = Upath.find "/Volume" xml |> DeviceParam.create_from_upath_find in
       let pan = Upath.find "/Panorama" xml |> DeviceParam.create_from_upath_find in
       { on; speaker; volume; pan }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating MixerDevice"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating MixerDevice"))
 
   module Patch = struct
     type t = {
@@ -960,7 +960,7 @@ module Macro = struct
     let control_id = extract_index_from_name @@ Xml.get_name control_xml in
     let base = GenericParam.create_float_manual control_xml in
     if name_id <> control_id then
-      raise (Xml.Invalid_Xml (name_xml, "Macro name ID " ^ string_of_int name_id ^ " does not match control ID " ^ string_of_int control_id ^ ". Macro names and controls must be paired correctly."))
+      raise (Xml.Xml_error (name_xml, "Macro name ID " ^ string_of_int name_id ^ " does not match control ID " ^ string_of_int control_id ^ ". Macro names and controls must be paired correctly."))
     else
     { id=name_id; base; }
 
@@ -1005,7 +1005,7 @@ module Snapshot = struct
         List.map (fun (_, xml_elem) ->
           let element_name = match xml_elem with
             | Xml.Element { name; _ } -> name
-            | Xml.Data _ -> raise (Xml.Invalid_Xml (xml_elem, "Expected Element, got Data"))
+            | Xml.Data _ -> raise (Xml.Xml_error (xml_elem, "Expected Element, got Data"))
           in
           let index = extract_index_from_name element_name in
           let value = Xml.get_float_attr "Value" xml_elem in
@@ -1016,7 +1016,7 @@ module Snapshot = struct
       in
 
       { id; name; values }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating Snapshot"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating Snapshot"))
 
   module Patch = struct
     type t = {
@@ -1360,7 +1360,7 @@ module RegularDevice = struct
         |> List.map DeviceParam.create_from_upath_find
       in
       { id; device_name=name; display_name; pointee; enabled; params; preset }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating Device"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating Device"))
 
   module Patch = struct
     type t = regular_device_patch
@@ -1489,7 +1489,7 @@ module GroupDevice = struct
         |> List.map (fun (n,c) ->
             let element_name = match (snd n) with
               | Xml.Element { name; _ } -> name
-              | Xml.Data _ -> raise (Xml.Invalid_Xml (snd n, "Expected Element, got Data"))
+              | Xml.Data _ -> raise (Xml.Xml_error (snd n, "Expected Element, got Data"))
             in
             let index = extract_index_from_name element_name in
             let macro = Macro.create (snd n) (snd c) in

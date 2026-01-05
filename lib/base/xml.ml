@@ -2,34 +2,47 @@ type t =
   | Element of { name: string; attrs: (string * string) list; childs: t list }
   | Data of string
 
-exception Invalid_Xml of t * string
+exception Xml_error of t * string
 
 let get_name = function
   | Element { name; _ } -> name
-  | Data _ -> invalid_arg "Cannot get childs from Data"
+  | Data _ as xml -> raise (Xml_error (xml, "Cannot get name from XML Data node"))
 
 let get_childs = function
   | Element { childs; _ } -> childs
-  | Data _ -> invalid_arg "Cannot get childs from Data"
+  | Data _ as xml -> raise (Xml_error (xml, "Cannot get children from XML Data node"))
 
 let get_value = function
   | Data value -> value
-  | Element _ -> invalid_arg "Cannot get value from Element"
+  | Element _ as xml -> raise (Xml_error (xml, "Cannot get value from XML Element node"))
 
 
 let get_attr name xml =
   match xml with
-  | Element { attrs; _ } -> List.assoc name attrs
-  | Data _ -> raise (Invalid_argument "Can not found attribute in a XML Data")
+  | Element { attrs; _ } ->
+    (try List.assoc name attrs
+     with Not_found ->
+       raise (Xml_error (xml, Printf.sprintf "Attribute '%s' not found" name)))
+  | Data _ ->
+    raise (Xml_error (xml, "Cannot get attribute from XML Data node"))
 
 let get_int_attr name xml =
-  get_attr name xml |> int_of_string
+  let value = get_attr name xml in
+  try int_of_string value
+  with Failure _ ->
+    raise (Xml_error (xml, Printf.sprintf "Invalid integer value for attribute '%s': '%s'" name value))
 
 let get_float_attr name xml =
-  get_attr name xml |> float_of_string
+  let value = get_attr name xml in
+  try float_of_string value
+  with Failure _ ->
+    raise (Xml_error (xml, Printf.sprintf "Invalid float value for attribute '%s': '%s'" name value))
 
 let get_int64_attr name xml =
-  get_attr name xml |> Int64.of_string
+  let value = get_attr name xml in
+  try Int64.of_string value
+  with Failure _ ->
+    raise (Xml_error (xml, Printf.sprintf "Invalid int64 value for attribute '%s': '%s'" name value))
 
 let get_attr_opt name xml =
   match xml with
@@ -134,5 +147,5 @@ let rec pp_compact fmt = function
 let to_string xml =
   Fmt.str "%a" pp xml
 
-let pp_invalid_xml fmt (xml, msg) =
+let pp_xml_error fmt (xml, msg) =
   Fmt.pf fmt "%s@\nProblematic XML:\n%a@\n" msg pp xml

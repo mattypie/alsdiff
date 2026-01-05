@@ -475,10 +475,27 @@ let get_bool_attr_opt path attr tree = Option.bind (get_attr_opt path attr tree)
 let get_int64_attr_opt path attr tree = Option.bind (get_attr_opt path attr tree) Int64.of_string_opt
 
 let get_attr path attr tree = find_attr path attr tree |> snd
-let get_int_attr path attr tree = get_attr path attr tree |> int_of_string
-let get_float_attr path attr tree = get_attr path attr tree |> float_of_string
-let get_bool_attr path attr tree = get_attr path attr tree |> String.lowercase_ascii |> bool_of_string
-let get_int64_attr path attr tree = get_attr path attr tree |> Int64.of_string
+let get_int_attr path attr tree =
+  let value = get_attr path attr tree in
+  try int_of_string value
+  with Failure _ ->
+    raise (Xml.Xml_error (tree, Printf.sprintf "Invalid integer value for attribute '%s' at path '%s': '%s'" attr path value))
+let get_float_attr path attr tree =
+  let value = get_attr path attr tree in
+  try float_of_string value
+  with Failure _ ->
+    raise (Xml.Xml_error (tree, Printf.sprintf "Invalid float value for attribute '%s' at path '%s': '%s'" attr path value))
+let get_bool_attr path attr tree =
+  let value = get_attr path attr tree in
+  let lower = String.lowercase_ascii value in
+  try bool_of_string lower
+  with Failure _ ->
+    raise (Xml.Xml_error (tree, Printf.sprintf "Invalid boolean value for attribute '%s' at path '%s': '%s'" attr path value))
+let get_int64_attr path attr tree =
+  let value = get_attr path attr tree in
+  try Int64.of_string value
+  with Failure _ ->
+    raise (Xml.Xml_error (tree, Printf.sprintf "Invalid int64 value for attribute '%s' at path '%s': '%s'" attr path value))
 
 
 (* Equality and pretty printing functions for testing *)

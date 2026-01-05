@@ -16,7 +16,7 @@ module Locator = struct
       let name = Upath.get_attr "/Name" "Value" xml in
       let time = Upath.get_float_attr "/Time" "Value" xml in
       { id; name; time }
-    | _ -> raise (Xml.Invalid_Xml (xml, "Invalid XML element for creating Locator"))
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating Locator"))
 
   let has_same_id a b = a.id = b.id
   let id_hash t = Hashtbl.hash t.id
@@ -188,11 +188,11 @@ let create (xml : Xml.t) (file_path : string) : t =
       (* Check for LiveSet child *)
       (match Upath.find_opt "LiveSet" xml with
        | Some _ -> ()
-       | None -> raise (Xml.Invalid_Xml (xml, "Invalid Ableton file: missing LiveSet element")))
+       | None -> raise (Xml.Xml_error (xml, "Invalid Ableton file: missing LiveSet element")))
   | Xml.Element { name; _ } ->
-      raise (Xml.Invalid_Xml (xml, "Invalid Ableton file: expected root element 'Ableton', got '" ^ name ^ "'"))
+      raise (Xml.Xml_error (xml, "Invalid Ableton file: expected root element 'Ableton', got '" ^ name ^ "'"))
   | _ ->
-      raise (Xml.Invalid_Xml (xml, "Invalid Ableton file: root is not an element"))
+      raise (Xml.Xml_error (xml, "Invalid Ableton file: root is not an element"))
   );
 
   (* 2. Extract version information *)
