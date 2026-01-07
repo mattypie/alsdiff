@@ -4,12 +4,12 @@ open Alsdiff_output.View_model
 
 let test_compact () =
   let view =
-    Element {
+    Item {
       name = "MidiClip";
       change = Modified;
       domain_type = DTOther;
-      fields = [
-        { name = "Name"; change = Modified; domain_type = DTOther; oldval = Some (Fstring "Old"); newval = Some (Fstring "New") }
+      children = [
+        Field { name = "Name"; change = Modified; domain_type = DTOther; oldval = Some (Fstring "Old"); newval = Some (Fstring "New") }
       ]
     }
   in
@@ -24,12 +24,12 @@ let test_compact () =
 
 let test_full () =
   let view =
-    Element {
+    Item {
       name = "MidiClip";
       change = Modified;
       domain_type = DTOther;
-      fields = [
-        { name = "Name"; change = Modified; domain_type = DTOther; oldval = Some (Fstring "Old"); newval = Some (Fstring "New") }
+      children = [
+        Field { name = "Name"; change = Modified; domain_type = DTOther; oldval = Some (Fstring "Old"); newval = Some (Fstring "New") }
       ]
     }
   in
@@ -49,13 +49,13 @@ let test_collection () =
       name = "Notes";
       change = Modified;
       domain_type = DTOther;
-      elements = [
-        {
+      items = [
+        Item {
           name = "Note";
           change = Added;
           domain_type = DTOther;
-          fields = [
-             { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint 60) }
+          children = [
+             Field { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint 60) }
           ]
         }
       ]
@@ -73,12 +73,12 @@ let test_collection () =
 (* New test: Removed items show summary only *)
 let test_removed_summary () =
   let view =
-    Element {
+    Item {
       name = "MidiClip";
       change = Removed;
       domain_type = DTOther;
-      fields = [
-        { name = "Name"; change = Removed; domain_type = DTOther; oldval = Some (Fstring "Test"); newval = None }
+      children = [
+        Field { name = "Name"; change = Removed; domain_type = DTOther; oldval = Some (Fstring "Test"); newval = None }
       ]
     }
   in
@@ -93,10 +93,10 @@ let test_removed_summary () =
 
 (* New test: Collection item limiting *)
 let test_collection_limit () =
-  let elements = List.init 100 (fun i ->
-    { name = "Note"; change = Added; domain_type = DTOther; fields = [{ name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint i) }] }
+  let items = List.init 100 (fun i ->
+    Item { name = "Note"; change = Added; domain_type = DTOther; children = [Field { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint i) }] }
   ) in
-  let view = Collection { name = "Notes"; change = Added; domain_type = DTOther; elements } in
+  let view = Collection { name = "Notes"; change = Added; domain_type = DTOther; items } in
   let cfg = { full with max_collection_items = Some 10 } in
   let buffer = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buffer in
@@ -113,11 +113,11 @@ let test_collection_limit () =
 let test_none_level () =
   let cfg = { full with unchanged = None } in
   let view =
-    Element {
+    Item {
       name = "MidiClip";
       change = Unchanged;
       domain_type = DTOther;
-      fields = []
+      children = []
     }
   in
   let buffer = Buffer.create 1024 in
@@ -246,18 +246,18 @@ let test_rendering_with_nested_overrides () =
   } in
 
   (* Create test views *)
-  let added_device = Element {
+  let added_device = Item {
     name = "Operator";
     change = Added;
     domain_type = DTDevice;
-    fields = [{name = "Preset"; change = Added; domain_type = DTDevice; oldval = None; newval = Some (Fstring "Init")}];
+    children = [Field {name = "Preset"; change = Added; domain_type = DTDevice; oldval = None; newval = Some (Fstring "Init")}];
   } in
 
-  let removed_device = Element {
+  let removed_device = Item {
     name = "Echo";
     change = Removed;
     domain_type = DTDevice;
-    fields = [];
+    children = [];
   } in
 
   (* Render and verify output differs *)

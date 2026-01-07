@@ -26,8 +26,8 @@ let load_liveset ~domain_mgr file =
 (** [create_views change] converts a Liveset structured change into view objects. *)
 let create_views (change : (Liveset.t, Liveset.Patch.t) Diff.structured_change)
   : View_model.view list =
-  let section_view = View_model.create_liveset_view change in
-  [View_model.Section section_view]
+  let item = View_model.create_liveset_item change in
+  [View_model.Item item]
 
 (** [render_views config views] renders a list of views to a string using the layout engine. *)
 let render_views config (views : View_model.view list) : string =

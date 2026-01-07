@@ -121,61 +121,76 @@ let should_render_level (level : detail_level) : bool =
   | Summary | Compact | Full -> true
 
 (* Helper to check if we should show fields for an element *)
-let should_show_fields (cfg : detail_config) (elem : element_view) : bool =
+let should_show_fields (cfg : detail_config) (elem : item) : bool =
   let level = get_effective_detail cfg elem.change elem.domain_type in
-  level = Full && elem.fields <> []
+  level = Full && elem.children <> []
+
+(* Helper to check if an item is element-like (all children are Field views) *)
+let is_element_like_item (elem : item) : bool =
+  elem.children <> [] &&
+  List.for_all (fun (v : view) ->
+    match v with
+    | Field _ -> true
+    | Item _ -> false
+    | Collection _ -> false
+  ) elem.children
 
 (* Helper to filter and limit collection elements *)
 let filter_collection_elements
     (cfg : detail_config)
-    (col : collection_view)
-  : element_view list =
+    (col : collection)
+  : item list =
   let level : detail_level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then []
   else
-    let filtered : element_view list =
-      List.filter (fun (e : element_view) ->
-          let elem_level : detail_level = get_effective_detail cfg e.change e.domain_type in
-          should_render_level elem_level
-        ) col.elements
+    let filtered : item list =
+      List.filter_map (fun (v : view) ->
+          match v with
+          | Item e ->
+              let elem_level : detail_level = get_effective_detail cfg e.change e.domain_type in
+              if should_render_level elem_level then Some e else None
+          | _ -> None
+        ) col.items
     in
     match cfg.max_collection_items with
     | None -> filtered
     | Some n -> List.take n filtered
 
 (* Count changed fields in an element *)
-let count_changed_fields (elem : element_view) : int =
-  List.filter (fun (f : field_view) -> f.change <> Unchanged) elem.fields
+let count_changed_fields (elem : item) : int =
+  List.filter (fun (v : view) ->
+    match v with
+    | Field f -> f.change <> Unchanged
+    | _ -> false
+  ) elem.children
   |> List.length
 
 (* Count filtered elements in a collection *)
-let count_changed_elements (cfg : detail_config) (col : collection_view) : int =
+let count_changed_elements (cfg : detail_config) (col : collection) : int =
   let filtered = filter_collection_elements cfg col in
   List.length filtered
 
 (* Count filtered sub-views in a section *)
-let count_changed_sub_views (cfg : detail_config) (section : section_view) : int =
+let count_changed_sub_views (cfg : detail_config) (section : item) : int =
   (* First filter: remove unchanged if show_unchanged_fields is false *)
   let sub_views = if cfg.show_unchanged_fields
-    then section.sub_views
+    then section.children
     else List.filter (fun v ->
         match v with
         | Field f -> f.change <> Unchanged
-        | Element e -> e.change <> Unchanged
+        | Item e -> e.change <> Unchanged
         | Collection c -> c.change <> Unchanged
-        | Section s -> s.change <> Unchanged
-      ) section.sub_views
+      ) section.children
   in
   (* Second filter: remove views that won't render due to type_overrides *)
   let sub_views = List.filter (fun v ->
       match v with
       | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
-      | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
+      | Item e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
       | Collection c ->
         let col_level = get_effective_detail cfg c.change c.domain_type in
         should_render_level col_level &&
         (filter_collection_elements cfg c) <> []
-      | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
     ) sub_views
   in
   List.length sub_views
@@ -206,48 +221,48 @@ let increment_breakdown (acc : change_breakdown) (ct : change_type) : change_bre
   | Unchanged -> acc
 
 (* Count fields by change type *)
-let count_fields_breakdown (elem : element_view) : change_breakdown =
-  List.fold_left (fun (acc : change_breakdown) (f : field_view) -> increment_breakdown acc f.change)
-    ({ added = 0; removed = 0; modified = 0 } : change_breakdown) elem.fields
+let count_fields_breakdown (elem : item) : change_breakdown =
+  List.fold_left (fun (acc : change_breakdown) (v : view) ->
+    match v with
+    | Field f -> increment_breakdown acc f.change
+    | _ -> acc
+  ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) elem.children
 
 (* Count filtered elements by change type *)
-let count_elements_breakdown (cfg : detail_config) (col : collection_view) : change_breakdown =
+let count_elements_breakdown (cfg : detail_config) (col : collection) : change_breakdown =
   let filtered = filter_collection_elements cfg col in
-  List.fold_left (fun (acc : change_breakdown) (e : element_view) -> increment_breakdown acc e.change)
+  List.fold_left (fun (acc : change_breakdown) (e : item) -> increment_breakdown acc e.change)
     ({ added = 0; removed = 0; modified = 0 } : change_breakdown) filtered
 
 (* Count filtered sub-views by change type *)
-let count_sub_views_breakdown (cfg : detail_config) (section : section_view) : change_breakdown =
+let count_sub_views_breakdown (cfg : detail_config) (section : item) : change_breakdown =
   (* First filter: remove unchanged if show_unchanged_fields is false *)
   let sub_views = if cfg.show_unchanged_fields
-    then section.sub_views
+    then section.children
     else List.filter (fun v ->
         match v with
         | Field f -> f.change <> Unchanged
-        | Element e -> e.change <> Unchanged
+        | Item e -> e.change <> Unchanged
         | Collection c -> c.change <> Unchanged
-        | Section s -> s.change <> Unchanged
-      ) section.sub_views
+      ) section.children
   in
   (* Second filter: remove views that won't render due to type_overrides *)
   let sub_views = List.filter (fun v ->
       match v with
       | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
-      | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
+      | Item e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
       | Collection c ->
         let col_level = get_effective_detail cfg c.change c.domain_type in
         should_render_level col_level &&
         (filter_collection_elements cfg c) <> []
-      | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
     ) sub_views
   in
   (* Count by change type using helper *)
   List.fold_left (fun (acc : change_breakdown) v ->
     match v with
     | Field f -> increment_breakdown acc f.change
-    | Element e -> increment_breakdown acc e.change
+    | Item e -> increment_breakdown acc e.change
     | Collection c -> increment_breakdown acc c.change
-    | Section s -> increment_breakdown acc s.change
   ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) sub_views
 
 (* Preset configurations for common use cases *)
@@ -503,7 +518,7 @@ let pp_field_value fmt = function
   | Fstring s -> Fmt.pf fmt "%s" s
 
 (* Field view rendering *)
-let pp_field cfg fmt (field : field_view) =
+let pp_field cfg fmt (field : field) =
   (* Always render if called - filtering happens at parent level *)
   Fmt.pf fmt "@[<h>  %a %s: " (pp_change_type cfg) field.change field.name;
   match field.oldval, field.newval with
@@ -516,7 +531,7 @@ let pp_field cfg fmt (field : field_view) =
   | None, None -> Fmt.pf fmt "@]"
 
 (* Element view rendering *)
-let pp_element cfg fmt (elem : element_view) =
+let pp_item cfg fmt (elem : item) =
   let level = get_effective_detail cfg elem.change elem.domain_type in
   if not (should_render_level level) then ()
   else
@@ -531,12 +546,17 @@ let pp_element cfg fmt (elem : element_view) =
     Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
   if should_show_fields cfg elem then (
     Fmt.cut fmt ();
-    Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt elem.fields
+    let fields = List.filter_map (fun (v : view) ->
+      match v with
+      | Field f -> Some f
+      | _ -> None
+    ) elem.children in
+    Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt fields
   );
   Fmt.pf fmt "@]"
 
 (* Collection view rendering *)
-let pp_collection cfg fmt (col : collection_view) =
+let pp_collection cfg fmt (col : collection) =
   let level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then ()
   else
@@ -554,37 +574,35 @@ let pp_collection cfg fmt (col : collection_view) =
       Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) col.change col.name;
     List.iter (fun e ->
         Fmt.pf fmt "@\n";
-        pp_element cfg fmt e
+        pp_item cfg fmt e
       ) elements;
     Fmt.pf fmt "@]"
 
 (* Section view rendering *)
-let rec pp_section cfg fmt (section : section_view) =
+let rec pp_section cfg fmt (section : item) =
   let level = get_effective_detail cfg section.change section.domain_type in
   if not (should_render_level level) then ()
   else
     (* Filter sub_views based on show_unchanged_fields and detail levels *)
     let sub_views = if cfg.show_unchanged_fields
-      then section.sub_views
+      then section.children
       else List.filter (fun v ->
           match v with
           | Field f -> f.change <> Unchanged
-          | Element e -> e.change <> Unchanged
+          | Item e -> e.change <> Unchanged
           | Collection c -> c.change <> Unchanged
-          | Section s -> s.change <> Unchanged
-        ) section.sub_views
+        ) section.children
     in
     (* Further filter to remove views that will render nothing due to type_overrides *)
     let sub_views = List.filter (fun v ->
         match v with
         | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
-        | Element e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
+        | Item e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
         | Collection c ->
           let col_level = get_effective_detail cfg c.change c.domain_type in
           should_render_level col_level &&
           (* Also check if any elements would render *)
           (filter_collection_elements cfg c) <> []
-        | Section s -> should_render_level (get_effective_detail cfg s.change s.domain_type)
       ) sub_views in
     (* Render section header *)
     begin
@@ -612,9 +630,13 @@ let rec pp_section cfg fmt (section : section_view) =
 (* Main view rendering function *)
 and pp_view cfg fmt = function
   | Field field -> pp_field cfg fmt field
-  | Element elem -> pp_element cfg fmt elem
+  | Item elem ->
+    (* Dispatch to pp_item for element-like items, pp_section for section-like items *)
+    if is_element_like_item elem then
+      pp_item cfg fmt elem
+    else
+      pp_section cfg fmt elem
   | Collection col -> pp_collection cfg fmt col
-  | Section sect -> pp_section cfg fmt sect
 
 (* Top-level pp function - main entry point *)
 let pp cfg fmt view =
@@ -623,3 +645,4 @@ let pp cfg fmt view =
 (* Top-level render function for string output *)
 let render_to_string cfg view =
   Fmt.str "%a" (pp_view cfg) view
+
