@@ -460,7 +460,7 @@ let render_midi_clip ?(indent_level = 0) (patch : Clip.MidiClip.Patch.t) =
            Some
              (match note_patch.velocity with
              | `Modified m ->
-                 Printf.sprintf "velocity: %d→%d" m.oldval m.newval
+                 Printf.sprintf "velocity: %f→%f" m.oldval m.newval
              | _ -> "")
          else None);
         (if note_patch.note <> `Unchanged then
@@ -476,7 +476,7 @@ let render_midi_clip ?(indent_level = 0) (patch : Clip.MidiClip.Patch.t) =
            Some
              (match note_patch.off_velocity with
              | `Modified m ->
-                 Printf.sprintf "off_velocity: %d→%d" m.oldval m.newval
+                 Printf.sprintf "off_velocity: %f→%f" m.oldval m.newval
              | _ -> "")
          else None);
       ]
@@ -494,7 +494,7 @@ let render_midi_clip ?(indent_level = 0) (patch : Clip.MidiClip.Patch.t) =
           format_item =
             (fun (note : Clip.MidiNote.t) ->
               let note_name = Clip.MidiNote.get_note_name_from_int note.Clip.MidiNote.note in
-              Printf.sprintf "Note: time=%f, duration=%f, velocity=%d, note=%s"
+              Printf.sprintf "Note: time=%f, duration=%f, velocity=%f, note=%s"
                 note.Clip.MidiNote.time note.Clip.MidiNote.duration
                 note.Clip.MidiNote.velocity note_name);
           indent_level = indent_level + 2;

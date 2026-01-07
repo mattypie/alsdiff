@@ -54,14 +54,14 @@ let test_midi_track_clips_and_notes () =
     let first_note = List.nth notes_list 0 in
     Alcotest.(check (float 0.001)) "first note time" 8.0 first_note.time;
     Alcotest.(check (float 0.001)) "first note duration" 8.0 first_note.duration;
-    Alcotest.(check int) "first note velocity" 102 first_note.velocity;
+    Alcotest.(check (float 0.001)) "first note velocity" 102.0 first_note.velocity;
     Alcotest.(check int) "first note note_id" 2 first_note.id;
 
     (* Check another note *)
     let second_note = List.nth notes_list 1 in
     Alcotest.(check (float 0.001)) "second note time" 32.0 second_note.time;
     Alcotest.(check (float 0.001)) "second note duration" 11.0 second_note.duration;
-    Alcotest.(check int) "second note velocity" 102 second_note.velocity;
+    Alcotest.(check (float 0.001)) "second note velocity" 102.0 second_note.velocity;
     Alcotest.(check int) "second note note_id" 5 second_note.id
   else
     Alcotest.fail "Expected at least one MIDI note in clip"

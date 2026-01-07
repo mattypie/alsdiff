@@ -467,7 +467,7 @@ let create_note_item
       name = "Velocity";
       of_parent_value = (fun x -> x.velocity);
       of_parent_patch = (fun x -> x.Patch.velocity);
-      wrapper = int_value;
+      wrapper = float_value;
     };
     FieldDesc {
       name = "Note";
@@ -479,7 +479,7 @@ let create_note_item
       name = "Off Velocity";
       of_parent_value = (fun x -> x.off_velocity);
       of_parent_patch = (fun x -> x.Patch.off_velocity);
-      wrapper = int_value;
+      wrapper = float_value;
     };
   ]
   in

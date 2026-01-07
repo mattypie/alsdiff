@@ -39,8 +39,8 @@ module MidiNote = struct
     note : int;
     time : float;
     duration : float;
-    velocity : int;
-    off_velocity : int;
+    velocity : float;
+    off_velocity : float;
   } [@@deriving eq]
 
   let has_same_id a b = a.id = b.id
@@ -53,8 +53,8 @@ module MidiNote = struct
       let id = Xml.get_int_attr "NoteId" xml in
       let time = Xml.get_float_attr "Time" xml in
       let duration = Xml.get_float_attr "Duration" xml in
-      let velocity = Xml.get_int_attr "Velocity" xml in
-      let off_velocity = Xml.get_int_attr "OffVelocity" xml in
+      let velocity = Xml.get_float_attr "Velocity" xml in
+      let off_velocity = Xml.get_float_attr "OffVelocity" xml in
       { id; note; time; duration; velocity; off_velocity }
     | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating MidiNote"))
 
@@ -63,8 +63,8 @@ module MidiNote = struct
     type t = {
       time : float atomic_update;
       duration : float atomic_update;
-      velocity : int atomic_update;
-      off_velocity : int atomic_update;
+      velocity : float atomic_update;
+      off_velocity : float atomic_update;
       note : int atomic_update;
     }
 
@@ -84,8 +84,8 @@ module MidiNote = struct
 
     let time_change = diff_atomic_value (module Equality.FloatEq) old_time new_time in
     let duration_change = diff_atomic_value (module Equality.FloatEq) old_duration new_duration in
-    let velocity_change = diff_atomic_value (module Equality.IntEq) old_velocity new_velocity in
-    let off_velocity_change = diff_atomic_value (module Equality.IntEq) old_off_velocity new_off_velocity in
+    let velocity_change = diff_atomic_value (module Float) old_velocity new_velocity in
+    let off_velocity_change = diff_atomic_value (module Float) old_off_velocity new_off_velocity in
     let note_change = diff_atomic_value (module Equality.IntEq) old_note new_note in
     {
       time = time_change;
