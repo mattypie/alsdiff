@@ -518,7 +518,7 @@ let pp_field_value fmt = function
   | Fstring s -> Fmt.pf fmt "%s" s
 
 (* Field view rendering *)
-let pp_field cfg fmt (field : field) =
+let rec pp_field cfg fmt (field : field) =
   (* Always render if called - filtering happens at parent level *)
   Fmt.pf fmt "@[<h>  %a %s: " (pp_change_type cfg) field.change field.name;
   match field.oldval, field.newval with
@@ -531,7 +531,7 @@ let pp_field cfg fmt (field : field) =
   | None, None -> Fmt.pf fmt "@]"
 
 (* Element view rendering *)
-let pp_item cfg fmt (elem : item) =
+and pp_item cfg fmt (elem : item) =
   let level = get_effective_detail cfg elem.change elem.domain_type in
   if not (should_render_level level) then ()
   else
@@ -546,17 +546,31 @@ let pp_item cfg fmt (elem : item) =
     Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
   if should_show_fields cfg elem then (
     Fmt.cut fmt ();
+    (* Render Field children *)
     let fields = List.filter_map (fun (v : view) ->
       match v with
       | Field f -> Some f
       | _ -> None
     ) elem.children in
-    Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt fields
+    Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt fields;
+    (* Render Item and Collection children *)
+    let nested = List.filter (fun (v : view) ->
+      match v with
+      | Item _ | Collection _ -> true
+      | _ -> false
+    ) elem.children in
+    List.iter (fun v ->
+      Fmt.cut fmt ();
+      match v with
+      | Item e -> pp_item cfg fmt e
+      | Collection c -> pp_collection cfg fmt c
+      | _ -> ()
+    ) nested
   );
   Fmt.pf fmt "@]"
 
 (* Collection view rendering *)
-let pp_collection cfg fmt (col : collection) =
+and pp_collection cfg fmt (col : collection) =
   let level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then ()
   else
