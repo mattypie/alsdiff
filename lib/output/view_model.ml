@@ -492,97 +492,6 @@ let create_note_item
   ViewBuilder.build_item_from_fields c ~name:note_name ~domain_type:DTNote ~field_descs
 
 
-(** [create_midi_clip_view] creates a [section_view] from a MidiClip structured change.
-    @param c the midi clip structured change
-*)
-let create_midi_clip_view
-  (c : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change)
-  : item =
-
-  let change_type = ViewBuilder.change_type_of c in
-
-  let section_name = match c with
-    | `Added clip -> Printf.sprintf "MidiClip (#%d): %s" clip.Clip.MidiClip.id clip.Clip.MidiClip.name
-    | `Removed clip -> Printf.sprintf "MidiClip (#%d): %s" clip.Clip.MidiClip.id clip.Clip.MidiClip.name
-    | `Modified patch ->
-        (match patch.name with
-         | `Modified { newval; _ } -> Printf.sprintf "MidiClip (#%d): %s" patch.Clip.MidiClip.Patch.id newval
-         | `Unchanged -> Printf.sprintf "MidiClip (#%d)" patch.Clip.MidiClip.Patch.id)
-    | `Unchanged -> "MidiClip"
-  in
-
-  (* Field descriptors for atomic fields *)
-  let name_field_desc = FieldDesc {
-    name = "Name";
-    of_parent_value = (fun (x : Clip.MidiClip.t) -> x.Clip.MidiClip.name);
-    of_parent_patch = (fun (p : Clip.MidiClip.Patch.t) -> p.name);
-    wrapper = string_value;
-  } in
-
-  let start_time_field_desc = FieldDesc {
-    name = "Start Time";
-    of_parent_value = (fun (x : Clip.MidiClip.t) -> x.Clip.MidiClip.start_time);
-    of_parent_patch = (fun (p : Clip.MidiClip.Patch.t) -> p.start_time);
-    wrapper = float_value;
-  } in
-
-  let end_time_field_desc = FieldDesc {
-    name = "End Time";
-    of_parent_value = (fun (x : Clip.MidiClip.t) -> x.Clip.MidiClip.end_time);
-    of_parent_patch = (fun (p : Clip.MidiClip.Patch.t) -> p.end_time);
-    wrapper = float_value;
-  } in
-
-  (* Build atomic field views *)
-  let name_fv : field = ViewBuilder.build_field c name_field_desc ~domain_type:DTClip in
-  let start_fv : field = ViewBuilder.build_field c start_time_field_desc ~domain_type:DTClip in
-  let end_fv : field = ViewBuilder.build_field c end_time_field_desc ~domain_type:DTClip in
-  let atomic_field_views : view list =
-    [name_fv; start_fv; end_fv]
-    |> List.filter (fun (fv : field) -> fv.change <> Unchanged)
-    |> List.map (fun (fv : field) -> (Field fv : view))
-  in
-
-  (* Build Loop section using the new combinator *)
-  let loop_section = ViewBuilder.build_item_from_children c
-    ~name:"Loop"
-    ~of_value:(fun (clip : Clip.MidiClip.t) -> clip.loop)
-    ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.loop)
-    ~build_value_children:create_loop_fields
-    ~build_patch_children:create_loop_patch_fields
-    ~domain_type:DTLoop
-  in
-
-  (* Build TimeSignature section using the new combinator *)
-  let signature_section = ViewBuilder.build_item_from_children c
-    ~name:"TimeSignature"
-    ~of_value:(fun (clip : Clip.MidiClip.t) -> clip.signature)
-    ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.signature)
-    ~build_value_children:create_signature_fields
-    ~build_patch_children:create_signature_patch_fields
-    ~domain_type:DTSignature
-  in
-
-  (* Build Notes collection using the new combinator *)
-  let notes_collection = ViewBuilder.build_collection c
-    ~name:"Notes"
-    ~of_value:(fun (clip : Clip.MidiClip.t) -> clip.notes)
-    ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.notes)
-    ~build_item:create_note_item
-    ~domain_type:DTNote
-  in
-
-  (* Build sub_views list *)
-  let children =
-    atomic_field_views
-    @ (loop_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (signature_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (notes_collection |> Option.map (fun c -> Collection c) |> option_to_list)
-  in
-
-  { name = section_name; change = change_type; domain_type = DTClip; children }
-
-
 (** [create_midi_clip_item] creates a [item] from a MidiClip structured change (new type system).
     @param c the midi clip structured change
 *)
@@ -694,98 +603,6 @@ let sample_ref_field_specs : (Clip.SampleRef.t, Clip.SampleRef.Patch.t) unified_
 
 let create_sample_ref_fields = build_value_field_views sample_ref_field_specs ~domain_type:DTSampleRef
 let create_sample_ref_patch_fields = build_patch_field_views sample_ref_field_specs ~domain_type:DTSampleRef
-
-
-(** [create_audio_clip_view] creates a [section_view] from an AudioClip structured change.
-    @param c the audio clip structured change
-*)
-let create_audio_clip_view
-  (c : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change)
-  : item =
-
-  let change_type = ViewBuilder.change_type_of c in
-
-  let section_name = match c with
-    | `Added clip -> Printf.sprintf "AudioClip (#%d): %s" clip.Clip.AudioClip.id clip.Clip.AudioClip.name
-    | `Removed clip -> Printf.sprintf "AudioClip (#%d): %s" clip.Clip.AudioClip.id clip.Clip.AudioClip.name
-    | `Modified patch ->
-        (match patch.name with
-         | `Modified { newval; _ } -> Printf.sprintf "AudioClip (#%d): %s" patch.Clip.AudioClip.Patch.id newval
-         | `Unchanged -> Printf.sprintf "AudioClip (#%d)" patch.Clip.AudioClip.Patch.id)
-    | `Unchanged -> "AudioClip"
-  in
-
-  (* Field descriptors for atomic fields *)
-  let name_field_desc = FieldDesc {
-    name = "Name";
-    of_parent_value = (fun (x : Clip.AudioClip.t) -> x.Clip.AudioClip.name);
-    of_parent_patch = (fun (p : Clip.AudioClip.Patch.t) -> p.name);
-    wrapper = string_value;
-  } in
-
-  let start_time_field_desc = FieldDesc {
-    name = "Start Time";
-    of_parent_value = (fun (x : Clip.AudioClip.t) -> x.Clip.AudioClip.start_time);
-    of_parent_patch = (fun (p : Clip.AudioClip.Patch.t) -> p.start_time);
-    wrapper = float_value;
-  } in
-
-  let end_time_field_desc = FieldDesc {
-    name = "End Time";
-    of_parent_value = (fun (x : Clip.AudioClip.t) -> x.Clip.AudioClip.end_time);
-    of_parent_patch = (fun (p : Clip.AudioClip.Patch.t) -> p.end_time);
-    wrapper = float_value;
-  } in
-
-  (* Build atomic field views *)
-  let name_fv : field = ViewBuilder.build_field c name_field_desc ~domain_type:DTClip in
-  let start_fv : field = ViewBuilder.build_field c start_time_field_desc ~domain_type:DTClip in
-  let end_fv : field = ViewBuilder.build_field c end_time_field_desc ~domain_type:DTClip in
-  let atomic_field_views : view list =
-    [name_fv; start_fv; end_fv]
-    |> List.filter (fun (fv : field) -> fv.change <> Unchanged)
-    |> List.map (fun (fv : field) -> (Field fv : view))
-  in
-
-  (* Build Loop section *)
-  let loop_section = ViewBuilder.build_item_from_children c
-    ~name:"Loop"
-    ~of_value:(fun (clip : Clip.AudioClip.t) -> clip.loop)
-    ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.loop)
-    ~build_value_children:create_loop_fields
-    ~build_patch_children:create_loop_patch_fields
-    ~domain_type:DTLoop
-  in
-
-  (* Build TimeSignature section *)
-  let signature_section = ViewBuilder.build_item_from_children c
-    ~name:"TimeSignature"
-    ~of_value:(fun (clip : Clip.AudioClip.t) -> clip.signature)
-    ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.signature)
-    ~build_value_children:create_signature_fields
-    ~build_patch_children:create_signature_patch_fields
-    ~domain_type:DTSignature
-  in
-
-  (* Build SampleRef section - replaces Notes collection from MidiClip *)
-  let sample_ref_section = ViewBuilder.build_item_from_children c
-    ~name:"SampleRef"
-    ~of_value:(fun (clip : Clip.AudioClip.t) -> clip.sample_ref)
-    ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.sample_ref)
-    ~build_value_children:create_sample_ref_fields
-    ~build_patch_children:create_sample_ref_patch_fields
-    ~domain_type:DTSampleRef
-  in
-
-  (* Build sub_views list *)
-  let children =
-    atomic_field_views
-    @ (loop_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (signature_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (sample_ref_section |> Option.map (fun s -> Item s) |> option_to_list)
-  in
-
-  { name = section_name; change = change_type; domain_type = DTClip; children }
 
 
 (** [create_audio_clip_item] creates a [item] from an AudioClip structured change (new type system).
@@ -1146,10 +963,6 @@ let create_snapshot_item
 (* ==================== Device View Template Infrastructure ==================== *)
 
 (** Configuration for building a device section *)
-type ('device, 'patch) device_section_config = {
-  name : string;
-  build : ('device, 'patch) structured_change -> view option;
-}
 
 (** [build_device_section_name] generates the section name for a device.
     Format: "DeviceType: name" when available, just "DeviceType" otherwise.
@@ -1174,34 +987,11 @@ let build_device_section_name
 (** [build_display_name_field] creates the display name field view for a device.
     Returns None if the display name is unchanged.
 *)
-let build_display_name_field
-  (type device patch)
-  ~(get_display_name : device -> string)
-  ~(get_display_name_patch : patch -> string atomic_update)
-  ~(domain_type : domain_type)
-  (c : (device, patch) structured_change)
-  : view option =
-  let field_desc = FieldDesc {
-    name = "Display Name";
-    of_parent_value = get_display_name;
-    of_parent_patch = get_display_name_patch;
-    wrapper = string_value;
-  } in
-  let field_view = ViewBuilder.build_field c field_desc ~domain_type in
-  if field_view.change = Unchanged then None
-  else Some (Field field_view)
 
 
 (** [build_custom_sections] builds all custom sections for a device.
     Filters out None results and converts to view list.
 *)
-let build_custom_sections
-  (type device patch)
-  (sections : (device, patch) device_section_config list)
-  (c : (device, patch) structured_change)
-  : view list =
-  sections
-  |> List.filter_map (fun config -> config.build c)
 
 
 (** [create_collection_section_config] creates a config for a collection section.
@@ -1210,30 +1000,22 @@ let build_custom_sections
     @param of_patch Extract collection changes from patch
     @param build_element Element view builder
 *)
-let create_collection_section_config
-  (type device patch elem elem_patch)
-  ~(name : string)
-  ~(of_value : device -> elem list)
-  ~(of_patch : patch -> (elem, elem_patch) structured_change list)
-  ~(build_element : (elem, elem_patch) structured_change -> item)
-  ~(domain_type : domain_type)
-  : (device, patch) device_section_config =
-  {
-    name;
-    build = (fun c ->
-      ViewBuilder.build_collection c
-        ~name
-        ~of_value
-        ~of_patch
-        ~build_item:build_element
-        ~domain_type
-      |> Option.map (fun col -> Collection col)
-    );
-  }
 
 
 (** [create_preset_section_config] creates the standard preset section config.
     This can be shared by all device types that use PresetRef.
+*)
+
+
+(** Configuration for building a device section - new type system *)
+type ('device, 'patch) device_section_config = {
+  name : string;
+  build : ('device, 'patch) structured_change -> view option;
+}
+
+
+(** [create_preset_section_config] creates the standard preset section config (new type system).
+    This is the new type system version of create_preset_section_config.
 *)
 let create_preset_section_config
   (type device patch)
@@ -1241,37 +1023,6 @@ let create_preset_section_config
   ~(of_patch : patch -> (Device.PresetRef.t, Device.PresetRef.Patch.t) structured_change)
   ~(domain_type : domain_type)
   : (device, patch) device_section_config =
-  {
-    name = "Preset";
-    build = (fun c ->
-      ViewBuilder.build_item_from_children_with_change c
-        ~name:"Preset"
-        ~of_value
-        ~of_patch
-        ~build_value_children:create_preset_ref_fields
-        ~build_patch_children:create_preset_ref_patch_fields
-        ~domain_type
-      |> Option.map (fun s -> Item s)
-    );
-  }
-
-
-(** Configuration for building a device section - new type system *)
-type ('device, 'patch) new_device_section_config = {
-  name : string;
-  build : ('device, 'patch) structured_change -> view option;
-}
-
-
-(** [create_preset_section_config_new] creates the standard preset section config (new type system).
-    This is the new type system version of create_preset_section_config.
-*)
-let create_preset_section_config_new
-  (type device patch)
-  ~(of_value : device -> Device.PresetRef.t option)
-  ~(of_patch : patch -> (Device.PresetRef.t, Device.PresetRef.Patch.t) structured_change)
-  ~(domain_type : domain_type)
-  : (device, patch) new_device_section_config =
   {
     name = "Preset";
     build = (fun c ->
@@ -1300,6 +1051,71 @@ let create_preset_section_config_new
     @param domain_type The domain type for this device
     @param c The device structured change
     @return A section_view for the device
+*)
+
+
+(* ==================== Device Item Template Infrastructure (New Type System) ==================== *)
+
+(** [build_display_name_field] creates the display name field view for a device (new type system).
+    Returns None if the display name is unchanged.
+*)
+let build_display_name_field
+  (type device patch)
+  ~(get_display_name : device -> string)
+  ~(get_display_name_patch : patch -> string atomic_update)
+  ~(domain_type : domain_type)
+  (c : (device, patch) structured_change)
+  : view option =
+  let field_desc = FieldDesc {
+    name = "Display Name";
+    of_parent_value = get_display_name;
+    of_parent_patch = get_display_name_patch;
+    wrapper = string_value;
+  } in
+  let field = ViewBuilder.build_field c field_desc ~domain_type in
+  if field.change = Unchanged then None
+  else Some (Field field)
+
+(** [build_custom_sections] builds all custom sections for a device (new type system).
+    Filters out None results and converts to view list.
+*)
+let build_custom_sections
+  (type device patch)
+  (sections : (device, patch) device_section_config list)
+  (c : (device, patch) structured_change)
+  : view list =
+  sections
+  |> List.filter_map (fun config -> config.build c)
+
+(** [create_collection_section_config] creates a config for a collection section (new type system).
+    @param name Section name
+    @param of_value Extract collection from device value
+    @param of_patch Extract collection changes from patch
+    @param build_item Item builder - returns item
+*)
+let create_collection_section_config
+  (type device patch elem elem_patch)
+  ~(name : string)
+  ~(of_value : device -> elem list)
+  ~(of_patch : patch -> (elem, elem_patch) structured_change list)
+  ~(build_item : (elem, elem_patch) structured_change -> item)
+  ~(domain_type : domain_type)
+  : (device, patch) device_section_config =
+  {
+    name;
+    build = (fun c ->
+      ViewBuilder.build_collection c
+        ~name
+        ~of_value
+        ~of_patch
+        ~build_item
+        ~domain_type
+      |> Option.map (fun col -> Collection col)
+    );
+  }
+
+(** [build_device_view] builds a device view as a item.
+    This is the new type system version of build_device_view.
 *)
 let build_device_view
   (type device patch)
@@ -1342,116 +1158,6 @@ let build_device_view
   (* Build custom sections *)
   let custom_views = build_custom_sections custom_sections c in
 
-  (* Combine all sub-views *)
-  let children = display_name_view @ preset_view @ custom_views in
-
-  { name = section_name; change = change_type; domain_type; children }
-
-
-(* ==================== Device Item Template Infrastructure (New Type System) ==================== *)
-
-(** [build_display_name_field_new] creates the display name field view for a device (new type system).
-    Returns None if the display name is unchanged.
-*)
-let build_display_name_field_new
-  (type device patch)
-  ~(get_display_name : device -> string)
-  ~(get_display_name_patch : patch -> string atomic_update)
-  ~(domain_type : domain_type)
-  (c : (device, patch) structured_change)
-  : view option =
-  let field_desc = FieldDesc {
-    name = "Display Name";
-    of_parent_value = get_display_name;
-    of_parent_patch = get_display_name_patch;
-    wrapper = string_value;
-  } in
-  let field = ViewBuilder.build_field c field_desc ~domain_type in
-  if field.change = Unchanged then None
-  else Some (Field field)
-
-(** [build_custom_sections_new] builds all custom sections for a device (new type system).
-    Filters out None results and converts to view list.
-*)
-let build_custom_sections_new
-  (type device patch)
-  (sections : (device, patch) new_device_section_config list)
-  (c : (device, patch) structured_change)
-  : view list =
-  sections
-  |> List.filter_map (fun config -> config.build c)
-
-(** [create_collection_section_config_new] creates a config for a collection section (new type system).
-    @param name Section name
-    @param of_value Extract collection from device value
-    @param of_patch Extract collection changes from patch
-    @param build_item Item builder - returns item
-*)
-let create_collection_section_config_new
-  (type device patch elem elem_patch)
-  ~(name : string)
-  ~(of_value : device -> elem list)
-  ~(of_patch : patch -> (elem, elem_patch) structured_change list)
-  ~(build_item : (elem, elem_patch) structured_change -> item)
-  ~(domain_type : domain_type)
-  : (device, patch) new_device_section_config =
-  {
-    name;
-    build = (fun c ->
-      ViewBuilder.build_collection c
-        ~name
-        ~of_value
-        ~of_patch
-        ~build_item
-        ~domain_type
-      |> Option.map (fun col -> Collection col)
-    );
-  }
-
-(** [build_device_item] builds a device view as a item.
-    This is the new type system version of build_device_view.
-*)
-let build_device_item
-  (type device patch)
-  ~(device_type_name : string)
-  ~(get_device_name : device -> string)
-  ~(get_display_name : device -> string)
-  ~(get_display_name_patch : patch -> string atomic_update)
-  ~(preset_config : (device, patch) new_device_section_config option)
-  ~(custom_sections : (device, patch) new_device_section_config list)
-  ~(domain_type : domain_type)
-  (c : (device, patch) structured_change)
-  : item =
-  let change_type = ViewBuilder.change_type_of c in
-
-  (* Build section name *)
-  let section_name = build_device_section_name
-    ~device_type_name
-    ~get_device_name
-    ~get_display_name_patch
-    c
-  in
-
-  (* Build display name field *)
-  let display_name_view = build_display_name_field_new
-    ~get_display_name
-    ~get_display_name_patch
-    ~domain_type
-    c
-    |> option_to_list
-  in
-
-  (* Build preset section if configured *)
-  let preset_view = match preset_config with
-    | None -> []
-    | Some config ->
-        config.build c
-        |> option_to_list
-  in
-
-  (* Build custom sections *)
-  let custom_views = build_custom_sections_new custom_sections c in
-
   (* Combine all children *)
   let children = display_name_view @ preset_view @ custom_views in
 
@@ -1460,36 +1166,12 @@ let build_device_item
 
 (* ==================== Device View Functions ==================== *)
 
-(** [create_regular_device_view] creates a [section_view] from a RegularDevice structured change. *)
-let create_regular_device_view
-  (c : (Device.RegularDevice.t, Device.RegularDevice.Patch.t) structured_change)
-  : item =
-
-  let params_config = create_collection_section_config
-    ~name:"Parameters"
-    ~of_value:(fun (d : Device.RegularDevice.t) -> d.params)
-    ~of_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.params)
-    ~build_element:create_device_param_item
-    ~domain_type:DTParam
-  in
-
-  build_device_view
-    ~device_type_name:"RegularDevice"
-    ~get_device_name:(fun (d : Device.RegularDevice.t) -> d.device_name)
-    ~get_display_name:(fun (d : Device.RegularDevice.t) -> d.display_name)
-    ~get_display_name_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.display_name)
-    ~preset_config:None
-    ~custom_sections:[params_config]
-    ~domain_type:DTDevice
-    c
-
-
 (** [create_regular_device_item] creates a [item] from a RegularDevice structured change (new type system). *)
 let create_regular_device_item
   (c : (Device.RegularDevice.t, Device.RegularDevice.Patch.t) structured_change)
   : item =
 
-  let params_config = create_collection_section_config_new
+  let params_config = create_collection_section_config
     ~name:"Parameters"
     ~of_value:(fun (d : Device.RegularDevice.t) -> d.params)
     ~of_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.params)
@@ -1497,73 +1179,13 @@ let create_regular_device_item
     ~domain_type:DTParam
   in
 
-  build_device_item
+  build_device_view
     ~device_type_name:"RegularDevice"
     ~get_device_name:(fun (d : Device.RegularDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.RegularDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.display_name)
     ~preset_config:None
     ~custom_sections:[params_config]
-    ~domain_type:DTDevice
-    c
-
-
-(** [create_plugin_device_view] creates a [section_view] from a PluginDevice structured change. *)
-let create_plugin_device_view
-  (c : (Device.PluginDevice.t, Device.PluginDevice.Patch.t) structured_change)
-  : item =
-
-  let params_config = create_collection_section_config
-    ~name:"Parameters"
-    ~of_value:(fun (d : Device.PluginDevice.t) -> d.params)
-    ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.params)
-    ~build_element:create_plugin_param_item
-    ~domain_type:DTParam
-  in
-
-  (* Custom enabled section builder - for nested GenericParam handling *)
-  let enabled_config : (Device.PluginDevice.t, Device.PluginDevice.Patch.t) device_section_config = {
-    name = "Enabled";
-    build = (fun c ->
-      match c with
-      | `Modified patch ->
-          (match patch.enabled with
-           | `Unchanged -> None
-           | `Modified ep ->
-               (match ep.base with
-                | `Unchanged -> None
-                | `Modified gpp ->
-                    let value_field = atomic_update_to_field_view
-                      ~name:"Value"
-                      ~wrapper:(fun v -> match v with
-                        | Device.Float f -> Ffloat f
-                        | Device.Int i -> Fint i
-                        | Device.Bool b -> Fbool b
-                        | Device.Enum (e, _) -> Fint e)
-                      ~domain_type:DTParam
-                      gpp.value
-                    in
-                    match value_field with
-                    | None -> None
-                    | Some fv -> Some (Item {
-                        name = "Enabled";
-                        change = Modified;
-                        domain_type = DTParam;
-                        children = [Field fv]
-                      })))
-      | _ -> None);
-  } in
-
-  build_device_view
-    ~device_type_name:"PluginDevice"
-    ~get_device_name:(fun (d : Device.PluginDevice.t) -> d.device_name)
-    ~get_display_name:(fun (d : Device.PluginDevice.t) -> d.display_name)
-    ~get_display_name_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.display_name)
-    ~preset_config:(Some (create_preset_section_config
-      ~of_value:(fun (d : Device.PluginDevice.t) -> d.preset)
-      ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.preset)
-      ~domain_type:DTPreset))
-    ~custom_sections:[enabled_config; params_config]
     ~domain_type:DTDevice
     c
 
@@ -1573,7 +1195,7 @@ let create_plugin_device_item
   (c : (Device.PluginDevice.t, Device.PluginDevice.Patch.t) structured_change)
   : item =
 
-  let params_config = create_collection_section_config_new
+  let params_config = create_collection_section_config
     ~name:"Parameters"
     ~of_value:(fun (d : Device.PluginDevice.t) -> d.params)
     ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.params)
@@ -1582,7 +1204,7 @@ let create_plugin_device_item
   in
 
   (* Custom enabled section builder - for nested GenericParam handling *)
-  let enabled_config : (Device.PluginDevice.t, Device.PluginDevice.Patch.t) new_device_section_config = {
+  let enabled_config : (Device.PluginDevice.t, Device.PluginDevice.Patch.t) device_section_config = {
     name = "Enabled";
     build = (fun c ->
       match c with
@@ -1615,74 +1237,16 @@ let create_plugin_device_item
       | _ -> None);
   } in
 
-  build_device_item
+  build_device_view
     ~device_type_name:"PluginDevice"
     ~get_device_name:(fun (d : Device.PluginDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.PluginDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.display_name)
-    ~preset_config:(Some (create_preset_section_config_new
+    ~preset_config:(Some (create_preset_section_config
       ~of_value:(fun (d : Device.PluginDevice.t) -> d.preset)
       ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.preset)
       ~domain_type:DTPreset))
     ~custom_sections:[enabled_config; params_config]
-    ~domain_type:DTDevice
-    c
-
-
-(** [create_max4live_device_view] creates a [section_view] from a Max4LiveDevice structured change. *)
-let create_max4live_device_view
-  (c : (Device.Max4LiveDevice.t, Device.Max4LiveDevice.Patch.t) structured_change)
-  : item =
-
-  let params_config = create_collection_section_config
-    ~name:"Parameters"
-    ~of_value:(fun (d : Device.Max4LiveDevice.t) -> d.params)
-    ~of_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.params)
-    ~build_element:create_m4l_param_item
-    ~domain_type:DTParam
-  in
-
-  (* Custom patch_ref section builder - manual handling because patch_ref uses structured_change *)
-  let patch_ref_config : (Device.Max4LiveDevice.t, Device.Max4LiveDevice.Patch.t) device_section_config = {
-    name = "PatchRef";
-    build = (fun c ->
-      match c with
-      | `Added d ->
-          let fields = create_patch_ref_fields Added d.patch_ref in
-          if fields = [] then None
-          else Some (Item { name = "PatchRef"; change = Added; domain_type = DTPreset; children = fields })
-      | `Removed d ->
-          let fields = create_patch_ref_fields Removed d.patch_ref in
-          if fields = [] then None
-          else Some (Item { name = "PatchRef"; change = Removed; domain_type = DTPreset; children = fields })
-      | `Modified patch ->
-          (match patch.patch_ref with
-           | `Unchanged -> None
-           | `Added pr ->
-               let fields = create_patch_ref_fields Added pr in
-               if fields = [] then None
-               else Some (Item { name = "PatchRef"; change = Modified; domain_type = DTPreset; children = fields })
-           | `Removed pr ->
-               let fields = create_patch_ref_fields Removed pr in
-               if fields = [] then None
-               else Some (Item { name = "PatchRef"; change = Modified; domain_type = DTPreset; children = fields })
-           | `Modified pr_patch ->
-               let fields = create_patch_ref_patch_fields pr_patch in
-               if fields = [] then None
-               else Some (Item { name = "PatchRef"; change = Modified; domain_type = DTPreset; children = fields }))
-      | `Unchanged -> None);
-  } in
-
-  build_device_view
-    ~device_type_name:"Max4LiveDevice"
-    ~get_device_name:(fun (d : Device.Max4LiveDevice.t) -> d.device_name)
-    ~get_display_name:(fun (d : Device.Max4LiveDevice.t) -> d.display_name)
-    ~get_display_name_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.display_name)
-    ~preset_config:(Some (create_preset_section_config
-      ~of_value:(fun (d : Device.Max4LiveDevice.t) -> d.preset)
-      ~of_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.preset)
-      ~domain_type:DTPreset))
-    ~custom_sections:[patch_ref_config; params_config]
     ~domain_type:DTDevice
     c
 
@@ -1692,7 +1256,7 @@ let create_max4live_device_item
   (c : (Device.Max4LiveDevice.t, Device.Max4LiveDevice.Patch.t) structured_change)
   : item =
 
-  let params_config = create_collection_section_config_new
+  let params_config = create_collection_section_config
     ~name:"Parameters"
     ~of_value:(fun (d : Device.Max4LiveDevice.t) -> d.params)
     ~of_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.params)
@@ -1701,7 +1265,7 @@ let create_max4live_device_item
   in
 
   (* Custom patch_ref section builder - manual handling because patch_ref uses structured_change *)
-  let patch_ref_config : (Device.Max4LiveDevice.t, Device.Max4LiveDevice.Patch.t) new_device_section_config = {
+  let patch_ref_config : (Device.Max4LiveDevice.t, Device.Max4LiveDevice.Patch.t) device_section_config = {
     name = "PatchRef";
     build = (fun c ->
       match c with
@@ -1756,51 +1320,16 @@ let create_max4live_device_item
       | `Unchanged -> None);
   } in
 
-  build_device_item
+  build_device_view
     ~device_type_name:"Max4LiveDevice"
     ~get_device_name:(fun (d : Device.Max4LiveDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.Max4LiveDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.display_name)
-    ~preset_config:(Some (create_preset_section_config_new
+    ~preset_config:(Some (create_preset_section_config
       ~of_value:(fun (d : Device.Max4LiveDevice.t) -> d.preset)
       ~of_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.preset)
       ~domain_type:DTPreset))
     ~custom_sections:[patch_ref_config; params_config]
-    ~domain_type:DTDevice
-    c
-
-
-(** [create_group_device_view] creates a [section_view] from a GroupDevice structured change. *)
-let create_group_device_view
-  (c : (Device.GroupDevice.t, Device.GroupDevice.Patch.t) structured_change)
-  : item =
-
-  let macros_config = create_collection_section_config
-    ~name:"Macros"
-    ~of_value:(fun (d : Device.GroupDevice.t) -> d.macros)
-    ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.macros)
-    ~build_element:create_macro_item
-    ~domain_type:DTMacro
-  in
-
-  let snapshots_config = create_collection_section_config
-    ~name:"Snapshots"
-    ~of_value:(fun (d : Device.GroupDevice.t) -> d.snapshots)
-    ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.snapshots)
-    ~build_element:create_snapshot_item
-    ~domain_type:DTSnapshot
-  in
-
-  build_device_view
-    ~device_type_name:"GroupDevice"
-    ~get_device_name:(fun (d : Device.GroupDevice.t) -> d.device_name)
-    ~get_display_name:(fun (d : Device.GroupDevice.t) -> d.display_name)
-    ~get_display_name_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.display_name)
-    ~preset_config:(Some (create_preset_section_config
-      ~of_value:(fun (d : Device.GroupDevice.t) -> d.preset)
-      ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.preset)
-      ~domain_type:DTPreset))
-    ~custom_sections:[macros_config; snapshots_config]
     ~domain_type:DTDevice
     c
 
@@ -1810,7 +1339,7 @@ let create_group_device_item
   (c : (Device.GroupDevice.t, Device.GroupDevice.Patch.t) structured_change)
   : item =
 
-  let macros_config = create_collection_section_config_new
+  let macros_config = create_collection_section_config
     ~name:"Macros"
     ~of_value:(fun (d : Device.GroupDevice.t) -> d.macros)
     ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.macros)
@@ -1818,7 +1347,7 @@ let create_group_device_item
     ~domain_type:DTMacro
   in
 
-  let snapshots_config = create_collection_section_config_new
+  let snapshots_config = create_collection_section_config
     ~name:"Snapshots"
     ~of_value:(fun (d : Device.GroupDevice.t) -> d.snapshots)
     ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.snapshots)
@@ -1826,12 +1355,12 @@ let create_group_device_item
     ~domain_type:DTSnapshot
   in
 
-  build_device_item
+  build_device_view
     ~device_type_name:"GroupDevice"
     ~get_device_name:(fun (d : Device.GroupDevice.t) -> d.device_name)
     ~get_display_name:(fun (d : Device.GroupDevice.t) -> d.display_name)
     ~get_display_name_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.display_name)
-    ~preset_config:(Some (create_preset_section_config_new
+    ~preset_config:(Some (create_preset_section_config
       ~of_value:(fun (d : Device.GroupDevice.t) -> d.preset)
       ~of_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.preset)
       ~domain_type:DTPreset))
@@ -2198,70 +1727,6 @@ let create_device_item
 
 (* ==================== Track Component Section Views ==================== *)
 
-(** [create_mixer_section_view] creates a [section_view] from a Mixer structured change.
-    @param c the mixer structured change
-*)
-let create_mixer_section_view
-    (c : (Track.Mixer.t, Track.Mixer.Patch.t) structured_change)
-    : item option =
-  let open Track.Mixer in
-
-  let volume_section = ViewBuilder.build_item_from_children c
-    ~name:"Volume"
-    ~of_value:(fun m -> m.volume)
-    ~of_patch:(fun p -> p.volume)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let pan_section = ViewBuilder.build_item_from_children c
-    ~name:"Pan"
-    ~of_value:(fun m -> m.pan)
-    ~of_patch:(fun p -> p.pan)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let mute_section = ViewBuilder.build_item_from_children c
-    ~name:"Mute"
-    ~of_value:(fun m -> m.mute)
-    ~of_patch:(fun p -> p.mute)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let solo_section = ViewBuilder.build_item_from_children c
-    ~name:"Solo"
-    ~of_value:(fun m -> m.solo)
-    ~of_patch:(fun p -> p.solo)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let sends_collection = ViewBuilder.build_collection c
-    ~name:"Sends"
-    ~of_value:(fun m -> m.sends)
-    ~of_patch:(fun p -> p.sends)
-    ~build_item:create_send_item
-    ~domain_type:DTSend
-  in
-
-  let children =
-    (volume_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (pan_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (mute_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (solo_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (sends_collection |> Option.map (fun c -> Collection c) |> option_to_list)
-  in
-
-  if children = [] then None
-  else Some { name = "Mixer"; change = ViewBuilder.change_type_of c; domain_type = DTMixer; children }
-
-
 (** [create_mixer_item] creates a [item] from a Mixer structured change (new type system).
     @param c the mixer structured change
 *)
@@ -2332,77 +1797,6 @@ let create_mixer_item
 
   if children = [] then None
   else Some { name = "Mixer"; change = ViewBuilder.change_type_of c; domain_type = DTMixer; children }
-
-
-(** [create_main_mixer_section_view] creates a [section_view] from a MainMixer structured change.
-    @param c the main mixer structured change
-*)
-let create_main_mixer_section_view
-    (c : (Track.MainMixer.t, Track.MainMixer.Patch.t) structured_change)
-    : item option =
-  let open Track.MainMixer in
-
-  (* Build base mixer nested section - simplified with key params *)
-  let base_mixer_section = ViewBuilder.build_item_from_children c
-    ~name:"Base Mixer"
-    ~of_value:(fun mm -> mm.base.Track.Mixer.volume)
-    ~of_patch:(fun p ->
-      match p.base with
-      | `Modified mp -> mp.Track.Mixer.Patch.volume
-      | `Unchanged -> `Unchanged)
-    ~build_value_children:(fun ct vol ->
-      create_generic_param_fields ct vol)
-    ~build_patch_children:(fun vol_patch ->
-      create_generic_param_patch_fields vol_patch)
-    ~domain_type:DTMixer
-  in
-
-  let tempo_section = ViewBuilder.build_item_from_children c
-    ~name:"Tempo"
-    ~of_value:(fun mm -> mm.tempo)
-    ~of_patch:(fun p -> p.tempo)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let time_sig_section = ViewBuilder.build_item_from_children c
-    ~name:"Time Signature"
-    ~of_value:(fun mm -> mm.time_signature)
-    ~of_patch:(fun p -> p.time_signature)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let crossfade_section = ViewBuilder.build_item_from_children c
-    ~name:"Crossfade"
-    ~of_value:(fun mm -> mm.crossfade)
-    ~of_patch:(fun p -> p.crossfade)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let groove_section = ViewBuilder.build_item_from_children c
-    ~name:"Global Groove"
-    ~of_value:(fun mm -> mm.global_groove)
-    ~of_patch:(fun p -> p.global_groove)
-    ~build_value_children:create_generic_param_fields
-    ~build_patch_children:create_generic_param_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let children =
-    (base_mixer_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (tempo_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (time_sig_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (crossfade_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (groove_section |> Option.map (fun s -> Item s) |> option_to_list)
-  in
-
-  if children = [] then None
-  else Some { name = "Main Mixer"; change = ViewBuilder.change_type_of c; domain_type = DTMixer; children }
 
 
 (** [create_main_mixer_item] creates a [item] from a MainMixer structured change (new type system).
@@ -2508,21 +1902,6 @@ let build_track_section_name
 (** [build_name_field] creates the name field view for a track.
     Returns None if the name is unchanged.
 *)
-let build_name_field
-  (type track patch)
-  ~(get_name : track -> string)
-  ~(get_name_patch : patch -> string atomic_update)
-  (c : (track, patch) structured_change)
-  : view option =
-  let field_desc = FieldDesc {
-    name = "Name";
-    of_parent_value = get_name;
-    of_parent_patch = get_name_patch;
-    wrapper = string_value;
-  } in
-  let field_view = ViewBuilder.build_field c field_desc ~domain_type:DTTrack in
-  if field_view.change = Unchanged then None
-  else Some (Field field_view)
 
 
 (** [create_track_collection_config] creates a config for a track collection section.
@@ -2531,12 +1910,44 @@ let build_name_field
     @param of_patch Extract collection changes from patch
     @param build_element Element view builder
 *)
+
+
+(** [create_track_mixer_config] creates a config for a mixer or routings section.
+    @param name Section name
+    @param of_value Extract nested value from track value
+    @param of_patch Extract nested update from track patch
+    @param build_value_fields Build views for Added/Removed cases
+    @param build_patch_fields Build views for Modified case
+*)
+
+
+(** [build_track_view] creates a track section view from a structured change.
+
+    @param track_type_name The type name for section header (e.g., "MidiTrack")
+    @param get_name Extract name from track value
+    @param get_name_patch Extract name update from patch
+    @param clips_config Optional clips collection configuration
+    @param mixer_config Mixer section configuration
+    @param extra_sections List of additional sections (automations, devices, routings)
+    @param c The track structured change
+    @return A section_view for the track
+*)
+
+
+(* ==================== Track Item Template Infrastructure (New Type System) ==================== *)
+
+(** [create_track_collection_config] creates a config for a track collection section (new type system).
+    @param name Section name
+    @param of_value Extract collection from track value
+    @param of_patch Extract collection changes from patch
+    @param build_item Item builder - returns item
+*)
 let create_track_collection_config
   (type track patch elem elem_patch)
   ~(name : string)
   ~(of_value : track -> elem list)
   ~(of_patch : patch -> (elem, elem_patch) structured_change list)
-  ~(build_element : (elem, elem_patch) structured_change -> item)
+  ~(build_item : (elem, elem_patch) structured_change -> item)
   ~domain_type
   : (track, patch) device_section_config =
   {
@@ -2546,19 +1957,19 @@ let create_track_collection_config
         ~name
         ~of_value
         ~of_patch
-        ~build_item:build_element
+        ~build_item
         ~domain_type
       |> Option.map (fun col -> Collection col)
     );
   }
 
 
-(** [create_track_mixer_config] creates a config for a mixer or routings section.
+(** [create_track_mixer_config] creates a config for a mixer/routings section (new type system).
     @param name Section name
     @param of_value Extract nested value from track value
     @param of_patch Extract nested update from track patch
-    @param build_value_fields Build views for Added/Removed cases
-    @param build_patch_fields Build views for Modified case
+    @param build_value_children Build children for Added/Removed cases
+    @param build_patch_children Build children for Modified case
 *)
 let create_track_mixer_config
   (type track patch nested_actual np)
@@ -2579,137 +1990,12 @@ let create_track_mixer_config
         ~build_value_children
         ~build_patch_children
         ~domain_type
-      |> Option.map (fun s -> Item s)
-    );
-  }
-
-
-(** [build_track_view] creates a track section view from a structured change.
-
-    @param track_type_name The type name for section header (e.g., "MidiTrack")
-    @param get_name Extract name from track value
-    @param get_name_patch Extract name update from patch
-    @param clips_config Optional clips collection configuration
-    @param mixer_config Mixer section configuration
-    @param extra_sections List of additional sections (automations, devices, routings)
-    @param c The track structured change
-    @return A section_view for the track
-*)
-let build_track_view
-  (type track patch)
-  ~(track_type_name : string)
-  ~(get_name : track -> string)
-  ~(get_name_patch : patch -> string atomic_update)
-  ~(get_current_name_patch : patch -> string)
-  ~(get_id : track -> int)
-  ~(get_id_patch : patch -> int)
-  ?(clips_config : (track, patch) device_section_config option)
-  ~(mixer_config : (track, patch) device_section_config)
-  ~(extra_sections : (track, patch) device_section_config list)
-  (c : (track, patch) structured_change)
-  : item =
-  let change_type = ViewBuilder.change_type_of c in
-
-  (* Build section name *)
-  let section_name = build_track_section_name
-    ~track_type_name
-    ~get_name
-    ~get_current_name_patch
-    ~get_id
-    ~get_id_patch
-    c
-  in
-
-  (* Build name field *)
-  let name_view : view list = build_name_field
-    ~get_name
-    ~get_name_patch
-    c
-    |> option_to_list
-  in
-
-  (* Build clips collection if configured *)
-  let clips_view : view list = match clips_config with
-    | None -> []
-    | Some config ->
-        config.build c
-        |> option_to_list
-  in
-
-  (* Build mixer section *)
-  let mixer_view : view list = (mixer_config.build c : view option) |> option_to_list in
-
-  (* Build extra sections (automations, devices, routings) *)
-  let extra_views : view list = build_custom_sections extra_sections c in
-
-  (* Combine all sub-views *)
-  let children = name_view @ clips_view @ mixer_view @ extra_views in
-
-  { name = section_name; change = change_type; domain_type = DTTrack; children }
-
-
-(* ==================== Track Item Template Infrastructure (New Type System) ==================== *)
-
-(** [create_track_collection_config_new] creates a config for a track collection section (new type system).
-    @param name Section name
-    @param of_value Extract collection from track value
-    @param of_patch Extract collection changes from patch
-    @param build_item Item builder - returns item
-*)
-let create_track_collection_config_new
-  (type track patch elem elem_patch)
-  ~(name : string)
-  ~(of_value : track -> elem list)
-  ~(of_patch : patch -> (elem, elem_patch) structured_change list)
-  ~(build_item : (elem, elem_patch) structured_change -> item)
-  ~domain_type
-  : (track, patch) new_device_section_config =
-  {
-    name;
-    build = (fun c ->
-      ViewBuilder.build_collection c
-        ~name
-        ~of_value
-        ~of_patch
-        ~build_item
-        ~domain_type
-      |> Option.map (fun col -> Collection col)
-    );
-  }
-
-
-(** [create_track_mixer_config_new] creates a config for a mixer/routings section (new type system).
-    @param name Section name
-    @param of_value Extract nested value from track value
-    @param of_patch Extract nested update from track patch
-    @param build_value_children Build children for Added/Removed cases
-    @param build_patch_children Build children for Modified case
-*)
-let create_track_mixer_config_new
-  (type track patch nested_actual np)
-  ~(name : string)
-  ~(of_value : track -> nested_actual)
-  ~(of_patch : patch -> np structured_update)
-  ~(build_value_children : change_type -> nested_actual -> view list)
-  ~(build_patch_children : np -> view list)
-  ~domain_type
-  : (track, patch) new_device_section_config =
-  {
-    name;
-    build = (fun c ->
-      ViewBuilder.build_item_from_children c
-        ~name
-        ~of_value
-        ~of_patch
-        ~build_value_children
-        ~build_patch_children
-        ~domain_type
       |> Option.map (fun i -> Item i)
     );
   }
 
 
-(** [build_track_item] builds a track view as a item.
+(** [build_track_view] builds a track view as a item.
     This is the new type system version of build_track_view.
 
     @param track_type_name The type name for section header (e.g., "MidiTrack")
@@ -2724,7 +2010,7 @@ let create_track_mixer_config_new
     @param c The track structured change
     @return A item for the track
 *)
-let build_track_item
+let build_track_view
   (type track patch)
   ~(track_type_name : string)
   ~(get_name : track -> string)
@@ -2732,9 +2018,9 @@ let build_track_item
   ~(get_current_name_patch : patch -> string)
   ~(get_id : track -> int)
   ~(get_id_patch : patch -> int)
-  ?(clips_config : (track, patch) new_device_section_config option)
-  ~(mixer_config : (track, patch) new_device_section_config)
-  ~(extra_sections : (track, patch) new_device_section_config list)
+  ?(clips_config : (track, patch) device_section_config option)
+  ~(mixer_config : (track, patch) device_section_config)
+  ~(extra_sections : (track, patch) device_section_config list)
   (c : (track, patch) structured_change)
   : item =
   let change_type = ViewBuilder.change_type_of c in
@@ -2774,7 +2060,7 @@ let build_track_item
   let mixer_view : view list = mixer_config.build c |> option_to_list in
 
   (* Build extra sections (automations, devices, routings) *)
-  let extra_views : view list = build_custom_sections_new extra_sections c in
+  let extra_views : view list = build_custom_sections extra_sections c in
 
   (* Combine all children *)
   let children = (name_field |> option_to_list) @ clips_view @ mixer_view @ extra_views in
@@ -2784,68 +2070,6 @@ let build_track_item
 
 (* ==================== Full Track Views ==================== *)
 
-(** [create_midi_track_view] creates a [section_view] from a MidiTrack structured change.
-    @param c the MIDI track structured change
-*)
-let create_midi_track_view
-    (c : (Track.MidiTrack.t, Track.MidiTrack.Patch.t) structured_change)
-    : item =
-
-  let clips_config = create_track_collection_config
-    ~name:"Clips"
-    ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.clips)
-    ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.clips)
-    ~build_element:create_midi_clip_item
-    ~domain_type:DTClip
-  in
-
-  let mixer_config : (_, _) device_section_config = create_track_mixer_config
-    ~name:"Mixer"
-    ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.mixer)
-    ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.mixer)
-    ~build_value_children:build_mixer_value_fields
-    ~build_patch_children:build_mixer_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let automations_config = create_track_collection_config
-    ~name:"Automations"
-    ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.automations)
-    ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.automations)
-    ~build_element:create_automation_item
-    ~domain_type:DTAutomation
-  in
-
-  let devices_config = create_track_collection_config
-    ~name:"Devices"
-    ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.devices)
-    ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.devices)
-    ~build_element:create_device_item
-    ~domain_type:DTDevice
-  in
-
-  let routings_config = create_track_mixer_config
-    ~name:"Routings"
-    ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.routings)
-    ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.routings)
-    ~build_value_children:create_routing_set_fields
-    ~build_patch_children:create_routing_set_patch_fields
-    ~domain_type:DTRouting
-  in
-
-  build_track_view
-    ~track_type_name:"MidiTrack"
-    ~get_name:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.name)
-    ~get_name_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.name)
-    ~get_current_name_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.current_name)
-    ~get_id:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.id)
-    ~get_id_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.id)
-    ~clips_config
-    ~mixer_config
-    ~extra_sections:[automations_config; devices_config; routings_config]
-    c
-
-
 (** [create_midi_track_item] creates a [item] from a MidiTrack structured change (new type system).
     @param c the MIDI track structured change
 *)
@@ -2853,7 +2077,7 @@ let create_midi_track_item
     (c : (Track.MidiTrack.t, Track.MidiTrack.Patch.t) structured_change)
     : item =
 
-  let clips_config = create_track_collection_config_new
+  let clips_config = create_track_collection_config
     ~name:"Clips"
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.clips)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.clips)
@@ -2861,7 +2085,7 @@ let create_midi_track_item
     ~domain_type:DTClip
   in
 
-  let mixer_config : (_, _) new_device_section_config = create_track_mixer_config_new
+  let mixer_config : (_, _) device_section_config = create_track_mixer_config
     ~name:"Mixer"
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.mixer)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.mixer)
@@ -2872,7 +2096,7 @@ let create_midi_track_item
     ~domain_type:DTMixer
   in
 
-  let automations_config = create_track_collection_config_new
+  let automations_config = create_track_collection_config
     ~name:"Automations"
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.automations)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.automations)
@@ -2880,7 +2104,7 @@ let create_midi_track_item
     ~domain_type:DTAutomation
   in
 
-  let devices_config = create_track_collection_config_new
+  let devices_config = create_track_collection_config
     ~name:"Devices"
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.devices)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.devices)
@@ -2888,7 +2112,7 @@ let create_midi_track_item
     ~domain_type:DTDevice
   in
 
-  let routings_config = create_track_mixer_config_new
+  let routings_config = create_track_mixer_config
     ~name:"Routings"
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.routings)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.routings)
@@ -2899,75 +2123,13 @@ let create_midi_track_item
     ~domain_type:DTRouting
   in
 
-  build_track_item
+  build_track_view
     ~track_type_name:"MidiTrack"
     ~get_name:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.name)
     ~get_name_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.name)
     ~get_current_name_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.current_name)
     ~get_id:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.id)
     ~get_id_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.id)
-    ~clips_config
-    ~mixer_config
-    ~extra_sections:[automations_config; devices_config; routings_config]
-    c
-
-
-(** [create_audio_track_view] creates a [section_view] from an AudioTrack structured change.
-    @param c the audio track structured change
-*)
-let create_audio_track_view
-    (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
-    : item =
-
-  let clips_config = create_track_collection_config
-    ~name:"Clips"
-    ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.clips)
-    ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.clips)
-    ~build_element:create_audio_clip_item
-    ~domain_type:DTClip
-  in
-
-  let mixer_config : (_, _) device_section_config = create_track_mixer_config
-    ~name:"Mixer"
-    ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.mixer)
-    ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.mixer)
-    ~build_value_children:build_mixer_value_fields
-    ~build_patch_children:build_mixer_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let automations_config = create_track_collection_config
-    ~name:"Automations"
-    ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.automations)
-    ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.automations)
-    ~build_element:create_automation_item
-    ~domain_type:DTAutomation
-  in
-
-  let devices_config = create_track_collection_config
-    ~name:"Devices"
-    ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.devices)
-    ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.devices)
-    ~build_element:create_device_item
-    ~domain_type:DTDevice
-  in
-
-  let routings_config = create_track_mixer_config
-    ~name:"Routings"
-    ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.routings)
-    ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.routings)
-    ~build_value_children:create_routing_set_fields
-    ~build_patch_children:create_routing_set_patch_fields
-    ~domain_type:DTRouting
-  in
-
-  build_track_view
-    ~track_type_name:"AudioTrack"
-    ~get_name:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.name)
-    ~get_name_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.name)
-    ~get_current_name_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.current_name)
-    ~get_id:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.id)
-    ~get_id_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.id)
     ~clips_config
     ~mixer_config
     ~extra_sections:[automations_config; devices_config; routings_config]
@@ -2981,7 +2143,7 @@ let create_audio_track_item
     (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
     : item =
 
-  let clips_config = create_track_collection_config_new
+  let clips_config = create_track_collection_config
     ~name:"Clips"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.clips)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.clips)
@@ -2989,7 +2151,7 @@ let create_audio_track_item
     ~domain_type:DTClip
   in
 
-  let mixer_config : (_, _) new_device_section_config = create_track_mixer_config_new
+  let mixer_config : (_, _) device_section_config = create_track_mixer_config
     ~name:"Mixer"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.mixer)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.mixer)
@@ -3000,7 +2162,7 @@ let create_audio_track_item
     ~domain_type:DTMixer
   in
 
-  let automations_config = create_track_collection_config_new
+  let automations_config = create_track_collection_config
     ~name:"Automations"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.automations)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.automations)
@@ -3008,7 +2170,7 @@ let create_audio_track_item
     ~domain_type:DTAutomation
   in
 
-  let devices_config = create_track_collection_config_new
+  let devices_config = create_track_collection_config
     ~name:"Devices"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.devices)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.devices)
@@ -3016,7 +2178,7 @@ let create_audio_track_item
     ~domain_type:DTDevice
   in
 
-  let routings_config = create_track_mixer_config_new
+  let routings_config = create_track_mixer_config
     ~name:"Routings"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.routings)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.routings)
@@ -3027,7 +2189,7 @@ let create_audio_track_item
     ~domain_type:DTRouting
   in
 
-  build_track_item
+  build_track_view
     ~track_type_name:"AudioTrack"
     ~get_name:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.name)
     ~get_name_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.name)
@@ -3035,61 +2197,6 @@ let create_audio_track_item
     ~get_id:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.id)
     ~get_id_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.id)
     ~clips_config
-    ~mixer_config
-    ~extra_sections:[automations_config; devices_config; routings_config]
-    c
-
-
-(** [create_main_track_view] creates a [section_view] from a MainTrack structured change.
-    @param c the main track structured change
-*)
-let create_main_track_view
-    (c : (Track.MainTrack.t, Track.MainTrack.Patch.t) structured_change)
-    : item =
-
-  (* NO clips collection for MainTrack *)
-
-  let mixer_config : (_, _) device_section_config = create_track_mixer_config
-    ~name:"Main Mixer"
-    ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.mixer)
-    ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.mixer)
-    ~build_value_children:build_main_mixer_value_fields
-    ~build_patch_children:build_main_mixer_patch_fields
-    ~domain_type:DTMixer
-  in
-
-  let automations_config = create_track_collection_config
-    ~name:"Automations"
-    ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.automations)
-    ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.automations)
-    ~build_element:create_automation_item
-    ~domain_type:DTAutomation
-  in
-
-  let devices_config = create_track_collection_config
-    ~name:"Devices"
-    ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.devices)
-    ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.devices)
-    ~build_element:create_device_item
-    ~domain_type:DTDevice
-  in
-
-  let routings_config = create_track_mixer_config
-    ~name:"Routings"
-    ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.routings)
-    ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.routings)
-    ~build_value_children:create_routing_set_fields
-    ~build_patch_children:create_routing_set_patch_fields
-    ~domain_type:DTRouting
-  in
-
-  build_track_view
-    ~track_type_name:"MainTrack"
-    ~get_name:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.name)
-    ~get_name_patch:(fun (p : Track.MainTrack.Patch.t) -> p.name)
-    ~get_current_name_patch:(fun (p : Track.MainTrack.Patch.t) -> p.current_name)
-    ~get_id:(fun (_ : Track.MainTrack.t) -> 0)
-    ~get_id_patch:(fun (_ : Track.MainTrack.Patch.t) -> 0)
     ~mixer_config
     ~extra_sections:[automations_config; devices_config; routings_config]
     c
@@ -3104,7 +2211,7 @@ let create_main_track_item
 
   (* NO clips collection for MainTrack *)
 
-  let mixer_config : (_, _) new_device_section_config = create_track_mixer_config_new
+  let mixer_config : (_, _) device_section_config = create_track_mixer_config
     ~name:"Main Mixer"
     ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.mixer)
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.mixer)
@@ -3115,7 +2222,7 @@ let create_main_track_item
     ~domain_type:DTMixer
   in
 
-  let automations_config = create_track_collection_config_new
+  let automations_config = create_track_collection_config
     ~name:"Automations"
     ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.automations)
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.automations)
@@ -3123,7 +2230,7 @@ let create_main_track_item
     ~domain_type:DTAutomation
   in
 
-  let devices_config = create_track_collection_config_new
+  let devices_config = create_track_collection_config
     ~name:"Devices"
     ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.devices)
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.devices)
@@ -3131,7 +2238,7 @@ let create_main_track_item
     ~domain_type:DTDevice
   in
 
-  let routings_config = create_track_mixer_config_new
+  let routings_config = create_track_mixer_config
     ~name:"Routings"
     ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.routings)
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.routings)
@@ -3142,7 +2249,7 @@ let create_main_track_item
     ~domain_type:DTRouting
   in
 
-  build_track_item
+  build_track_view
     ~track_type_name:"MainTrack"
     ~get_name:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.name)
     ~get_name_patch:(fun (p : Track.MainTrack.Patch.t) -> p.name)
@@ -3207,196 +2314,6 @@ let version_field_specs : (Liveset.Version.t, Liveset.Version.Patch.t) unified_f
 
 let create_version_fields = build_value_field_views version_field_specs ~domain_type:DTVersion
 let create_version_patch_fields = build_patch_field_views version_field_specs ~domain_type:DTVersion
-
-
-(** [create_liveset_view] creates a [section_view] from a Liveset structured change.
-    @param c the liveset structured change
-*)
-let create_liveset_view
-    (c : (Liveset.t, Liveset.Patch.t) structured_change)
-    : item =
-
-  let change_type = ViewBuilder.change_type_of c in
-
-  (* Build section name from liveset name *)
-  let section_name = match c with
-    | `Added ls -> "LiveSet: " ^ ls.name
-    | `Removed ls -> "LiveSet: " ^ ls.name
-    | `Modified patch ->
-        (match patch.name with
-         | `Modified { newval; _ } -> "LiveSet: " ^ newval
-         | `Unchanged -> "LiveSet")
-    | `Unchanged -> "LiveSet"
-  in
-
-  (* Build atomic field views for name, version, creator *)
-  let name_field_desc = FieldDesc {
-    name = "Name";
-    of_parent_value = (fun (ls : Liveset.t) -> ls.name);
-    of_parent_patch = (fun (p : Liveset.Patch.t) -> p.name);
-    wrapper = string_value;
-  } in
-
-  let creator_field_desc = FieldDesc {
-    name = "Creator";
-    of_parent_value = (fun (ls : Liveset.t) -> ls.creator);
-    of_parent_patch = (fun (p : Liveset.Patch.t) -> p.creator);
-    wrapper = string_value;
-  } in
-
-  let atomic_field_views =
-    [
-      ViewBuilder.build_field c name_field_desc ~domain_type:DTLiveset;
-      ViewBuilder.build_field c creator_field_desc ~domain_type:DTLiveset;
-    ]
-    |> List.filter (fun (fv : field) -> fv.change <> Unchanged)
-    |> List.map (fun (fv : field) -> (Field fv : view))
-  in
-
-  (* Build Version section using nested_section_view *)
-  let version_section = ViewBuilder.build_item_from_children c
-    ~name:"Version"
-    ~of_value:(fun (ls : Liveset.t) -> ls.version)
-    ~of_patch:(fun (p : Liveset.Patch.t) -> p.version)
-    ~build_value_children:create_version_fields
-    ~build_patch_children:create_version_patch_fields
-    ~domain_type:DTVersion
-  in
-
-  (* Build Main Track section - special handling for singleton track *)
-  let main_track_section = ViewBuilder.build_item_from_children_with_change c
-    ~name:"Main Track"
-    ~of_value:(fun (ls : Liveset.t) ->
-      (* Extract MainTrack from Track.t *)
-      match ls.Liveset.main with
-      | Track.Main t -> Some t
-      | _ -> None)
-    ~of_patch:(fun (p : Liveset.Patch.t) ->
-      (* Extract main track change from tracks - it's the one with Main/MainPatch variant *)
-      let find_main_track = function
-        | `Added (Track.Main t) -> Some (`Added t)
-        | `Removed (Track.Main t) -> Some (`Removed t)
-        | `Modified (Track.Patch.MainPatch pt) -> Some (`Modified pt)
-        | _ -> None
-      in
-      match List.find_map find_main_track p.tracks with
-      | Some main_change -> main_change
-      | None -> `Unchanged)
-    ~build_value_children:(fun ct (main_track : Track.MainTrack.t) ->
-      [Item (create_main_track_view (match ct with
-        | Added -> `Added main_track
-        | Removed -> `Removed main_track
-        | Unchanged -> failwith "Invalid change type for value"
-        | Modified -> failwith "Invalid change type for value"))])
-    ~build_patch_children:(fun pt ->
-      [Item (create_main_track_view (`Modified pt))])
-    ~domain_type:DTTrack
-  in
-
-  (* Build Tracks sections - added directly as sections, not wrapped in a collection *)
-  let build_tracks_sections (c : (Liveset.t, Liveset.Patch.t) structured_change) : view list =
-    (* Get track changes based on the liveset change type *)
-    let track_changes = match c with
-      | `Added ls ->
-          (* Added liveset - all tracks are Added *)
-          ls.Liveset.tracks
-          |> List.filter (fun t -> match t with
-              | Track.Main _ | Track.Return _ -> false
-              | _ -> true)
-          |> List.map (fun t -> match t with
-              | Track.Midi mt -> `Added (Track.Midi mt)
-              | Track.Audio at -> `Added (Track.Audio at)
-              | Track.Group gt -> `Added (Track.Group gt)
-              | _ -> failwith "Unexpected track type")
-      | `Removed ls ->
-          (* Removed liveset - all tracks are Removed *)
-          ls.Liveset.tracks
-          |> List.filter (fun t -> match t with
-              | Track.Main _ | Track.Return _ -> false
-              | _ -> true)
-          |> List.map (fun t -> match t with
-              | Track.Midi mt -> `Removed (Track.Midi mt)
-              | Track.Audio at -> `Removed (Track.Audio at)
-              | Track.Group gt -> `Removed (Track.Group gt)
-              | _ -> failwith "Unexpected track type")
-      | `Modified patch ->
-          (* Modified liveset - use the track changes from the patch *)
-          patch.tracks
-          |> List.filter (fun tc -> match tc with
-              | `Added (Track.Main _) -> false
-              | `Removed (Track.Main _) -> false
-              | `Modified (Track.Patch.MainPatch _) -> false
-              | `Added (Track.Return _) -> false
-              | `Removed (Track.Return _) -> false
-              | _ -> true)
-      | `Unchanged -> []
-    in
-    (* Build track sections directly (not wrapped as elements) *)
-    List.filter_map (fun tc ->
-      match tc with
-      | `Added (Track.Midi t) -> Some (Item (create_midi_track_view (`Added t)))
-      | `Removed (Track.Midi t) -> Some (Item (create_midi_track_view (`Removed t)))
-      | `Modified (Track.Patch.MidiPatch pt) -> Some (Item (create_midi_track_view (`Modified pt)))
-      | `Added (Track.Audio t) -> Some (Item (create_audio_track_view (`Added t)))
-      | `Removed (Track.Audio t) -> Some (Item (create_audio_track_view (`Removed t)))
-      | `Added (Track.Group t) -> Some (Item (create_audio_track_view (`Added t)))
-      | `Removed (Track.Group t) -> Some (Item (create_audio_track_view (`Removed t)))
-      | `Modified (Track.Patch.AudioPatch pt) -> Some (Item (create_audio_track_view (`Modified pt)))
-      | `Unchanged -> None
-      | _ -> failwith "Unexpected track type"
-    ) track_changes
-  in
-
-  (* Build Returns sections - added directly as sections, not wrapped in a collection *)
-  let build_returns_sections (c : (Liveset.t, Liveset.Patch.t) structured_change) : view list =
-    (* Get return track changes based on the liveset change type *)
-    let return_changes = match c with
-      | `Added ls ->
-          ls.Liveset.returns |> List.map (fun t ->
-            match t with
-            | Track.Return rt -> `Added (Track.Return rt)
-            | _ -> failwith "Unexpected non-Return track in returns list"
-          )
-      | `Removed ls ->
-          ls.Liveset.returns |> List.map (fun t ->
-            match t with
-            | Track.Return rt -> `Removed (Track.Return rt)
-            | _ -> failwith "Unexpected non-Return track in returns list"
-          )
-      | `Modified patch -> patch.returns
-      | `Unchanged -> []
-    in
-    (* Build return track sections directly *)
-    List.filter_map (fun rc ->
-      match rc with
-      | `Added (Track.Return t) -> Some (Item (create_audio_track_view (`Added t)))
-      | `Removed (Track.Return t) -> Some (Item (create_audio_track_view (`Removed t)))
-      | `Modified (Track.Patch.AudioPatch pt) -> Some (Item (create_audio_track_view (`Modified pt)))
-      | `Unchanged -> None
-      | _ -> failwith "Unexpected track type in Liveset returns"
-    ) return_changes
-  in
-
-  (* Build Locators collection *)
-  let locators_collection = ViewBuilder.build_collection c
-    ~name:"Locators"
-    ~of_value:(fun (ls : Liveset.t) -> ls.Liveset.locators)
-    ~of_patch:(fun (p : Liveset.Patch.t) -> p.locators)
-    ~build_item:create_locator_item
-    ~domain_type:DTLocator
-  in
-
-  (* Combine all sub-views *)
-  let children =
-    atomic_field_views
-    @ (version_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ (main_track_section |> Option.map (fun s -> Item s) |> option_to_list)
-    @ build_tracks_sections c  (* Tracks added directly as sections *)
-    @ build_returns_sections c  (* Returns added directly as sections *)
-    @ (locators_collection |> Option.map (fun c -> Collection c) |> option_to_list)
-  in
-
-  { name = section_name; change = change_type; domain_type = DTLiveset; children }
 
 
 (** [create_liveset_item] creates a [item] from a Liveset structured change (new type system).
