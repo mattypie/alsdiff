@@ -6,5 +6,13 @@
     "name": "krfantasy"
   },
   "keywords": ["ocaml", "lsp", "language-server", "ocamllsp"],
-  "lspServers": "./.lsp.json"
+  "lspServers": {
+    "ocaml": {
+      "command": "ocamllsp",
+      "extensionToLanguage": {
+        ".ml": "ocaml",
+        ".mli": "ocaml"
+      }
+    }
+  }
 }

@@ -1,9 +1,0 @@
-{
-  "ocaml": {
-    "command": "ocamllsp",
-    "extensionToLanguage": {
-      ".ml": "ocaml",
-      ".mli": "ocaml"
-    }
-  }
-}
