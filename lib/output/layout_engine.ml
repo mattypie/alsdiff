@@ -518,7 +518,7 @@ let pp_field_value fmt = function
   | Fstring s -> Fmt.pf fmt "%s" s
 
 (* Field view rendering *)
-let rec pp_field cfg fmt (field : field) =
+let pp_field cfg fmt (field : field) =
   (* Always render if called - filtering happens at parent level *)
   Fmt.pf fmt "@[<h>  %a %s: " (pp_change_type cfg) field.change field.name;
   match field.oldval, field.newval with
@@ -531,7 +531,7 @@ let rec pp_field cfg fmt (field : field) =
   | None, None -> Fmt.pf fmt "@]"
 
 (* Element view rendering *)
-and pp_item cfg fmt (elem : item) =
+let rec pp_item cfg fmt (elem : item) =
   let level = get_effective_detail cfg elem.change elem.domain_type in
   if not (should_render_level level) then ()
   else
@@ -634,10 +634,20 @@ let rec pp_section cfg fmt (section : item) =
     end;
     (* Render sub-views for Compact and Full modes, OR for LiveSet in Summary mode *)
     if level <> Summary || section.domain_type = DTLiveset then (
+      let views_to_render = match level with
+        | Compact ->
+            (* Compact mode: only show Item and Collection subviews, no Fields *)
+            List.filter (fun v ->
+              match v with
+              | Item _ | Collection _ -> true
+              | Field _ -> false
+            ) sub_views
+        | Full | Summary | None -> sub_views
+      in
       List.iter (fun view ->
           Fmt.pf fmt "@\n";
           pp_view cfg fmt view
-        ) sub_views;
+        ) views_to_render;
       Fmt.pf fmt "@]"
     )
 
@@ -659,4 +669,3 @@ let pp cfg fmt view =
 (* Top-level render function for string output *)
 let render_to_string cfg view =
   Fmt.str "%a" (pp_view cfg) view
-
