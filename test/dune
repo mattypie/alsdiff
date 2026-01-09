@@ -140,6 +140,11 @@
  (deps main_track.xml))
 
 (test
+ (name test_view_model)
+ (modules test_view_model)
+ (libraries alsdiff_lib alcotest test_utils))
+
+(test
  (name test_text_renderer)
  (modules test_text_renderer)
  (libraries alsdiff_lib alcotest test_utils))
