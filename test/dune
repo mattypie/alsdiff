@@ -140,6 +140,6 @@
  (deps main_track.xml))
 
 (test
- (name test_layout_engine)
- (modules test_layout_engine)
+ (name test_text_renderer)
+ (modules test_text_renderer)
  (libraries alsdiff_lib alcotest test_utils))

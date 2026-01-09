@@ -1,5 +1,5 @@
 
-open Alsdiff_output.Layout_engine
+open Alsdiff_output.Text_renderer
 open Alsdiff_output.View_model
 
 let test_compact () =

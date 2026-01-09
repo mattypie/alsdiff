@@ -8,14 +8,14 @@ let get_config () =
   match Sys.argv with
   | [| _; _; _; mode |] ->
     (match mode with
-     | "compact" -> Layout_engine.compact
-     | "full" -> Layout_engine.full
-     | "midi" -> Layout_engine.midi_friendly
-     | "quiet" -> Layout_engine.quiet
-     | "verbose" -> Layout_engine.verbose
-     | "track_only" -> Layout_engine.track_only
+     | "compact" -> Text_renderer.compact
+     | "full" -> Text_renderer.full
+     | "midi" -> Text_renderer.midi_friendly
+     | "quiet" -> Text_renderer.quiet
+     | "verbose" -> Text_renderer.verbose
+     | "track_only" -> Text_renderer.track_only
      | _ -> Fmt.epr "Unknown mode: %s@." mode; exit 1)
-  | _ -> Layout_engine.midi_friendly  (* Default *)
+  | _ -> Text_renderer.midi_friendly  (* Default *)
 
 (** [load_liveset ~domain_mgr file] loads an .als file and creates a Liveset. *)
 let load_liveset ~domain_mgr file =
@@ -36,7 +36,7 @@ let render_views config (views : View_model.view list) : string =
   Fmt.set_style_renderer ppf `None;
 
   List.iter (fun view ->
-    Layout_engine.pp config ppf view;
+    Text_renderer.pp config ppf view;
     Fmt.pf ppf "@.";
   ) views;
 
