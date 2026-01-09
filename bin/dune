@@ -1,13 +1,6 @@
 (executable
  (public_name alsdiff)
- (name main)
- (modules main)
- (modes byte exe)
- (libraries alsdiff_lib eio_main))
-
-(executable
- (public_name layout_print)
- (name layout_print)
- (modules layout_print)
+ (name alsdiff)
+ (modules alsdiff)
  (modes byte exe)
  (libraries alsdiff_lib eio_main))

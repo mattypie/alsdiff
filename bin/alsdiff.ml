@@ -14,7 +14,7 @@ let get_config () =
      | "quiet" -> Text_renderer.quiet
      | "verbose" -> Text_renderer.verbose
      | _ -> Fmt.epr "Unknown mode: %s@." mode; exit 1)
-  | _ -> Text_renderer.midi_friendly  (* Default *)
+  | _ -> Text_renderer.quiet  (* Default *)
 
 (** [load_liveset ~domain_mgr file] loads an .als file and creates a Liveset. *)
 let load_liveset ~domain_mgr file =
@@ -46,7 +46,7 @@ let render_views config (views : View_model.view list) : string =
 let main ~domain_mgr =
   if Array.length Sys.argv < 3 then (
     Fmt.epr "Usage: %s <file1.als> <file2.als> [mode]@." Sys.argv.(0);
-    Fmt.epr "Modes: compact, full, midi (default), quiet, verbose@.";
+    Fmt.epr "Modes: compact, full, midi, quiet(default), verbose@.";
     exit 1
   );
 
