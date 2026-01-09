@@ -442,11 +442,15 @@ let signature_field_specs : (Clip.TimeSignature.t, Clip.TimeSignature.Patch.t) u
 let create_signature_fields = build_value_field_views signature_field_specs ~domain_type:DTSignature
 let create_signature_patch_fields = build_patch_field_views signature_field_specs ~domain_type:DTSignature
 
+(* Default note name style for MIDI notes *)
+let default_note_name_style = Clip.MidiNote.Sharp
 
 (** [create_note_item] builds a [item] for a single note change (new type system).
+    @param note_name_style the style to use for note names (Sharp or Flat)
     @param c the note structured change
 *)
 let create_note_item
+    ?(note_name_style = default_note_name_style)
     (c : (Clip.MidiNote.t, Clip.MidiNote.Patch.t) structured_change)
     : item =
   let open Clip.MidiNote in
@@ -484,8 +488,12 @@ let create_note_item
   ]
   in
   let note_name = match c with
-    | `Added n -> Printf.sprintf "Note %d" n.note
-    | `Removed n -> Printf.sprintf "Note %d" n.note
+    | `Added n ->
+        let name = Clip.MidiNote.get_note_name_from_int ~style:note_name_style n.note in
+        Printf.sprintf "Note %s (%d)" name n.note
+    | `Removed n ->
+        let name = Clip.MidiNote.get_note_name_from_int ~style:note_name_style n.note in
+        Printf.sprintf "Note %s (%d)" name n.note
     | `Modified _ -> "Note"
     | `Unchanged -> "Note"
   in

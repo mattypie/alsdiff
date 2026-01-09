@@ -45,6 +45,9 @@ type detail_config = {
   prefix_removed : string;
   prefix_modified : string;
   prefix_unchanged : string;
+
+  (* Note name display style for MIDI notes *)
+  note_name_style : Alsdiff_live.Clip.MidiNote.note_display_style;
 }
 
 (* Helper: Create a per_change_override with all fields set to None *)
@@ -280,6 +283,7 @@ let compact = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
+  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
 }
 
 (* Legacy Full equivalent: show all details *)
@@ -295,6 +299,7 @@ let full = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
+  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
 }
 
 (* MIDI-friendly: don't show details for removed clips *)
@@ -310,6 +315,7 @@ let midi_friendly = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
+  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
 }
 
 (* Quiet mode: minimal output *)
@@ -325,6 +331,7 @@ let quiet = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
+  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
 }
 
 (* Verbose mode: show everything including unchanged *)
@@ -340,6 +347,7 @@ let verbose = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
+  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
 }
 
 (* ==================== Type-Based Presets ==================== *)
