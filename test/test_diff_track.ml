@@ -1,6 +1,6 @@
 
+open Alsdiff_base
 open Alsdiff_live
-open Alsdiff_output
 open Alsdiff_live.Track
 
 
@@ -63,10 +63,34 @@ let test_midi_track_diff () =
   let new_track = make_midi_track 1 "Midi Track Renamed" mixer2 in
 
   let patch = Track.diff old_track new_track in
-  let output = Text_output.render_track patch in
 
-  let expected = "Midi Track Patch:\n  ~ Name changed from Midi Track to Midi Track Renamed\n  Mixer Patch:\n    Volume:\n        ~ Value changed from 0.80 to 0.50" in
-  Alcotest.(check string) "Midi track diff output" expected output
+  (* Check that we got a MidiPatch *)
+  (match patch with
+  | Track.Patch.MidiPatch midi_patch ->
+      (* Check name change *)
+      (match midi_patch.Track.MidiTrack.Patch.name with
+      | `Modified m ->
+          Alcotest.(check string) "old name" "Midi Track" m.oldval;
+          Alcotest.(check string) "new name" "Midi Track Renamed" m.newval
+      | _ -> Alcotest.fail "Expected name to be modified");
+
+      (* Check mixer volume change *)
+      (match midi_patch.Track.MidiTrack.Patch.mixer with
+      | `Modified mixer_patch ->
+          (match mixer_patch.Track.Mixer.Patch.volume with
+          | `Modified volume_patch ->
+              (match volume_patch.Device.GenericParam.Patch.value with
+              | `Modified v ->
+                  (match v.Diff.oldval with
+                  | Device.Float old_val -> Alcotest.(check (float 0.01)) "old volume" 0.8 old_val
+                  | _ -> Alcotest.fail "Expected Float value");
+                  (match v.Diff.newval with
+                  | Device.Float new_val -> Alcotest.(check (float 0.01)) "new volume" 0.5 new_val
+                  | _ -> Alcotest.fail "Expected Float value")
+              | _ -> Alcotest.fail "Expected volume value to be modified")
+          | _ -> Alcotest.fail "Expected volume to be modified")
+      | _ -> Alcotest.fail "Expected mixer to be modified")
+  | _ -> Alcotest.fail "Expected MidiPatch")
 
 let () =
   Alcotest.run "Diff Track" [

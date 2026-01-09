@@ -3,8 +3,7 @@
  (modules
    output
    view_model
-   text_renderer
-   text_output)
+   text_renderer)
  (libraries
    alsdiff_base
    alsdiff_live
