@@ -63,8 +63,13 @@ let main ~domain_mgr =
   (* Diff livesets - returns Liveset.Patch.t *)
   let liveset_patch = Liveset.diff liveset1 liveset2 in
 
-  (* Wrap in `Modified to get (Liveset.t, Liveset.Patch.t) structured_change *)
-  let liveset_change = `Modified liveset_patch in
+  (* Wrap in appropriate variant based on whether there are changes *)
+  let liveset_change =
+    if Liveset.Patch.is_empty liveset_patch then
+      `Unchanged
+    else
+      `Modified liveset_patch
+  in
 
   (* Create view using the full hierarchy *)
   let views = create_views liveset_change in

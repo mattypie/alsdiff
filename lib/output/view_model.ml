@@ -2313,7 +2313,7 @@ let create_locator_item
     FieldDesc {
       name = "Id";
       of_parent_value = (fun (x : Liveset.Locator.t) -> x.Liveset.Locator.id);
-      of_parent_patch = (fun _ -> failwith "Locator id is immutable");
+      of_parent_patch = (fun _ -> `Unchanged);
       wrapper = int_value;
     };
     FieldDesc {
