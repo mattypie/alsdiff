@@ -47,7 +47,7 @@ type detail_config = {
   prefix_unchanged : string;
 
   (* Note name display style for MIDI notes *)
-  note_name_style : Alsdiff_live.Clip.MidiNote.note_display_style;
+  note_name_style : note_display_style;
 }
 
 (* Helper: Create a per_change_override with all fields set to None *)
@@ -283,7 +283,7 @@ let compact = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
-  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
+  note_name_style = Sharp;
 }
 
 (* Legacy Full equivalent: show all details *)
@@ -299,7 +299,7 @@ let full = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
-  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
+  note_name_style = Sharp;
 }
 
 (* MIDI-friendly: don't show details for removed clips *)
@@ -315,7 +315,7 @@ let midi_friendly = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
-  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
+  note_name_style = Sharp;
 }
 
 (* Quiet mode: minimal output *)
@@ -331,7 +331,7 @@ let quiet = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
-  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
+  note_name_style = Sharp;
 }
 
 (* Verbose mode: show everything including unchanged *)
@@ -347,7 +347,7 @@ let verbose = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "";
-  note_name_style = Alsdiff_live.Clip.MidiNote.Sharp;
+  note_name_style = Sharp;
 }
 
 (* Helper to create a config with custom prefixes *)
@@ -549,8 +549,6 @@ let rec pp_section cfg fmt (section : item) =
         ) else (
           Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
         )
-      else if level = Compact then
-        Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
       else
         Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
     end;

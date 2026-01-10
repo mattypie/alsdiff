@@ -2,6 +2,25 @@ open Alsdiff_live
 open Alsdiff_base.Diff
 open Ptime.Span
 
+type note_display_style = Sharp | Flat
+
+let get_note_name_from_int ?(style : note_display_style = Sharp) (note_int : int) : string =
+  let note_names_sharp = [| "C"; "C#"; "D"; "D#"; "E"; "F"; "F#"; "G"; "G#"; "A"; "A#"; "B" |] in
+  let note_names_flat = [| "C"; "Db"; "D"; "Eb"; "E"; "F"; "Gb"; "G"; "Ab"; "A"; "Bb"; "B" |] in
+
+  let note_class = note_int mod 12 in
+  let octave_num = note_int / 12 - 1 in (* MIDI octave adjustment *)
+
+  let note_name = match style with
+    | Sharp -> note_names_sharp.(note_class)
+    | Flat -> note_names_flat.(note_class)
+  in
+
+  Printf.sprintf "%s%d" note_name octave_num
+
+let get_note_name ?(style : note_display_style = Sharp) (note : int) : string =
+  get_note_name_from_int note ~style
+
 (** [format_unix_timestamp] converts a Unix timestamp (int) to a human-readable datetime string.
     Returns "Invalid timestamp" if the timestamp is out of range for ptime.
     @param ts Unix timestamp as int (seconds since epoch)
@@ -458,14 +477,14 @@ let create_signature_fields = build_value_field_views signature_field_specs ~dom
 let create_signature_patch_fields = build_patch_field_views signature_field_specs ~domain_type:DTSignature
 
 (* Default note name style for MIDI notes *)
-let default_note_name_style = Clip.MidiNote.Sharp
+let default_note_name_style = Sharp
 
 (** [create_note_item] builds a [item] for a single note change (new type system).
     @param note_name_style the style to use for note names (Sharp or Flat)
     @param c the note structured change
 *)
 let create_note_item
-    ?(note_name_style = default_note_name_style)
+    ?(note_name_style : note_display_style = default_note_name_style)
     (c : (Clip.MidiNote.t, Clip.MidiNote.Patch.t) structured_change)
     : item =
   let open Clip.MidiNote in
@@ -504,10 +523,10 @@ let create_note_item
   in
   let note_name = match c with
     | `Added n ->
-        let name = Clip.MidiNote.get_note_name_from_int ~style:note_name_style n.note in
+        let name = get_note_name_from_int ~style:note_name_style n.note in
         Printf.sprintf "Note %s (%d)" name n.note
     | `Removed n ->
-        let name = Clip.MidiNote.get_note_name_from_int ~style:note_name_style n.note in
+        let name = get_note_name_from_int ~style:note_name_style n.note in
         Printf.sprintf "Note %s (%d)" name n.note
     | `Modified _ -> "Note"
     | `Unchanged -> "Note"
