@@ -3,4 +3,4 @@
  (name alsdiff)
  (modules alsdiff)
  (modes byte exe)
- (libraries alsdiff_lib eio_main))
+ (libraries alsdiff_lib eio_main cmdliner))
