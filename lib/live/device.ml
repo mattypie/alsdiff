@@ -392,12 +392,12 @@ module PresetRef = struct
     if old_preset.id <> new_preset.id then
       failwith "cannot diff two PresetRefs with different Ids"
     else
-      let relative_path_change = diff_atomic_value (module Equality.StringEq) old_preset.relative_path new_preset.relative_path in
-      let path_change = diff_atomic_value (module Equality.StringEq) old_preset.path new_preset.path in
-      let pack_name_change = diff_atomic_value (module Equality.StringEq) old_preset.pack_name new_preset.pack_name in
-      let pack_id_change = diff_atomic_value (module Equality.IntEq) old_preset.pack_id new_preset.pack_id in
-      let file_size_change = diff_atomic_value (module Equality.IntEq) old_preset.file_size new_preset.file_size in
-      let crc_change = diff_atomic_value (module Equality.IntEq) old_preset.crc new_preset.crc in
+      let relative_path_change = diff_atomic_value (module String) old_preset.relative_path new_preset.relative_path in
+      let path_change = diff_atomic_value (module String) old_preset.path new_preset.path in
+      let pack_name_change = diff_atomic_value (module String) old_preset.pack_name new_preset.pack_name in
+      let pack_id_change = diff_atomic_value (module Int) old_preset.pack_id new_preset.pack_id in
+      let file_size_change = diff_atomic_value (module Int) old_preset.file_size new_preset.file_size in
+      let crc_change = diff_atomic_value (module Int) old_preset.crc new_preset.crc in
       {
         relative_path = relative_path_change;
         path = path_change;
@@ -488,13 +488,13 @@ module PatchRef = struct
     (* if old_patch.id <> new_patch.id then *)
     (*   failwith "cannot diff two PatchRefs with different Ids" *)
     (* else *)
-      let relative_path_change = diff_atomic_value (module Equality.StringEq) old_patch.relative_path new_patch.relative_path in
-      let path_change = diff_atomic_value (module Equality.StringEq) old_patch.path new_patch.path in
-      let pack_name_change = diff_atomic_value (module Equality.StringEq) old_patch.pack_name new_patch.pack_name in
-      let pack_id_change = diff_atomic_value (module Equality.IntEq) old_patch.pack_id new_patch.pack_id in
-      let file_size_change = diff_atomic_value (module Equality.IntEq) old_patch.file_size new_patch.file_size in
-      let crc_change = diff_atomic_value (module Equality.IntEq) old_patch.crc new_patch.crc in
-      let last_mod_date_change = diff_atomic_value (module Equality.IntEq) old_patch.last_mod_date new_patch.last_mod_date in
+      let relative_path_change = diff_atomic_value (module String) old_patch.relative_path new_patch.relative_path in
+      let path_change = diff_atomic_value (module String) old_patch.path new_patch.path in
+      let pack_name_change = diff_atomic_value (module String) old_patch.pack_name new_patch.pack_name in
+      let pack_id_change = diff_atomic_value (module Int) old_patch.pack_id new_patch.pack_id in
+      let file_size_change = diff_atomic_value (module Int) old_patch.file_size new_patch.file_size in
+      let crc_change = diff_atomic_value (module Int) old_patch.crc new_patch.crc in
+      let last_mod_date_change = diff_atomic_value (module Int) old_patch.last_mod_date new_patch.last_mod_date in
       {
         relative_path = relative_path_change;
         path = path_change;
@@ -768,10 +768,10 @@ module PluginDesc = struct
     if old_desc.uid <> new_desc.uid then
       failwith "cannot diff two PluginDesc with different UIDs"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_desc.name new_desc.name in
-      let uid_change = diff_atomic_value (module Equality.StringEq) old_desc.uid new_desc.uid in
+      let name_change = diff_atomic_value (module String) old_desc.name new_desc.name in
+      let uid_change = diff_atomic_value (module String) old_desc.uid new_desc.uid in
       let plugin_type_change = diff_atomic_value (module PluginTypeEq) old_desc.plugin_type new_desc.plugin_type in
-      let state_change = diff_atomic_value (module Equality.StringEq) old_desc.state new_desc.state in
+      let state_change = diff_atomic_value (module String) old_desc.state new_desc.state in
 
       {
         Patch.name = name_change;
@@ -862,7 +862,7 @@ module Max4LiveParam = struct
     if old_param.id <> new_param.id then
       failwith "cannot diff two Max4LiveParams with different Ids"
     else
-      let index_change = diff_atomic_value (module Equality.IntEq) old_param.index new_param.index in
+      let index_change = diff_atomic_value (module Int) old_param.index new_param.index in
       let base_change = diff_complex_value (module GenericParam) old_param.base new_param.base in
 
       {
@@ -941,7 +941,7 @@ let diff_atomic_list (old_list : float list) (new_list : float list) : float ato
     failwith "diff_atomic_list requires lists of same length"
   else
     List.map2 (fun old_elem new_elem ->
-      (diff_atomic_value (module Equality.FloatEq) old_elem new_elem :> float atomic_change)
+      (diff_atomic_value (module Float) old_elem new_elem :> float atomic_change)
     ) old_list new_list
 
 
@@ -1033,7 +1033,7 @@ module Snapshot = struct
     if old_snapshot.id <> new_snapshot.id then
       failwith "cannot diff two Snapshots with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_snapshot.name new_snapshot.name in
+      let name_change = diff_atomic_value (module String) old_snapshot.name new_snapshot.name in
       let values_changes = diff_atomic_list old_snapshot.values new_snapshot.values in
 
       {
@@ -1173,7 +1173,7 @@ let rec regular_device_diff (old_device : regular_device) (new_device : regular_
   if old_device.id <> new_device.id && old_device.device_name <> new_device.device_name  then
     failwith "cannot diff two RegularDevices with different Ids & Device names"
   else
-    let display_name_change = diff_atomic_value (module Equality.StringEq) old_device.display_name new_device.display_name in
+    let display_name_change = diff_atomic_value (module String) old_device.display_name new_device.display_name in
     let preset_change = diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset in
     let params_changes =
       diff_list_id (module DeviceParam) old_device.params new_device.params
@@ -1191,7 +1191,7 @@ and plugin_device_diff (old_device : plugin_device) (new_device : plugin_device)
     failwith "cannot diff two PluginDevices with different IDs"
   else
     let display_name_change =
-      diff_atomic_value (module Equality.StringEq) old_device.display_name new_device.display_name
+      diff_atomic_value (module String) old_device.display_name new_device.display_name
     in
     let enabled_change =
       diff_complex_value (module DeviceParam) old_device.enabled new_device.enabled
@@ -1225,7 +1225,7 @@ and max4live_device_diff (old_device : max4live_device) (new_device : max4live_d
     failwith "cannot diff two Max4LiveDevices with different IDs"
   else
     let display_name_change =
-      diff_atomic_value (module Equality.StringEq) old_device.display_name new_device.display_name
+      diff_atomic_value (module String) old_device.display_name new_device.display_name
     in
     let enabled_change =
       diff_complex_value (module DeviceParam) old_device.enabled new_device.enabled
@@ -1299,7 +1299,7 @@ and group_device_diff (old_group : group_device) (new_group : group_device) =
   if old_group.id <> new_group.id then
     failwith "cannot diff two GroupDevices with different Ids"
   else
-    let display_name_change = diff_atomic_value (module Equality.StringEq) old_group.display_name new_group.display_name in
+    let display_name_change = diff_atomic_value (module String) old_group.display_name new_group.display_name in
     let enabled_change = diff_complex_value (module DeviceParam) old_group.enabled new_group.enabled in
     let preset_change = diff_complex_value_opt (module PresetRef) old_group.preset new_group.preset in
     let branches_changes =

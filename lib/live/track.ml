@@ -69,9 +69,9 @@ module Routing = struct
       failwith "cannot diff two Routing with different route types"
     else
       let route_type_change = diff_atomic_value (module RouteTypeEq) old_routing.route_type new_routing.route_type in
-      let target_change = diff_atomic_value (module Equality.StringEq) old_routing.target new_routing.target in
-      let upper_string_change = diff_atomic_value (module Equality.StringEq) old_routing.upper_string new_routing.upper_string in
-      let lower_string_change = diff_atomic_value (module Equality.StringEq) old_routing.lower_string new_routing.lower_string in
+      let target_change = diff_atomic_value (module String) old_routing.target new_routing.target in
+      let upper_string_change = diff_atomic_value (module String) old_routing.upper_string new_routing.upper_string in
+      let lower_string_change = diff_atomic_value (module String) old_routing.lower_string new_routing.lower_string in
 
       {
         Patch.route_type = route_type_change;
@@ -293,7 +293,7 @@ module MidiTrack = struct
     if old_track.id <> new_track.id then
       failwith "cannot diff two MidiTracks with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+      let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.MidiClip) old_track.clips new_track.clips
       in
@@ -376,7 +376,7 @@ module AudioTrack = struct
     if old_track.id <> new_track.id then
       failwith "cannot diff two AudioTracks with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+      let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.AudioClip) old_track.clips new_track.clips
       in
@@ -503,7 +503,7 @@ module MainTrack = struct
   end
 
   let diff (old_track : t) (new_track : t) : Patch.t =
-    let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+    let name_change = diff_atomic_value (module String) old_track.name new_track.name in
     let automations_changes =
       diff_list_id (module Automation) old_track.automations new_track.automations
     in
