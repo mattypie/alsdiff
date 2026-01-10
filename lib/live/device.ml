@@ -421,7 +421,7 @@ module PatchRef = struct
     pack_id : int;
     file_size : int;
     crc : int;
-    last_mod_date : int64;  (* LastModDate Value attribute - UNIX timestamp *)
+    last_mod_date : int;  (* LastModDate Value attribute - UNIX timestamp *)
   } [@@deriving eq]
 
   let has_same_id a b = a.id = b.id
@@ -447,10 +447,10 @@ module PatchRef = struct
       let path = Upath.get_attr "/Path" "Value" file_ref_xml in
       let preset_file_name = Upath.get_attr "/Path" "Value" file_ref_xml |> Filename.basename |> Filename.remove_extension in
 
-      (* Extract LastModDate as int64 UNIX timestamp *)
+      (* Extract LastModDate as int UNIX timestamp *)
       let last_mod_date =
-        try Upath.get_attr "/LastModDate" "Value" xml |> Int64.of_string
-        with _ -> 0L (* Default to 0L if not found *)
+        try Upath.get_attr "/LastModDate" "Value" xml |> int_of_string
+        with _ -> 0 (* Default to 0 if not found *)
       in
 
       let name = preset_file_name in
@@ -470,7 +470,7 @@ module PatchRef = struct
       pack_id : int atomic_update;
       file_size : int atomic_update;
       crc : int atomic_update;
-      last_mod_date : int64 atomic_update;
+      last_mod_date : int atomic_update;
     }
 
     let is_empty p =
@@ -494,7 +494,7 @@ module PatchRef = struct
       let pack_id_change = diff_atomic_value (module Equality.IntEq) old_patch.pack_id new_patch.pack_id in
       let file_size_change = diff_atomic_value (module Equality.IntEq) old_patch.file_size new_patch.file_size in
       let crc_change = diff_atomic_value (module Equality.IntEq) old_patch.crc new_patch.crc in
-      let last_mod_date_change = diff_atomic_value (module Equality.Int64Eq) old_patch.last_mod_date new_patch.last_mod_date in
+      let last_mod_date_change = diff_atomic_value (module Equality.IntEq) old_patch.last_mod_date new_patch.last_mod_date in
       {
         relative_path = relative_path_change;
         path = path_change;

@@ -96,8 +96,8 @@ let test_diff_logic () =
 
       (match sample_ref_patch.last_modified_date with
       | `Modified m ->
-          check int64 "old last modified" 1742403846L m.oldval;
-          check int64 "new last modified" 1742403845L m.newval
+          check int "old last modified" 1742403846 m.oldval;
+          check int "new last modified" 1742403845 m.newval
       | _ -> fail "Expected last modified date to be modified")
   | `Unchanged -> fail "Expected sample reference to be modified")
 

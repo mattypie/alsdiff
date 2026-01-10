@@ -259,14 +259,14 @@ module SampleRef = struct
   type t = {
     file_path : string;
     crc : string;
-    last_modified_date : int64; (* unix timestamp *)
+    last_modified_date : int; (* unix timestamp *)
   } [@@deriving eq]
 
   module Patch = struct
     type t = {
       file_path : string atomic_update;
       crc : string atomic_update;
-      last_modified_date : int64 atomic_update;
+      last_modified_date : int atomic_update;
     }
 
     let is_empty p =
@@ -278,7 +278,7 @@ module SampleRef = struct
   let create (xml : Xml.t) : t =
     match xml with
     | Xml.Element { name = "SampleRef"; _ } ->
-      let last_modified_date = Upath.get_int64_attr "LastModDate" "Value" xml in
+      let last_modified_date = Upath.get_int_attr "LastModDate" "Value" xml in
       let file_path = Upath.get_attr "FileRef/Path" "Value" xml in
       let crc = Upath.get_attr "FileRef/OriginalCrc" "Value" xml in
       { file_path; crc; last_modified_date }
@@ -291,7 +291,7 @@ module SampleRef = struct
 
     let file_path_change = diff_atomic_value (module Equality.StringEq) old_file_path new_file_path in
     let crc_change = diff_atomic_value (module Equality.StringEq) old_crc new_crc in
-    let last_modified_date_change = diff_atomic_value (module Equality.Int64Eq) old_date new_date in
+    let last_modified_date_change = diff_atomic_value (module Equality.IntEq) old_date new_date in
     { file_path = file_path_change; crc = crc_change; last_modified_date = last_modified_date_change }
 
 end

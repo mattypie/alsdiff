@@ -2,14 +2,14 @@ open Alsdiff_live
 open Alsdiff_base.Diff
 open Ptime.Span
 
-(** [format_unix_timestamp] converts a Unix timestamp (int64) to a human-readable datetime string.
+(** [format_unix_timestamp] converts a Unix timestamp (int) to a human-readable datetime string.
     Returns "Invalid timestamp" if the timestamp is out of range for ptime.
-    @param ts Unix timestamp as int64 (seconds since epoch)
+    @param ts Unix timestamp as int (seconds since epoch)
     @return Formatted datetime string in ISO 8601 format (e.g., "2024-01-15 14:30:00")
 *)
-let format_unix_timestamp (ts : int64) : string =
-  (* Convert int64 seconds to ptime *)
-  let span = of_int_s (Int64.to_int ts) in
+let format_unix_timestamp (ts : int) : string =
+  (* Convert int seconds to ptime *)
+  let span = of_int_s ts in
   match Ptime.of_span span with
   | None -> "Invalid timestamp"
   | Some t ->

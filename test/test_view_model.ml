@@ -296,7 +296,7 @@ let test_create_midi_clip_item () =
 
 
 let test_create_audio_clip_item_added () =
-  let sample_ref = { SampleRef.file_path = "/path/to/sample.wav"; crc = "abc123"; last_modified_date = 12345L } in
+  let sample_ref = { SampleRef.file_path = "/path/to/sample.wav"; crc = "abc123"; last_modified_date = 12345 } in
   let loop = { Loop.start_time = 0.0; end_time = 4.0; on = true } in
   let signature = { TimeSignature.numer = 4; denom = 4 } in
   let clip = {
