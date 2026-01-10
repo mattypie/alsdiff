@@ -42,8 +42,8 @@ module EnvelopeEvent = struct
     else
       let { time = old_time; value = old_value; _ } = old_event in
       let { time = new_time; value = new_value; _ } = new_event in
-      let time_change = diff_atomic_value (module Equality.FloatEq) old_time new_time in
-      let value_change = diff_atomic_value (module Equality.FloatEq) old_value new_value in
+      let time_change = diff_atomic_value (module Float) old_time new_time in
+      let value_change = diff_atomic_value (module Float) old_value new_value in
       { time = time_change; value = value_change }
 end
 

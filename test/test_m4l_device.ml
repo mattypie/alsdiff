@@ -224,7 +224,7 @@ let test_m4l_device_patch_ref () =
   Alcotest.(check int) "patch ref pack id" 0 patch_ref.pack_id;
   Alcotest.(check int) "patch ref file size" 444848 patch_ref.file_size;
   Alcotest.(check int) "patch ref crc" 3851 patch_ref.crc;
-  Alcotest.(check int64) "patch ref last mod date" 1742403843L patch_ref.last_mod_date
+  Alcotest.(check int) "patch ref last mod date" 1742403843 patch_ref.last_mod_date
 
 let () =
   Alcotest.run "M4LDevice" [

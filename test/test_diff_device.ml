@@ -1,6 +1,5 @@
 
 open Alsdiff_live
-open Alsdiff_output
 open Alsdiff_live.Device
 
 (* Helper to create a dummy DeviceParam *)
@@ -37,14 +36,35 @@ let test_regular_device_diff () =
   let new_device = make_regular_device 1 "Overdrive" [param1_mod; param2] in
 
   let patch = Device.diff old_device new_device in
-  let output = Text_output.render_device patch in
 
-  let expected = "Regular Device Patch:\n  Parameters Changes:\n      ~ Value changed from 0.50 to 0.80" in
-  Alcotest.(check string) "Regular device diff output" expected output
+  (* Check that we got a RegularPatch *)
+  (match patch with
+  | Device.Patch.RegularPatch regular_patch ->
+      (* The first param (Drive) should be Modified, second (Tone) should be Unchanged *)
+      (* Check the Drive param change (first in params list) *)
+      (match regular_patch.params with
+      | drive_change :: _ ->
+          (match drive_change with
+          | `Modified param_patch ->
+              (match param_patch.Device.DeviceParam.Patch.base with
+              | `Modified generic_patch ->
+                  (match generic_patch.Device.GenericParam.Patch.value with
+                  | `Modified v ->
+                      (match v.oldval with
+                      | Device.Float old_val -> Alcotest.(check (float 0.01)) "old value" 0.5 old_val
+                      | _ -> Alcotest.fail "Expected Float value");
+                      (match v.newval with
+                      | Device.Float new_val -> Alcotest.(check (float 0.01)) "new value" 0.8 new_val
+                      | _ -> Alcotest.fail "Expected Float value")
+                  | _ -> Alcotest.fail "Expected value to be modified")
+              | _ -> Alcotest.fail "Expected base to be modified")
+          | _ -> Alcotest.fail "Expected param to be modified")
+      | _ -> Alcotest.fail "Expected at least one param change")
+  | _ -> Alcotest.fail "Expected RegularPatch")
 
 let test_plugin_device_diff () =
   (* Mock Plugin Device *)
-  (* For simplicity, we'll just test that it renders correctly *)
+  (* Test that plugin device diffing works correctly *)
   let make_plugin_param id name index value =
     {
       PluginParam.id = id;
@@ -92,10 +112,31 @@ let test_plugin_device_diff () =
   } in
 
   let patch = Device.diff old_plugin new_plugin in
-  let output = Text_output.render_device patch in
 
-  let expected = "Plugin Device Patch:\n  Parameters Changes:\n        ~ Value changed from 0.50 to 0.70" in
-  Alcotest.(check string) "Plugin device diff output" expected output
+  (* Check that we got a PluginPatch *)
+  (match patch with
+  | Device.Patch.PluginPatch plugin_patch ->
+      (* The Cutoff param should be Modified *)
+      (* Check the Cutoff param change (first in params list) *)
+      (match plugin_patch.params with
+      | cutoff_change :: _ ->
+          (match cutoff_change with
+          | `Modified param_patch ->
+              (match param_patch.Device.PluginParam.Patch.base with
+              | `Modified generic_patch ->
+                  (match generic_patch.Device.GenericParam.Patch.value with
+                  | `Modified v ->
+                      (match v.oldval with
+                      | Device.Float old_val -> Alcotest.(check (float 0.01)) "old value" 0.5 old_val
+                      | _ -> Alcotest.fail "Expected Float value");
+                      (match v.newval with
+                      | Device.Float new_val -> Alcotest.(check (float 0.01)) "new value" 0.7 new_val
+                      | _ -> Alcotest.fail "Expected Float value")
+                  | _ -> Alcotest.fail "Expected value to be modified")
+              | _ -> Alcotest.fail "Expected base to be modified")
+          | _ -> Alcotest.fail "Expected param to be modified")
+      | _ -> Alcotest.fail "Expected at least one param change")
+  | _ -> Alcotest.fail "Expected PluginPatch")
 
 let () =
   Alcotest.run "Diff Device" [

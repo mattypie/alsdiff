@@ -32,7 +32,8 @@
    ppx_deriving
    ppx_deriving_yojson
    ppx_deriving_jsonschema
-   fmt)
+   fmt
+   ptime)
  (tags
   ("ableton live" "git" "version control")))
 

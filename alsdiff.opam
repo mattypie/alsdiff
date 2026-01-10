@@ -24,6 +24,7 @@ depends: [
   "ppx_deriving_yojson"
   "ppx_deriving_jsonschema"
   "fmt"
+  "ptime"
   "odoc" {with-doc}
 ]
 build: [

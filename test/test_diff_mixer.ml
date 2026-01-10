@@ -1,6 +1,5 @@
 open Alsdiff_base
 open Alsdiff_live
-open Alsdiff_output
 
 let test_mixer_diff () =
   (* Load the old mixer XML *)
@@ -36,14 +35,88 @@ let test_mixer_diff () =
   (* Diff the mixers *)
   let patch = Track.Mixer.diff old_mixer new_mixer in
 
-  (* Render the diff *)
-  let output = Text_output.render_mixer patch in
+  (* Check volume change *)
+  (match patch.Track.Mixer.Patch.volume with
+  | `Modified volume_patch ->
+      (match volume_patch.Device.GenericParam.Patch.value with
+      | `Modified v ->
+          (match v.oldval with
+          | Device.Float old_val -> Alcotest.(check (float 0.01)) "old volume" 0.70 old_val
+          | _ -> Alcotest.fail "Expected Float value");
+          (match v.newval with
+          | Device.Float new_val -> Alcotest.(check (float 0.01)) "new volume" 0.50 new_val
+          | _ -> Alcotest.fail "Expected Float value")
+      | _ -> Alcotest.fail "Expected volume value to be modified")
+  | _ -> Alcotest.fail "Expected volume to be modified");
 
-  (* Expected output - updated to match actual behavior *)
-  let expected = "Mixer Patch:\n  Volume:\n      ~ Value changed from 0.70 to 0.50\n  Pan:\n      ~ Value changed from -0.30 to 0.47\n  Mute:\n      ~ Value changed from false to true\n  Solo:\n      ~ Value changed from true to false\n  Send Changes:\n        ~ Value changed from 0.50 to 0.00\n    - Send 1 with amount 0.2500" in
+  (* Check pan change *)
+  (match patch.Track.Mixer.Patch.pan with
+  | `Modified pan_patch ->
+      (match pan_patch.Device.GenericParam.Patch.value with
+      | `Modified v ->
+          (match v.oldval with
+          | Device.Float old_val -> Alcotest.(check (float 0.01)) "old pan" (-0.30) old_val
+          | _ -> Alcotest.fail "Expected Float value");
+          (match v.newval with
+          | Device.Float new_val -> Alcotest.(check (float 0.01)) "new pan" 0.47 new_val
+          | _ -> Alcotest.fail "Expected Float value")
+      | _ -> Alcotest.fail "Expected pan value to be modified")
+  | _ -> Alcotest.fail "Expected pan to be modified");
 
-  (* Check that the output matches expected *)
-  Alcotest.(check string) "Mixer diff output" expected output
+  (* Check mute change *)
+  (match patch.Track.Mixer.Patch.mute with
+  | `Modified mute_patch ->
+      (match mute_patch.Device.GenericParam.Patch.value with
+      | `Modified v ->
+          (match v.oldval with
+          | Device.Bool old_val -> Alcotest.(check bool) "old mute" false old_val
+          | _ -> Alcotest.fail "Expected Bool value");
+          (match v.newval with
+          | Device.Bool new_val -> Alcotest.(check bool) "new mute" true new_val
+          | _ -> Alcotest.fail "Expected Bool value")
+      | _ -> Alcotest.fail "Expected mute value to be modified")
+  | _ -> Alcotest.fail "Expected mute to be modified");
+
+  (* Check solo change *)
+  (match patch.Track.Mixer.Patch.solo with
+  | `Modified solo_patch ->
+      (match solo_patch.Device.GenericParam.Patch.value with
+      | `Modified v ->
+          (match v.oldval with
+          | Device.Bool old_val -> Alcotest.(check bool) "old solo" true old_val
+          | _ -> Alcotest.fail "Expected Bool value");
+          (match v.newval with
+          | Device.Bool new_val -> Alcotest.(check bool) "new solo" false new_val
+          | _ -> Alcotest.fail "Expected Bool value")
+      | _ -> Alcotest.fail "Expected solo value to be modified")
+  | _ -> Alcotest.fail "Expected solo to be modified");
+
+  (* Check sends - should have 2 changes: one modified (Send 0) and one removed (Send 1) *)
+  (match patch.Track.Mixer.Patch.sends with
+  | [send0_change; send1_change] ->
+      (* Check Send 0 is Modified *)
+      (match send0_change with
+      | `Modified send_patch ->
+          (match send_patch.Track.Send.Patch.amount with
+          | `Modified amount_patch ->
+              (match amount_patch.Device.GenericParam.Patch.value with
+              | `Modified v ->
+                  (match v.oldval with
+                  | Device.Float old_val -> Alcotest.(check (float 0.01)) "Send 0 old amount" 0.5 old_val
+                  | _ -> Alcotest.fail "Expected Float value");
+                  (match v.newval with
+                  | Device.Float new_val -> Alcotest.(check (float 0.01)) "Send 0 new amount" 0.000316 new_val
+                  | _ -> Alcotest.fail "Expected Float value")
+              | _ -> Alcotest.fail "Expected amount to be modified")
+          | _ -> Alcotest.fail "Expected amount to be modified")
+      | _ -> Alcotest.fail "Expected Send 0 to be modified");
+
+      (* Check Send 1 is Removed *)
+      (match send1_change with
+      | `Removed send ->
+          Alcotest.(check int) "removed send id" 1 send.Track.Send.id
+      | _ -> Alcotest.fail "Expected send to be removed")
+  | _ -> Alcotest.fail "Expected exactly two send changes")
 
 let () =
   Alcotest.run "Diff Mixer" [

@@ -40,8 +40,8 @@ module Locator = struct
     if old_id <> new_id then
       failwith "cannot diff two locators with different Id"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_name new_name in
-      let time_change = diff_atomic_value (module Equality.FloatEq) old_time new_time in
+      let name_change = diff_atomic_value (module String) old_name new_name in
+      let time_change = diff_atomic_value (module Float) old_time new_time in
       { name = name_change; time = time_change }
 end
 
@@ -72,9 +72,9 @@ module Version = struct
     let { major = old_major; minor = old_minor; revision = old_rev } = old_version in
     let { major = new_major; minor = new_minor; revision = new_rev } = new_version in
 
-    let major_change = diff_atomic_value (module Equality.StringEq) old_major new_major in
-    let minor_change = diff_atomic_value (module Equality.StringEq) old_minor new_minor in
-    let rev_change = diff_atomic_value (module Equality.StringEq) old_rev new_rev in
+    let major_change = diff_atomic_value (module String) old_major new_major in
+    let minor_change = diff_atomic_value (module String) old_minor new_minor in
+    let rev_change = diff_atomic_value (module String) old_rev new_rev in
     {
       Patch.major = major_change;
       minor = minor_change;
@@ -297,9 +297,9 @@ module Patch = struct
 end
 
 let diff (old_liveset : t) (new_liveset : t) : Patch.t =
-  let name_change = diff_atomic_value (module Equality.StringEq) old_liveset.name new_liveset.name in
+  let name_change = diff_atomic_value (module String) old_liveset.name new_liveset.name in
   let version_change = diff_complex_value (module Version) old_liveset.version new_liveset.version in
-  let creator_change = diff_atomic_value (module Equality.StringEq) old_liveset.creator new_liveset.creator in
+  let creator_change = diff_atomic_value (module String) old_liveset.creator new_liveset.creator in
   let tracks_changes =
     diff_list_id (module Track) old_liveset.tracks new_liveset.tracks
   in
@@ -318,3 +318,20 @@ let diff (old_liveset : t) (new_liveset : t) : Patch.t =
     returns = returns_changes;
     locators = locators_changes;
   }
+
+let find_track name liveset =
+  match name with
+  | "Main" -> Some liveset.main
+  | _ ->
+    let re = Re.Pcre.re name |> Re.compile in
+    let rec find = function
+      | [] -> None
+      | x :: _ when Re.execp re (Track.get_name x) -> Some x
+      | _ :: xs -> find xs
+    in
+    let ( <|> ) op1 op2 =
+      match op1 with
+      | Some _ -> op1
+      | None -> op2
+    in
+    find liveset.tracks <|> find liveset.returns

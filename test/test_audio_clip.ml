@@ -17,7 +17,7 @@ let test_create_audio_clip () =
   let expected_sample_ref = {
     SampleRef.file_path = "/Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet [2022-04-27 164454].wav";
     SampleRef.crc = "48320";
-    SampleRef.last_modified_date = 1742403845L;
+    SampleRef.last_modified_date = 1742403845;
   } in
   let expected_loop = Some {
     Loop.start_time = 26.13179997086247;
@@ -35,7 +35,7 @@ let test_create_audio_clip () =
   (* Test sample reference *)
   Alcotest.(check string) "sample_ref.file_path" expected_sample_ref.file_path audio_clip.sample_ref.file_path;
   Alcotest.(check string) "sample_ref.crc" expected_sample_ref.crc audio_clip.sample_ref.crc;
-  Alcotest.(check int64) "sample_ref.last_modified_date" expected_sample_ref.last_modified_date audio_clip.sample_ref.last_modified_date;
+  Alcotest.(check int) "sample_ref.last_modified_date" expected_sample_ref.last_modified_date audio_clip.sample_ref.last_modified_date;
 
   (* Test loop section *)
   match expected_loop with

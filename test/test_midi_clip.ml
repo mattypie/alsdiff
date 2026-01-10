@@ -33,21 +33,6 @@ let test_midi_clip_parsing () =
       Alcotest.(check bool) "loop.on" expected_loop.Loop.on midi_clip.loop.on
   | None -> Alcotest.fail "Expected expected_loop to be Some"
 
-  (* TODO: Fix notes field access issue *)
-  (* let notes_list = midi_clip.notes in *)
-  (* let actual_note_count = List.length notes_list in *)
-  (* Alcotest.(check int) "note count" expected_note_count actual_note_count; *)
-
-  (* Check some note details *)
-  (* if actual_note_count > 0 then ( *)
-  (*   let first_note = List.hd notes_list in *)
-  (*   Alcotest.(check int) "first note time" 3 first_note.time; *)
-  (*   Alcotest.(check int) "first note duration" 0 first_note.duration; *)
-  (*   Alcotest.(check int) "first note velocity" 100 first_note.velocity; *)
-  (*   Alcotest.(check int) "first note note" 1 first_note.note *)
-  (* ) else *)
-  (*   Alcotest.fail "Expected at least one MIDI note" *)
-
 let () =
   Alcotest.run "MidiClip" [
     "create_midi_clip",

@@ -1,7 +1,6 @@
 open Alcotest
 open Alsdiff_base
 open Alsdiff_live.Clip
-open Alsdiff_output
 
 (** Helper to load an AudioClip.t from a file path. *)
 let load_audio_clip_from_file (path : string) : AudioClip.t =
@@ -97,46 +96,12 @@ let test_diff_logic () =
 
       (match sample_ref_patch.last_modified_date with
       | `Modified m ->
-          check int64 "old last modified" 1742403846L m.oldval;
-          check int64 "new last modified" 1742403845L m.newval
+          check int "old last modified" 1742403846 m.oldval;
+          check int "new last modified" 1742403845 m.newval
       | _ -> fail "Expected last modified date to be modified")
   | `Unchanged -> fail "Expected sample reference to be modified")
 
-(** Test function for verifying the text output from TextOutput module. *)
-let test_text_output () =
-  (* 1. Load the old and new states from the XML files. *)
-  let old_clip = load_audio_clip_from_file "audio_clip_old.xml" in
-  let new_clip = load_audio_clip_from_file "audio_clip.xml" in
-
-  (* 2. Compute the diff between the old and new states. *)
-  let patch = AudioClip.diff old_clip new_clip in
-
-  (* 3. Generate the text output using TextOutput. *)
-  let text_output = Text_output.render_audio_clip patch in
-
-  (* 4. Define the expected text output. *)
-  let expected_lines = [
-    "Audio Clip Patch:";
-    "  ~ Start time changed from 80.00 to 79.50";
-    "  ~ End time changed from 101.00 to 100.00";
-    "  ~ Time signature changed from 3/8 to 4/4";
-    "  Loop Changes:";
-    "      ~ Loop start changed from 30.00 to 26.13";
-    "      ~ Loop end changed from 50.00 to 46.63";
-    "      ~ Loop enabled changed from true to false";
-    "  Sample Reference Changes:";
-    "      ~ File path changed from /Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet_old.wav to /Users/krfantasy/Desktop/Prelude/Thick Air Project/Samples/Processed/Crop/Metal Sheet [2022-04-27 164454].wav";
-    "      ~ CRC changed from 12345 to 48320";
-    "      ~ Last modified changed from 1742403846 to 1742403845";
-  ] in
-  let expected_output = String.concat "\n" expected_lines in
-
-  (* 5. Assert that the generated text matches the expected text. *)
-  check string "text output" expected_output text_output
-
-(** Alcotest test suite setup. *)
 let () =
   run "Diff AudioClip" [
     "diff-logic", [ test_case "Test audio clip diffing logic" `Quick test_diff_logic ];
-    "text-output", [ test_case "Test text output rendering" `Quick test_text_output ];
   ]

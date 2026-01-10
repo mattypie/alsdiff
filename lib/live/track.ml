@@ -69,9 +69,9 @@ module Routing = struct
       failwith "cannot diff two Routing with different route types"
     else
       let route_type_change = diff_atomic_value (module RouteTypeEq) old_routing.route_type new_routing.route_type in
-      let target_change = diff_atomic_value (module Equality.StringEq) old_routing.target new_routing.target in
-      let upper_string_change = diff_atomic_value (module Equality.StringEq) old_routing.upper_string new_routing.upper_string in
-      let lower_string_change = diff_atomic_value (module Equality.StringEq) old_routing.lower_string new_routing.lower_string in
+      let target_change = diff_atomic_value (module String) old_routing.target new_routing.target in
+      let upper_string_change = diff_atomic_value (module String) old_routing.upper_string new_routing.upper_string in
+      let lower_string_change = diff_atomic_value (module String) old_routing.lower_string new_routing.lower_string in
 
       {
         Patch.route_type = route_type_change;
@@ -270,6 +270,8 @@ module MidiTrack = struct
 
   module Patch = struct
     type t = {
+      id : int;
+      current_name : string;
       name : string atomic_update;
       clips : (Clip.MidiClip.t, Clip.MidiClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
@@ -291,7 +293,7 @@ module MidiTrack = struct
     if old_track.id <> new_track.id then
       failwith "cannot diff two MidiTracks with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+      let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.MidiClip) old_track.clips new_track.clips
       in
@@ -304,6 +306,8 @@ module MidiTrack = struct
       let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
+        id = new_track.id;
+        current_name = new_track.name;
         Patch.name = name_change;
         clips = clips_changes;
         automations = automations_changes;
@@ -349,6 +353,8 @@ module AudioTrack = struct
 
   module Patch = struct
     type t = {
+      id : int;
+      current_name : string;
       name : string atomic_update;
       clips : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) structured_change list;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
@@ -370,7 +376,7 @@ module AudioTrack = struct
     if old_track.id <> new_track.id then
       failwith "cannot diff two AudioTracks with different Ids"
     else
-      let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+      let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.AudioClip) old_track.clips new_track.clips
       in
@@ -383,6 +389,8 @@ module AudioTrack = struct
       let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
       {
+        id = new_track.id;
+        current_name = new_track.name;
         Patch.name = name_change;
         clips = clips_changes;
         automations = automations_changes;
@@ -478,6 +486,7 @@ module MainTrack = struct
 
   module Patch = struct
     type t = {
+      current_name : string;
       name : string atomic_update;
       automations : (Automation.t, Automation.Patch.t) structured_change list;
       devices : (Device.t, Device.Patch.t) structured_change list;
@@ -494,7 +503,7 @@ module MainTrack = struct
   end
 
   let diff (old_track : t) (new_track : t) : Patch.t =
-    let name_change = diff_atomic_value (module Equality.StringEq) old_track.name new_track.name in
+    let name_change = diff_atomic_value (module String) old_track.name new_track.name in
     let automations_changes =
       diff_list_id (module Automation) old_track.automations new_track.automations
     in
@@ -504,6 +513,7 @@ module MainTrack = struct
     let mixer_change = diff_complex_value (module MainMixer) old_track.mixer new_track.mixer in
     let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
     {
+      current_name = new_track.name;
       Patch.name = name_change;
       automations = automations_changes;
       devices = devices_changes;
@@ -543,11 +553,11 @@ let create (xml : Xml.t) : t =
   | Xml.Element { name = "ReturnTrack"; _ } -> Audio (AudioTrack.create xml)
   | Xml.Element { name = "MainTrack"; _ } -> Main (MainTrack.create xml)
   | _ ->
-      let name = match xml with
-        | Xml.Element { name; _ } -> name
-        | _ -> "non-element"
-      in
-      raise (Xml.Xml_error (xml, "Unsupported track type: " ^ name))
+    let name = match xml with
+      | Xml.Element { name; _ } -> name
+      | _ -> "non-element"
+    in
+    raise (Xml.Xml_error (xml, "Unsupported track type: " ^ name))
 
 module Patch = struct
   type t =
@@ -576,3 +586,10 @@ let diff (old_track : t) (new_track : t) : Patch.t =
     Patch.MainPatch main_patch
   | _ ->
     failwith "cannot diff tracks of different types (e.g. MidiTrack vs AudioTrack)"
+
+let get_name = function
+  | Midi a -> a.name
+  | Audio a -> a.name
+  | Group a -> a.name
+  | Return a -> a.name
+  | Main _ -> "Main"

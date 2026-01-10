@@ -2,7 +2,11 @@
  (name alsdiff_output)
  (modules
    output
-   text_output)
+   view_model
+   text_renderer)
  (libraries
    alsdiff_base
-   alsdiff_live))
+   alsdiff_live
+   ppx_deriving_yojson
+   fmt
+   ptime))
