@@ -8,4 +8,5 @@
    alsdiff_base
    alsdiff_live
    ppx_deriving_yojson
-   fmt))
+   fmt
+   ptime))

@@ -1,5 +1,20 @@
 open Alsdiff_live
 open Alsdiff_base.Diff
+open Ptime.Span
+
+(** [format_unix_timestamp] converts a Unix timestamp (int64) to a human-readable datetime string.
+    Returns "Invalid timestamp" if the timestamp is out of range for ptime.
+    @param ts Unix timestamp as int64 (seconds since epoch)
+    @return Formatted datetime string in ISO 8601 format (e.g., "2024-01-15 14:30:00")
+*)
+let format_unix_timestamp (ts : int64) : string =
+  (* Convert int64 seconds to ptime *)
+  let span = of_int_s (Int64.to_int ts) in
+  match Ptime.of_span span with
+  | None -> "Invalid timestamp"
+  | Some t ->
+      (* Format as RFC 3339 with space instead of T, no decimal places for seconds *)
+      Ptime.to_rfc3339 ~space:true ~frac_s:0 ~tz_offset_s:0 t
 
 type field_value =
   | Fint of int
@@ -605,8 +620,8 @@ let sample_ref_field_specs : (Clip.SampleRef.t, Clip.SampleRef.Patch.t) unified_
     get_value = (fun sr -> string_value sr.crc);
     get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.crc) };
   { name = "Last Modified";
-    get_value = (fun sr -> int_value (Int64.to_int sr.last_modified_date));
-    get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> int_value (Int64.to_int x)) p.last_modified_date) };
+    get_value = (fun sr -> string_value (format_unix_timestamp sr.last_modified_date));
+    get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> string_value (format_unix_timestamp x)) p.last_modified_date) };
 ]
 
 let create_sample_ref_fields = build_value_field_views sample_ref_field_specs ~domain_type:DTSampleRef
@@ -883,7 +898,7 @@ let patch_ref_field_specs : (Device.PatchRef.t, Device.PatchRef.Patch.t) unified
     get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.pack_name) };
   { name = "Last Modified";
     get_value = (fun _ -> Fstring "");  (* Not available in PatchRef.t *)
-    get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> int_value (Int64.to_int x)) p.last_mod_date) };
+    get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> string_value (format_unix_timestamp x)) p.last_mod_date) };
 ]
 
 let create_patch_ref_fields = build_value_field_views patch_ref_field_specs ~domain_type:DTPreset
