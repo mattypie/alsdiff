@@ -2,7 +2,7 @@ open Alsdiff_live
 open Alsdiff_base.Diff
 open Ptime.Span
 
-type note_display_style = Sharp | Flat
+type note_display_style = Sharp | Flat [@@deriving yojson]
 
 let get_note_name_from_int ?(style : note_display_style = Sharp) (note_int : int) : string =
   let note_names_sharp = [| "C"; "C#"; "D"; "D#"; "E"; "F"; "F#"; "G"; "G#"; "A"; "A#"; "B" |] in
@@ -58,6 +58,7 @@ type change_type =
   | Added
   | Removed
   | Modified
+[@@deriving yojson]
 
 type domain_type =
   | DTLiveset
@@ -80,6 +81,7 @@ type domain_type =
   | DTSampleRef
   | DTVersion
   | DTOther
+[@@deriving yojson]
 
 
 (** Unified type system (3 types instead of 4) - Element and Section unified into Item *)

@@ -9,4 +9,6 @@
    alsdiff_live
    ppx_deriving_yojson
    fmt
-   ptime))
+   ptime
+   yojson)
+ (preprocess (pps ppx_deriving_yojson)))

@@ -2,10 +2,11 @@ open View_model
 
 (** How much detail to show for a particular diff item. *)
 type detail_level =
-  | None     (** Completely hide the item - not rendered at all *)
+  | DLNone     (** Completely hide the item - not rendered at all *)
   | Summary  (** Show name + change symbol + count of changed items (no field details) *)
   | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
   | Full     (** Show name + change symbol + all fields/sub-views *)
+[@@deriving yojson { strict = false }]
 
 (** Breakdown of changes by type for Summary mode *)
 type change_breakdown = {
@@ -13,6 +14,7 @@ type change_breakdown = {
   removed: int;
   modified: int;
 }
+[@@deriving yojson]
 
 (* Per-change-type override for domain types *)
 (* None means use the base change_type default *)
@@ -22,6 +24,7 @@ type per_change_override = {
   modified : detail_level option;
   unchanged : detail_level option;
 }
+[@@deriving yojson]
 
 type detail_config = {
   added : detail_level;
@@ -49,6 +52,7 @@ type detail_config = {
   (* Note name display style for MIDI notes *)
   note_name_style : note_display_style;
 }
+[@@deriving yojson]
 
 (* Helper: Create a per_change_override with all fields set to None *)
 let no_override () = {
@@ -120,7 +124,7 @@ let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
 (* Helper to check if we should render based on detail level *)
 let should_render_level (level : detail_level) : bool =
   match level with
-  | None -> false
+  | DLNone -> false
   | Summary | Compact | Full -> true
 
 (* Helper to check if we should show fields for an element *)
@@ -275,9 +279,9 @@ let compact = {
   added = Compact;
   removed = Compact;
   modified = Compact;
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [];
-  max_collection_items = None;
+  max_collection_items = None;  (* This is still option None, not detail_level None *)
   show_unchanged_fields = false;
   prefix_added = "+";
   prefix_removed = "-";
@@ -291,9 +295,9 @@ let full = {
   added = Full;
   removed = Full;
   modified = Full;
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [];
-  max_collection_items = None;
+  max_collection_items = None;  (* This is still option None, not detail_level None *)
   show_unchanged_fields = false;
   prefix_added = "+";
   prefix_removed = "-";
@@ -307,7 +311,7 @@ let midi_friendly = {
   added = Full;
   removed = Summary;  (* Just show "MidiClip: Name" when deleted *)
   modified = Full;
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [];
   max_collection_items = Some 50;  (* Limit note output *)
   show_unchanged_fields = false;
@@ -323,7 +327,7 @@ let quiet = {
   added = Summary;
   removed = Summary;
   modified = Summary;           (* Compact *)
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [(DTLiveset, uniform_override Compact)];  (* Show LiveSet sub-views, but children stay in Summary *)
   max_collection_items = Some 10;
   show_unchanged_fields = false;
@@ -341,7 +345,7 @@ let verbose = {
   modified = Full;
   unchanged = Full;
   type_overrides = [];
-  max_collection_items = None;
+  max_collection_items = None;  (* This is still option None, not detail_level None *)
   show_unchanged_fields = true;
   prefix_added = "+";
   prefix_removed = "-";
@@ -562,7 +566,7 @@ let rec pp_section cfg fmt (section : item) =
               | Item _ | Collection _ -> true
               | Field _ -> false
             ) sub_views
-        | Full | Summary | None -> sub_views
+        | Full | Summary | DLNone -> sub_views
       in
       List.iter (fun view ->
           Fmt.pf fmt "@\n";
