@@ -2158,11 +2158,13 @@ let create_midi_track_item
     ~extra_sections:[automations_config; devices_config; routings_config]
     c
 
-
-(** [create_audio_track_item] creates a [item] from an AudioTrack structured change (new type system).
-    @param c the audio track structured change
+(** [create_audio_like_track_item] creates a [item] for AudioTrack-like structured changes.
+    Shared implementation for AudioTrack and GroupTrack (which share the same internal structure).
+    @param track_type_name The display type name (e.g., "AudioTrack" or "Group")
+    @param c the track structured change
 *)
-let create_audio_track_item
+let create_audio_like_track_item
+    ~track_type_name
     (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
     : item =
 
@@ -2174,14 +2176,12 @@ let create_audio_track_item
     ~domain_type:DTClip
   in
 
-  let mixer_config : (_, _) device_section_config = create_track_mixer_config
+  let mixer_config = create_track_mixer_config
     ~name:"Mixer"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.mixer)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.mixer)
-    ~build_value_children:(fun ct mix ->
-        build_mixer_value_fields ct mix )
-    ~build_patch_children:(fun mix_patch ->
-        build_mixer_patch_fields mix_patch )
+    ~build_value_children:(fun ct mix -> build_mixer_value_fields ct mix)
+    ~build_patch_children:(fun mix_patch -> build_mixer_patch_fields mix_patch)
     ~domain_type:DTMixer
   in
 
@@ -2205,15 +2205,13 @@ let create_audio_track_item
     ~name:"Routings"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.routings)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.routings)
-    ~build_value_children:(fun ct routes ->
-        create_routing_set_fields ct routes )
-    ~build_patch_children:(fun routes_patch ->
-        create_routing_set_patch_fields routes_patch )
+    ~build_value_children:(fun ct routes -> create_routing_set_fields ct routes)
+    ~build_patch_children:(fun routes_patch -> create_routing_set_patch_fields routes_patch)
     ~domain_type:DTRouting
   in
 
   build_track_view
-    ~track_type_name:"AudioTrack"
+    ~track_type_name
     ~get_name:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.name)
     ~get_name_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.name)
     ~get_current_name_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.current_name)
@@ -2223,6 +2221,25 @@ let create_audio_track_item
     ~mixer_config
     ~extra_sections:[automations_config; devices_config; routings_config]
     c
+
+
+(** [create_audio_track_item] creates a [item] from an AudioTrack structured change (new type system).
+    @param c the audio track structured change
+*)
+let create_audio_track_item
+    (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
+    : item =
+  create_audio_like_track_item ~track_type_name:"AudioTrack" c
+
+
+(** [create_group_track_item] creates a [item] from a GroupTrack structured change (new type system).
+    Group tracks use the same internal structure as AudioTrack but have a different type name.
+    @param c the group track structured change (represented as AudioTrack internally)
+*)
+let create_group_track_item
+    (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
+    : item =
+  create_audio_like_track_item ~track_type_name:"Group" c
 
 
 (** [create_main_track_item] creates a [item] from a MainTrack structured change (new type system).
@@ -2472,8 +2489,8 @@ let create_liveset_item
       | `Modified (Track.Patch.MidiPatch pt) -> Some (Item (create_midi_track_item (`Modified pt)))
       | `Added (Track.Audio t) -> Some (Item (create_audio_track_item (`Added t)))
       | `Removed (Track.Audio t) -> Some (Item (create_audio_track_item (`Removed t)))
-      | `Added (Track.Group t) -> Some (Item (create_audio_track_item (`Added t)))
-      | `Removed (Track.Group t) -> Some (Item (create_audio_track_item (`Removed t)))
+      | `Added (Track.Group t) -> Some (Item (create_group_track_item (`Added t)))
+      | `Removed (Track.Group t) -> Some (Item (create_group_track_item (`Removed t)))
       | `Modified (Track.Patch.AudioPatch pt) -> Some (Item (create_audio_track_item (`Modified pt)))
       | `Unchanged -> None
       | _ -> failwith "Unexpected track type"
