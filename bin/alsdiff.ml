@@ -52,6 +52,33 @@ let load_config_from_json file_path =
   | Yojson.Json_error msg ->
     failwith ("JSON error in " ^ file_path ^ ": " ^ msg)
 
+let find_git_root () =
+  let rec search path =
+    if Sys.file_exists (Filename.concat path ".git") then
+      Some path
+    else
+      let parent = Filename.dirname path in
+      if parent = path then None
+      else search parent
+  in
+  search (Sys.getcwd ())
+
+let discover_config_file () =
+  match find_git_root () with
+  | Some git_root ->
+      let git_config = Filename.concat git_root ".alsdiff.json" in
+      if Sys.file_exists git_config then Some git_config
+      else
+        let home_config = Filename.concat (Sys.getenv "HOME") ".alsdiff.json" in
+        if Sys.file_exists home_config then Some home_config else None
+  | None ->
+      let home_config = Filename.concat (Sys.getenv "HOME") ".alsdiff.json" in
+      if Sys.file_exists home_config then Some home_config else None
+
+let load_and_report_config config_path =
+  Fmt.pr "Loading configuration from %s@." config_path;
+  load_config_from_json config_path
+
 let diff_cmd ~config ~domain_mgr =
   let file1 = config.file1 in
   let file2 = config.file2 in
@@ -59,10 +86,8 @@ let diff_cmd ~config ~domain_mgr =
   let base_renderer_config =
     match config.config_file with
     | Some config_path ->
-        let json_config = load_config_from_json config_path in
-        json_config
+        load_config_from_json config_path
     | None ->
-        (* Use preset if provided *)
         match config.preset with
         | Some preset ->
             let base = match preset with
@@ -72,7 +97,11 @@ let diff_cmd ~config ~domain_mgr =
                   | `Quiet -> Text_renderer.quiet
                   | `Verbose -> Text_renderer.verbose
             in base
-        | None -> Text_renderer.quiet
+        | None ->
+            (* Auto-discover .alsdiff.json when neither --config nor --preset specified *)
+            match discover_config_file () with
+            | Some auto_config -> load_and_report_config auto_config
+            | None -> Text_renderer.quiet
   in
 
   let renderer_config = { base_renderer_config with
@@ -177,9 +206,16 @@ let cmd =
     `Pre "$(cmd) v1.als v2.als --config myconfig.json --max-collection-items 100";
     `P "Config file with prefix override:";
     `Pre "$(cmd) v1.als v2.als --config myconfig.json --prefix-added \"ADD \"";
+    `P "Auto-discover configuration from .alsdiff.json:";
+    `Pre "$(cmd) v1.als v2.als";
+    `P "Configuration search order (when --config not specified):";
+    `P "1. --preset PRESET (if specified)";
+    `P "2. .alsdiff.json in git repository root";
+    `P "3. .alsdiff.json in $HOME";
+    `P "4. quiet preset (default)";
     `S Manpage.s_options;
-    `P "$(b,--config FILE) loads configuration from JSON file. The --preset option is ignored when --config is specified. Individual CLI options override values from config file.";
-    `P "$(b,--preset PRESET) sets the output detail preset. Available presets: $(b,compact), $(b,full), $(b,midi), $(b,quiet) (default), $(b,verbose). Ignored when --config is specified.";
+    `P "$(b,--config FILE) loads configuration from JSON file. Takes precedence over auto-discovery. The --preset option is ignored when --config is specified. Individual CLI options override values from config file.";
+    `P "$(b,--preset PRESET) sets the output detail preset. Available presets: $(b,compact), $(b,full), $(b,midi), $(b,quiet) (default), $(b,verbose). Takes precedence over auto-discovery but ignored when --config is specified.";
     `P "$(b,--prefix-added PREFIX) overrides prefix for added items from config file.";
     `P "$(b,--prefix-removed PREFIX) overrides prefix for removed items from config file.";
     `P "$(b,--prefix-modified PREFIX) overrides prefix for modified items from config file.";
