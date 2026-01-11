@@ -30,8 +30,8 @@ let render_views config (views : View_model.view list) : string =
   Buffer.contents buffer
 
 type config = {
-  file1: string;
-  file2: string;
+  file1: string option;
+  file2: string option;
   config_file: string option;
   preset: [ `Compact | `Full | `Midi | `Quiet | `Verbose ] option;
   prefix_added: string option;
@@ -40,6 +40,8 @@ type config = {
   prefix_unchanged: string option;
   note_name_style: note_display_style option;
   max_collection_items: int option;
+  dump_schema: string option;
+  validate_config: string option;
 }
 
 let load_config_from_json file_path =
@@ -80,8 +82,14 @@ let load_and_report_config config_path =
   load_config_from_json config_path
 
 let diff_cmd ~config ~domain_mgr =
-  let file1 = config.file1 in
-  let file2 = config.file2 in
+  let file1 = match config.file1 with
+    | Some f -> f
+    | None -> failwith "FILE1.als is required for diff"
+  in
+  let file2 = match config.file2 with
+    | Some f -> f
+    | None -> failwith "FILE2.als is required for diff"
+  in
 
   let base_renderer_config =
     match config.config_file with
@@ -133,12 +141,12 @@ let diff_cmd ~config ~domain_mgr =
   Fmt.pr "%s@." output
 
 let file1 =
-  let doc = "First .als file to compare" in
-  Arg.(required & pos 0 (some string) None & info [] ~docv:"FILE1.als" ~doc)
+  let doc = "First .als file to compare (required for diff, not needed with --dump-schema)" in
+  Arg.(value & pos 0 (some string) None & info [] ~docv:"FILE1.als" ~doc)
 
 let file2 =
-  let doc = "Second .als file to compare" in
-  Arg.(required & pos 1 (some string) None & info [] ~docv:"FILE2.als" ~doc)
+  let doc = "Second .als file to compare (required for diff, not needed with --dump-schema)" in
+  Arg.(value & pos 1 (some string) None & info [] ~docv:"FILE2.als" ~doc)
 
 let config_file =
   let doc = "Load configuration from JSON file. Overrides --preset, individual CLI options override config values." in
@@ -171,6 +179,14 @@ let note_name_style =
 let max_collection_items =
   let doc = "Maximum number of items to show in collections (default from preset: None/10/50 depending on preset)" in
   Arg.(value & opt (some int) None & info ["max-collection-items"] ~docv:"N" ~doc)
+
+let dump_schema =
+  let doc = "Dump JSON schema for configuration to stdout (if no FILE given) or to FILE and exit. Does not require FILE1.als or FILE2.als." in
+  Arg.(value & opt (some string) None & info ["dump-schema"] ~docv:"FILE" ~doc)
+
+let validate_config =
+  let doc = "Validate a configuration file against the JSON schema and exit. Reports validation errors without running diff." in
+  Arg.(value & opt (some string) None & info ["validate-config"] ~docv:"FILE" ~doc)
 
 let config_ref = ref None
 
@@ -208,6 +224,12 @@ let cmd =
     `Pre "$(cmd) v1.als v2.als --config myconfig.json --prefix-added \"ADD \"";
     `P "Auto-discover configuration from .alsdiff.json:";
     `Pre "$(cmd) v1.als v2.als";
+    `P "Dump configuration JSON schema to stdout:";
+    `Pre "$(cmd) --dump-schema";
+    `P "Dump configuration JSON schema to file:";
+    `Pre "$(cmd) --dump-schema config-schema.json";
+    `P "Validate a configuration file:";
+    `Pre "$(cmd) --validate-config myconfig.json";
     `P "Configuration search order (when --config not specified):";
     `P "1. --preset PRESET (if specified)";
     `P "2. .alsdiff.json in git repository root";
@@ -222,12 +244,14 @@ let cmd =
     `P "$(b,--prefix-unchanged PREFIX) overrides prefix for unchanged items from config file.";
     `P "$(b,--note-name-style STYLE) overrides note name style from config file.";
     `P "$(b,--max-collection-items N) overrides max collection items from config file.";
+    `P "$(b,--dump-schema [FILE]) dumps JSON schema for configuration to stdout or FILE and exits.";
+    `P "$(b,--validate-config FILE) validates a configuration file against the JSON schema and exits. Useful for checking config files before use.";
     `S Manpage.s_bugs;
     `P "Report bugs at https://github.com/krfantasy/alsdiff/issues";
   ] in
   Cmd.make (Cmd.info "alsdiff" ~version:"%%VERSION%%" ~doc ~man) @@
-  let+ file1 and+ file2 and+ config_file and+ preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items in
-  let cfg = { file1; file2; config_file; preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items } in
+  let+ file1 and+ file2 and+ config_file and+ preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items and+ dump_schema and+ validate_config in
+  let cfg = { file1; file2; config_file; preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items; dump_schema; validate_config } in
   config_ref := Some cfg;
   ()
 
@@ -238,10 +262,42 @@ let main () =
     match !config_ref with
       | None -> 0
       | Some cfg ->
-        Eio_main.run @@ fun env ->
-        let domain_mgr = Eio.Stdenv.domain_mgr env in
-        diff_cmd ~config:cfg ~domain_mgr;
-        0
+        (* Handle --validate-config first *)
+        (match cfg.validate_config with
+        | Some config_path ->
+            (match Text_renderer.validate_config_file config_path with
+            | Ok () ->
+                Fmt.pr "Configuration file %s is valid@." config_path;
+                0
+            | Error msg ->
+                Fmt.epr "%s@." msg;
+                1)
+        | None ->
+            (* Handle --dump-schema *)
+            match cfg.dump_schema with
+            | Some path ->
+                (* Dump to file or stdout *)
+                if path = "" || path = "-" then begin
+                  print_endline (Text_renderer.detail_config_schema_to_string ());
+                  0
+                end else begin
+                  Text_renderer.write_schema_to_file path;
+                  Fmt.pr "Schema written to %s@." path;
+                  0
+                end
+            | None ->
+                (* Normal diff operation - requires both files *)
+                match cfg.file1, cfg.file2 with
+                | Some _, Some _ ->
+                    Eio_main.run @@ fun env ->
+                    let domain_mgr = Eio.Stdenv.domain_mgr env in
+                    diff_cmd ~config:cfg ~domain_mgr;
+                    0
+                | _ ->
+                    Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
+                    Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
+                    Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
+                    1)
   else
     exit exit_code
 

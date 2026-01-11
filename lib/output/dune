@@ -8,7 +8,9 @@
    alsdiff_base
    alsdiff_live
    ppx_deriving_yojson
+   ppx_deriving_jsonschema.runtime
+   jsonschema
    fmt
    ptime
    yojson)
- (preprocess (pps ppx_deriving_yojson)))
+ (preprocess (pps ppx_deriving_yojson ppx_deriving_jsonschema)))
