@@ -92,6 +92,7 @@ type pointee =
   | Max4LiveParamPointee of Device.Max4LiveParam.t
   | PluginParamPointee of Device.PluginParam.t
   | MacroPointee of Device.Macro.t
+  | TrackParamPointee of string * string  (* (track_name, param_name) *)
 
 
 type t = {
@@ -104,7 +105,6 @@ type t = {
   locators : Locator.t list;
   pointees : pointee IntHashtbl.t;
 }
-
 
 (* Helper to extract devices from any track type *)
 let get_track_devices = function
@@ -169,6 +169,28 @@ and process_group_branches (pointees : pointee IntHashtbl.t) (branches : Device.
     ) mixer_params
   ) branches
 
+and process_mixer_automation (pointees : pointee IntHashtbl.t)
+    (mixer : Track.Mixer.t) (track_name : string) : unit =
+  let mixer_params = [
+    (mixer.Track.Mixer.volume.automation, track_name ^ ": Volume");
+    (mixer.Track.Mixer.pan.automation, track_name ^ ": Pan");
+    (mixer.Track.Mixer.mute.automation, track_name ^ ": Mute");
+    (mixer.Track.Mixer.solo.automation, track_name ^ ": Solo");
+    (mixer.Track.Mixer.volume.modulation, track_name ^ ": Volume Modulation");
+    (mixer.Track.Mixer.pan.modulation, track_name ^ ": Pan Modulation");
+    (mixer.Track.Mixer.mute.modulation, track_name ^ ": Mute Modulation");
+    (mixer.Track.Mixer.solo.modulation, track_name ^ ": Solo Modulation");
+  ] in
+  List.iter (fun (param_id, param_name) ->
+    IntHashtbl.add pointees param_id (TrackParamPointee (track_name, param_name))
+  ) mixer_params;
+  List.iter (fun send ->
+    IntHashtbl.add pointees send.Track.Send.amount.automation
+      (TrackParamPointee (track_name, "Send to " ^ send.Track.Send.amount.name));
+    IntHashtbl.add pointees send.Track.Send.amount.modulation
+      (TrackParamPointee (track_name, "Send to " ^ send.Track.Send.amount.name ^ " Modulation"))
+  ) mixer.Track.Mixer.sends
+
 let build_pointees_table (liveset : t) : unit =
   (* Clear the existing hashtable *)
   IntHashtbl.clear liveset.pointees;
@@ -177,7 +199,47 @@ let build_pointees_table (liveset : t) : unit =
   List.iter (fun track ->
     let devices = get_track_devices track in
     (* Use the recursive function instead of the flat one *)
-    List.iter (process_device_recursive liveset.pointees) devices
+    List.iter (process_device_recursive liveset.pointees) devices;
+
+    (* Process track mixer parameters *)
+    let track_name = match track with
+    | Track.Midi t -> t.Track.MidiTrack.name
+    | Track.Audio t -> t.Track.AudioTrack.name
+    | Track.Group t -> t.Track.AudioTrack.name
+    | Track.Return t -> t.Track.AudioTrack.name
+    | Track.Main t -> t.Track.MainTrack.name
+    in
+
+    (* Add track mixer automation IDs to pointees *)
+    (match track with
+     | Track.Midi t ->
+         process_mixer_automation liveset.pointees t.Track.MidiTrack.mixer track_name
+     | Track.Audio t ->
+         process_mixer_automation liveset.pointees t.Track.AudioTrack.mixer track_name
+     | Track.Group t ->
+         process_mixer_automation liveset.pointees t.Track.AudioTrack.mixer track_name
+     | Track.Return t ->
+         process_mixer_automation liveset.pointees t.Track.AudioTrack.mixer track_name
+     | Track.Main t ->
+         let mixer = t.Track.MainTrack.mixer in
+         let mixer_base = mixer.Track.MainMixer.base in
+         (* Process base mixer parameters *)
+         process_mixer_automation liveset.pointees mixer_base track_name;
+         (* Process MainMixer-specific parameters *)
+         let main_mixer_params = [
+           (mixer.Track.MainMixer.tempo.automation, track_name ^ ": Tempo");
+           (mixer.Track.MainMixer.time_signature.automation, track_name ^ ": Time Signature");
+           (mixer.Track.MainMixer.crossfade.automation, track_name ^ ": Crossfade");
+           (mixer.Track.MainMixer.global_groove.automation, track_name ^ ": Global Groove");
+           (mixer.Track.MainMixer.tempo.modulation, track_name ^ ": Tempo Modulation");
+           (mixer.Track.MainMixer.time_signature.modulation, track_name ^ ": Time Signature Modulation");
+           (mixer.Track.MainMixer.crossfade.modulation, track_name ^ ": Crossfade Modulation");
+           (mixer.Track.MainMixer.global_groove.modulation, track_name ^ ": Global Groove Modulation");
+         ] in
+         List.iter (fun (param_id, param_name) ->
+           IntHashtbl.add liveset.pointees param_id (TrackParamPointee (track_name, param_name))
+         ) main_mixer_params
+    )
   ) (liveset.main :: liveset.tracks @ liveset.returns)
 
 
@@ -284,7 +346,9 @@ module Patch = struct
     tracks : (Track.t, Track.Patch.t) structured_change list;
     returns : (Track.t, Track.Patch.t) structured_change list;
     locators : (Locator.t, Locator.Patch.t) structured_change list;
-    (* Note: pointees is derived from tracks, so we don't diff it directly *)
+    (* Pointees tables for name resolution in all change types *)
+    old_pointees : pointee IntHashtbl.t;
+    new_pointees : pointee IntHashtbl.t;
   }
 
   let is_empty p =
@@ -294,6 +358,7 @@ module Patch = struct
     List.for_all (is_unchanged_change (module Track.Patch)) p.tracks &&
     List.for_all (is_unchanged_change (module Track.Patch)) p.returns &&
     List.for_all (is_unchanged_change (module Locator.Patch)) p.locators
+    (* Note: pointees tables are metadata for display, not diffed content *)
 end
 
 let diff (old_liveset : t) (new_liveset : t) : Patch.t =
@@ -317,6 +382,8 @@ let diff (old_liveset : t) (new_liveset : t) : Patch.t =
     tracks = tracks_changes;
     returns = returns_changes;
     locators = locators_changes;
+    old_pointees = IntHashtbl.copy old_liveset.pointees;
+    new_pointees = IntHashtbl.copy new_liveset.pointees;
   }
 
 let find_track name liveset =
@@ -335,3 +402,40 @@ let find_track name liveset =
       | None -> op2
     in
     find liveset.tracks <|> find liveset.returns
+
+(** [get_pointee_name_from_table_opt] resolves a pointee ID to a human-readable name,
+    returning None if not found. *)
+let get_pointee_name_from_table_opt (pointees : pointee IntHashtbl.t) (pointee_id : int) : string option =
+  match IntHashtbl.find_opt pointees pointee_id with
+  | None -> None
+  | Some pointee ->
+      Some (match pointee with
+      | DevicePointee device ->
+          let device_name = match device with
+          | Device.Regular d -> d.Device.device_name
+          | Device.Plugin d -> d.Device.device_name
+          | Device.Max4Live d -> d.Device.device_name
+          | Device.Group d -> d.Device.device_name
+          in
+          Printf.sprintf "Device: %s" device_name
+      | DeviceParamPointee param ->
+          Printf.sprintf "Parameter: %s" param.Device.DeviceParam.base.name
+      | PluginParamPointee param ->
+          Printf.sprintf "Plugin Parameter: %s" param.Device.PluginParam.base.name
+      | Max4LiveParamPointee param ->
+          Printf.sprintf "M4L Parameter: %s" param.Device.Max4LiveParam.base.name
+      | MacroPointee macro ->
+          Printf.sprintf "Macro: %s" macro.Device.Macro.base.name
+      | TrackParamPointee (track_name, param_name) ->
+          Printf.sprintf "%s: %s" track_name param_name)
+
+(** [get_pointee_name_from_table] resolves a pointee ID to a human-readable name
+    using a pointees table directly. *)
+let get_pointee_name_from_table (pointees : pointee IntHashtbl.t) (pointee_id : int) : string =
+  match get_pointee_name_from_table_opt pointees pointee_id with
+  | Some name -> name
+  | None -> Printf.sprintf "<Unknown Pointee %d>" pointee_id
+
+(** [get_pointee_name] resolves a pointee ID to a human-readable name. *)
+let get_pointee_name (pointee_id : int) (liveset : t) : string =
+  get_pointee_name_from_table liveset.pointees pointee_id

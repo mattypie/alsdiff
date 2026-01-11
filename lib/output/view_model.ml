@@ -1618,17 +1618,19 @@ let create_send_item
 
 
 (** [create_automation_item] builds a [item] for an automation change (new type system).
+    @param get_pointee_name function to resolve pointee IDs to names
     @param c the automation structured change
 *)
 let create_automation_item
+    ~(get_pointee_name : int -> string)
     (c : (Automation.t, Automation.Patch.t) structured_change)
     : item =
   let open Automation in
   let change_type = ViewBuilder.change_type_of c in
   let automation_name = match c with
-    | `Added a -> Printf.sprintf "Automation (id=%d, target=%d)" a.id a.target
-    | `Removed r -> Printf.sprintf "Automation (id=%d, target=%d)" r.id r.target
-    | `Modified patch -> Printf.sprintf "Automation (id=%d, target=%d)" patch.id patch.target
+    | `Added a -> Printf.sprintf "Automation (id=%d, target=%s)" a.id (get_pointee_name a.target)
+    | `Removed r -> Printf.sprintf "Automation (id=%d, target=%s)" r.id (get_pointee_name r.target)
+    | `Modified patch -> Printf.sprintf "Automation (id=%d, target=%s)" patch.id (get_pointee_name patch.target)
     | `Unchanged -> "Automation"
   in
 
@@ -2113,9 +2115,11 @@ let build_track_view
 (* ==================== Full Track Views ==================== *)
 
 (** [create_midi_track_item] creates a [item] from a MidiTrack structured change (new type system).
+    @param get_pointee_name function to resolve pointee IDs to names
     @param c the MIDI track structured change
 *)
 let create_midi_track_item
+    ~(get_pointee_name : int -> string)
     (c : (Track.MidiTrack.t, Track.MidiTrack.Patch.t) structured_change)
     : item =
 
@@ -2142,7 +2146,7 @@ let create_midi_track_item
     ~name:"Automations"
     ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.automations)
     ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.automations)
-    ~build_item:create_automation_item
+    ~build_item:(create_automation_item ~get_pointee_name)
     ~domain_type:DTAutomation
   in
 
@@ -2179,10 +2183,12 @@ let create_midi_track_item
 
 (** [create_audio_like_track_item] creates a [item] for AudioTrack-like structured changes.
     Shared implementation for AudioTrack and GroupTrack (which share the same internal structure).
+    @param get_pointee_name function to resolve pointee IDs to names
     @param track_type_name The display type name (e.g., "AudioTrack" or "Group")
     @param c the track structured change
 *)
 let create_audio_like_track_item
+    ~(get_pointee_name : int -> string)
     ~track_type_name
     (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
     : item =
@@ -2208,7 +2214,7 @@ let create_audio_like_track_item
     ~name:"Automations"
     ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.automations)
     ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.automations)
-    ~build_item:create_automation_item
+    ~build_item:(create_automation_item ~get_pointee_name)
     ~domain_type:DTAutomation
   in
 
@@ -2243,28 +2249,34 @@ let create_audio_like_track_item
 
 
 (** [create_audio_track_item] creates a [item] from an AudioTrack structured change (new type system).
+    @param get_pointee_name function to resolve pointee IDs to names
     @param c the audio track structured change
 *)
 let create_audio_track_item
+    ~(get_pointee_name : int -> string)
     (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
     : item =
-  create_audio_like_track_item ~track_type_name:"AudioTrack" c
+  create_audio_like_track_item ~get_pointee_name ~track_type_name:"AudioTrack" c
 
 
 (** [create_group_track_item] creates a [item] from a GroupTrack structured change (new type system).
     Group tracks use the same internal structure as AudioTrack but have a different type name.
+    @param get_pointee_name function to resolve pointee IDs to names
     @param c the group track structured change (represented as AudioTrack internally)
 *)
 let create_group_track_item
+    ~(get_pointee_name : int -> string)
     (c : (Track.AudioTrack.t, Track.AudioTrack.Patch.t) structured_change)
     : item =
-  create_audio_like_track_item ~track_type_name:"Group" c
+  create_audio_like_track_item ~get_pointee_name ~track_type_name:"Group" c
 
 
 (** [create_main_track_item] creates a [item] from a MainTrack structured change (new type system).
+    @param get_pointee_name function to resolve pointee IDs to names
     @param c the main track structured change
 *)
 let create_main_track_item
+    ~(get_pointee_name : int -> string)
     (c : (Track.MainTrack.t, Track.MainTrack.Patch.t) structured_change)
     : item =
 
@@ -2285,7 +2297,7 @@ let create_main_track_item
     ~name:"Automations"
     ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.automations)
     ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.automations)
-    ~build_item:create_automation_item
+    ~build_item:(create_automation_item ~get_pointee_name)
     ~domain_type:DTAutomation
   in
 
@@ -2384,6 +2396,22 @@ let create_liveset_item
 
   let change_type = ViewBuilder.change_type_of c in
 
+  (* Extract liveset for pointee name resolution *)
+  let get_pointee_name = match c with
+    | `Added ls -> (fun id -> Liveset.get_pointee_name_from_table ls.Liveset.pointees id)
+    | `Removed ls -> (fun id -> Liveset.get_pointee_name_from_table ls.Liveset.pointees id)
+    | `Modified patch ->
+        (* Use pointees tables from the patch for name resolution *)
+        (fun id ->
+          match Liveset.get_pointee_name_from_table_opt patch.Liveset.Patch.new_pointees id with
+          | Some name -> name
+          | None ->
+              match Liveset.get_pointee_name_from_table_opt patch.Liveset.Patch.old_pointees id with
+              | Some name -> name
+              | None -> Printf.sprintf "<Pointee %d>" id)
+    | `Unchanged -> fun id -> Printf.sprintf "<Pointee %d>" id
+  in
+
   (* Build section name from liveset name *)
   let section_name = match c with
     | `Added ls -> "LiveSet: " ^ ls.name
@@ -2452,13 +2480,13 @@ let create_liveset_item
       | Some main_change -> main_change
       | None -> `Unchanged)
     ~build_value_children:(fun ct (main_track : Track.MainTrack.t) ->
-      [Item (create_main_track_item (match ct with
+      [Item (create_main_track_item ~get_pointee_name (match ct with
         | Added -> `Added main_track
         | Removed -> `Removed main_track
         | Unchanged -> failwith "Invalid change type for value"
         | Modified -> failwith "Invalid change type for value"))])
     ~build_patch_children:(fun pt ->
-      [Item (create_main_track_item (`Modified pt))])
+      [Item (create_main_track_item ~get_pointee_name (`Modified pt))])
     ~domain_type:DTTrack
   in
 
@@ -2503,14 +2531,14 @@ let create_liveset_item
     (* Build track items directly (not wrapped as elements) *)
     List.filter_map (fun tc ->
       match tc with
-      | `Added (Track.Midi t) -> Some (Item (create_midi_track_item (`Added t)))
-      | `Removed (Track.Midi t) -> Some (Item (create_midi_track_item (`Removed t)))
-      | `Modified (Track.Patch.MidiPatch pt) -> Some (Item (create_midi_track_item (`Modified pt)))
-      | `Added (Track.Audio t) -> Some (Item (create_audio_track_item (`Added t)))
-      | `Removed (Track.Audio t) -> Some (Item (create_audio_track_item (`Removed t)))
-      | `Added (Track.Group t) -> Some (Item (create_group_track_item (`Added t)))
-      | `Removed (Track.Group t) -> Some (Item (create_group_track_item (`Removed t)))
-      | `Modified (Track.Patch.AudioPatch pt) -> Some (Item (create_audio_track_item (`Modified pt)))
+      | `Added (Track.Midi t) -> Some (Item (create_midi_track_item ~get_pointee_name (`Added t)))
+      | `Removed (Track.Midi t) -> Some (Item (create_midi_track_item ~get_pointee_name (`Removed t)))
+      | `Modified (Track.Patch.MidiPatch pt) -> Some (Item (create_midi_track_item ~get_pointee_name (`Modified pt)))
+      | `Added (Track.Audio t) -> Some (Item (create_audio_track_item ~get_pointee_name (`Added t)))
+      | `Removed (Track.Audio t) -> Some (Item (create_audio_track_item ~get_pointee_name (`Removed t)))
+      | `Added (Track.Group t) -> Some (Item (create_group_track_item ~get_pointee_name (`Added t)))
+      | `Removed (Track.Group t) -> Some (Item (create_group_track_item ~get_pointee_name (`Removed t)))
+      | `Modified (Track.Patch.AudioPatch pt) -> Some (Item (create_audio_track_item ~get_pointee_name (`Modified pt)))
       | `Unchanged -> None
       | _ -> failwith "Unexpected track type"
     ) track_changes
@@ -2538,9 +2566,9 @@ let create_liveset_item
     (* Build return track items directly *)
     List.filter_map (fun rc ->
       match rc with
-      | `Added (Track.Return t) -> Some (Item (create_audio_track_item (`Added t)))
-      | `Removed (Track.Return t) -> Some (Item (create_audio_track_item (`Removed t)))
-      | `Modified (Track.Patch.AudioPatch pt) -> Some (Item (create_audio_track_item (`Modified pt)))
+      | `Added (Track.Return t) -> Some (Item (create_audio_track_item ~get_pointee_name (`Added t)))
+      | `Removed (Track.Return t) -> Some (Item (create_audio_track_item ~get_pointee_name (`Removed t)))
+      | `Modified (Track.Patch.AudioPatch pt) -> Some (Item (create_audio_track_item ~get_pointee_name (`Modified pt)))
       | `Unchanged -> None
       | _ -> failwith "Unexpected track type in Liveset returns"
     ) return_changes

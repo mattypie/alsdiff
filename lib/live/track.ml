@@ -405,7 +405,7 @@ module MainMixer = struct
   type t = {
     base : Mixer.t;
     tempo : GenericParam.t;
-    time_signature : GenericParam.t;
+    time_signature : GenericParam.t; (* TODO: how to parse the time signature number? *)
     crossfade : GenericParam.t;
     global_groove : GenericParam.t;
   } [@@deriving eq]

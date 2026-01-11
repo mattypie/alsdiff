@@ -166,6 +166,36 @@ let test_liveset_main_track_parsing () =
 
   | _ -> Alcotest.fail "Expected Track.Main type for main track"
 
+let test_pointee_name_fallback_in_patch () =
+  let xml = read_file test_liveset_xml_path in
+  let liveset1 = Liveset.create xml test_liveset_xml_path in
+  let liveset2 = Liveset.create xml test_liveset_xml_path in
+
+  (* Create patch - tables should be copies, not references *)
+  let patch = Liveset.diff liveset1 liveset2 in
+
+  (* Test 1: Known ID should resolve from new_pointees *)
+  let known_ids = Liveset.IntHashtbl.to_seq_keys patch.Liveset.Patch.new_pointees
+                  |> List.of_seq in
+  (match known_ids with
+   | id :: _ ->
+       let result = Liveset.get_pointee_name_from_table_opt patch.Liveset.Patch.new_pointees id in
+       Alcotest.(check bool) "known ID resolves from new_pointees" true (Option.is_some result)
+   | [] -> ());
+
+  (* Test 2: Unknown ID should return None *)
+  let unknown_id = 999999 in
+  let result_new = Liveset.get_pointee_name_from_table_opt patch.Liveset.Patch.new_pointees unknown_id in
+  let result_old = Liveset.get_pointee_name_from_table_opt patch.Liveset.Patch.old_pointees unknown_id in
+  Alcotest.(check bool) "unknown ID returns None from new" true (Option.is_none result_new);
+  Alcotest.(check bool) "unknown ID returns None from old" true (Option.is_none result_old);
+
+  (* Test 3: Verify tables are copies (mutation doesn't affect patch) *)
+  let original_count = Liveset.IntHashtbl.length patch.Liveset.Patch.old_pointees in
+  Liveset.IntHashtbl.clear liveset1.Liveset.pointees;
+  let after_clear_count = Liveset.IntHashtbl.length patch.Liveset.Patch.old_pointees in
+  Alcotest.(check int) "patch tables are independent copies" original_count after_clear_count
+
 let () =
   Alcotest.run "Liveset" [
     "create", [
@@ -176,5 +206,6 @@ let () =
       Alcotest.test_case "pointees table initialization" `Quick test_liveset_pointees_table;
       Alcotest.test_case "locators parsing" `Quick test_liveset_locators_parsing;
       Alcotest.test_case "main track parsing" `Quick test_liveset_main_track_parsing;
+      Alcotest.test_case "pointee name fallback in patch" `Quick test_pointee_name_fallback_in_patch;
     ];
   ]
