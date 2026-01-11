@@ -462,7 +462,7 @@ let rec pp_item cfg fmt (elem : item) =
     render_summary_breakdown cfg fmt (count_fields_breakdown elem) elem.name elem.change
     (* Compact mode: name + change symbol *)
   else if level = Compact then
-    Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
+    Fmt.pf fmt "@[%a %s" (pp_change_type cfg) elem.change elem.name
     (* Full mode: name + symbol + fields *)
   else
     Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
@@ -504,7 +504,7 @@ and pp_collection cfg fmt (col : collection) =
       render_summary_breakdown cfg fmt (count_elements_breakdown cfg col) col.name col.change
       (* Compact mode: name + symbol, elements names + symbols *)
     else if level = Compact then
-      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
+      Fmt.pf fmt "@[%a %s" (pp_change_type cfg) col.change col.name
       (* Full mode: show all elements with their details *)
     else
       Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) col.change col.name;
