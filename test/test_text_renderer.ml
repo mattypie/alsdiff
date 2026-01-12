@@ -109,9 +109,9 @@ let test_collection_limit () =
   (* 10 items * 2 lines per item (element + field) + 1 line for collection header = 21 lines max *)
   Alcotest.(check bool) "collection limited" true (List.length lines < 100)
 
-(* New test: None level hides items *)
+(* New test: DLNone level hides items *)
 let test_none_level () =
-  let cfg = { full with unchanged = None } in
+  let cfg = { full with unchanged = DLNone } in
   let view =
     Item {
       name = "MidiClip";
@@ -226,12 +226,12 @@ let test_edge_cases () =
     type_overrides = [
       (DTDevice, uniform_override Full);
       (DTClip, uniform_override Summary);
-      (DTNote, uniform_override None);
+      (DTNote, uniform_override DLNone);
     ];
   } in
   Alcotest.(check bool) "added device" true (get_effective_detail cfg Added DTDevice = Full);
   Alcotest.(check bool) "added clip" true (get_effective_detail cfg Added DTClip = Summary);
-  Alcotest.(check bool) "added note" true (get_effective_detail cfg Added DTNote = None);
+  Alcotest.(check bool) "added note" true (get_effective_detail cfg Added DTNote = DLNone);
 
   (* Test: Unchanged type uses correct default *)
   Alcotest.(check bool) "unchanged device" true (get_effective_detail cfg Unchanged DTDevice = Full)

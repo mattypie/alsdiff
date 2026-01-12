@@ -20,20 +20,21 @@
  (synopsis "Git helper for Ableton Live Set(.als)")
  (description "Git helper for Ableton Live Set(.als)")
  (depends
-  (ocaml (>= 5.0.0))
-   re
-   camlzip
-   xmlm
-   angstrom
-  (cmdliner (>= 2.0.0))
-   eio
-   eio_main
-   alcotest
-   ppx_deriving
-   ppx_deriving_yojson
-   ppx_deriving_jsonschema
-   fmt
-   ptime)
+   (ocaml (>= 5.0.0))
+    re
+    camlzip
+    xmlm
+    angstrom
+   (cmdliner (>= 2.0.0))
+    eio
+    eio_main
+    alcotest
+    ppx_deriving
+    ppx_deriving_yojson
+    ppx_deriving_jsonschema
+    jsonschema
+    fmt
+    ptime)
  (tags
   ("ableton live" "git" "version control")))
 

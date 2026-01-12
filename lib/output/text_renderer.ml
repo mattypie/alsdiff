@@ -2,10 +2,11 @@ open View_model
 
 (** How much detail to show for a particular diff item. *)
 type detail_level =
-  | None     (** Completely hide the item - not rendered at all *)
+  | DLNone     (** Completely hide the item - not rendered at all *)
   | Summary  (** Show name + change symbol + count of changed items (no field details) *)
   | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
   | Full     (** Show name + change symbol + all fields/sub-views *)
+[@@deriving yojson { strict = false }, jsonschema]
 
 (** Breakdown of changes by type for Summary mode *)
 type change_breakdown = {
@@ -13,6 +14,7 @@ type change_breakdown = {
   removed: int;
   modified: int;
 }
+[@@deriving yojson, jsonschema]
 
 (* Per-change-type override for domain types *)
 (* None means use the base change_type default *)
@@ -22,6 +24,7 @@ type per_change_override = {
   modified : detail_level option;
   unchanged : detail_level option;
 }
+[@@deriving yojson, jsonschema]
 
 type detail_config = {
   added : detail_level;
@@ -49,6 +52,7 @@ type detail_config = {
   (* Note name display style for MIDI notes *)
   note_name_style : note_display_style;
 }
+[@@deriving yojson, jsonschema]
 
 (* Helper: Create a per_change_override with all fields set to None *)
 let no_override () = {
@@ -120,7 +124,7 @@ let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
 (* Helper to check if we should render based on detail level *)
 let should_render_level (level : detail_level) : bool =
   match level with
-  | None -> false
+  | DLNone -> false
   | Summary | Compact | Full -> true
 
 (* Helper to check if we should show fields for an element *)
@@ -275,9 +279,9 @@ let compact = {
   added = Compact;
   removed = Compact;
   modified = Compact;
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [];
-  max_collection_items = None;
+  max_collection_items = None;  (* This is still option None, not detail_level None *)
   show_unchanged_fields = false;
   prefix_added = "+";
   prefix_removed = "-";
@@ -291,9 +295,9 @@ let full = {
   added = Full;
   removed = Full;
   modified = Full;
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [];
-  max_collection_items = None;
+  max_collection_items = None;  (* This is still option None, not detail_level None *)
   show_unchanged_fields = false;
   prefix_added = "+";
   prefix_removed = "-";
@@ -307,7 +311,7 @@ let midi_friendly = {
   added = Full;
   removed = Summary;  (* Just show "MidiClip: Name" when deleted *)
   modified = Full;
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [];
   max_collection_items = Some 50;  (* Limit note output *)
   show_unchanged_fields = false;
@@ -323,7 +327,7 @@ let quiet = {
   added = Summary;
   removed = Summary;
   modified = Summary;           (* Compact *)
-  unchanged = None;
+  unchanged = DLNone;
   type_overrides = [(DTLiveset, uniform_override Compact)];  (* Show LiveSet sub-views, but children stay in Summary *)
   max_collection_items = Some 10;
   show_unchanged_fields = false;
@@ -341,7 +345,7 @@ let verbose = {
   modified = Full;
   unchanged = Full;
   type_overrides = [];
-  max_collection_items = None;
+  max_collection_items = None;  (* This is still option None, not detail_level None *)
   show_unchanged_fields = true;
   prefix_added = "+";
   prefix_removed = "-";
@@ -562,7 +566,7 @@ let rec pp_section cfg fmt (section : item) =
               | Item _ | Collection _ -> true
               | Field _ -> false
             ) sub_views
-        | Full | Summary | None -> sub_views
+        | Full | Summary | DLNone -> sub_views
       in
       List.iter (fun view ->
           Fmt.pf fmt "@\n";
@@ -589,3 +593,132 @@ let pp cfg fmt view =
 (* Top-level render function for string output *)
 let render_to_string cfg view =
   Fmt.str "%a" (pp_view cfg) view
+
+(* ==================== JSON Schema Generation ==================== *)
+
+(** Generate JSON schema for detail_config as Yojson.Basic.t
+    Uses $defs for domain_type, detail_level, per_change_override,
+    and note_display_style for better readability *)
+let detail_config_json_schema () : Yojson.Basic.t =
+  Ppx_deriving_jsonschema_runtime.json_schema
+    ~title:"ALSDiff Configuration Schema"
+    ~description:"Configuration schema for alsdiff output rendering"
+    ~definitions:[
+      ("domain_type", domain_type_jsonschema);
+      ("detail_level", detail_level_jsonschema);
+      ("per_change_override", per_change_override_jsonschema);
+      ("note_display_style", note_display_style_jsonschema);
+    ]
+    detail_config_jsonschema
+
+(** Generate JSON schema as a formatted string *)
+let detail_config_schema_to_string () : string =
+  Yojson.Basic.pretty_to_string (detail_config_json_schema ())
+
+(** Write JSON schema to a file *)
+let write_schema_to_file (path : string) : unit =
+  let schema = detail_config_schema_to_string () in
+  let oc = open_out path in
+  output_string oc schema;
+  output_string oc "\n";
+  close_out oc
+
+(* ==================== JSON Schema Validation ==================== *)
+
+(** Cached compiled validator for performance.
+    Compiled once on first use, then reused. *)
+let cached_validator : Jsonschema.validator option ref = ref None
+
+(** Get or create the JSON schema validator.
+    The validator is compiled once and cached for subsequent calls.
+    @raise Failure if schema compilation fails (should never happen with our generated schema) *)
+let get_config_validator () : Jsonschema.validator =
+  match !cached_validator with
+  | Some v -> v
+  | None ->
+      let schema = detail_config_json_schema () in
+      match Jsonschema.create_validator_from_json ~schema () with
+      | Ok v ->
+          cached_validator := Some v;
+          v
+      | Error err ->
+          (* This should never happen since our schema is generated correctly *)
+          let msg = Format.asprintf "Internal error: invalid schema: %a"
+            Jsonschema.pp_compile_error err in
+          failwith msg
+
+(** Validation error type with detailed information *)
+type validation_error = {
+  message: string;
+  path: string option;
+  details: string;
+}
+
+(** Convert Jsonschema validation error to our error type *)
+let validation_error_of_jsonschema (err : Jsonschema.validation_error) : validation_error =
+  let details = Jsonschema.Validation_error.to_string err in
+  { message = "JSON schema validation failed";
+    path = None;  (* Could extract from details if needed *)
+    details }
+
+(** Validate a JSON value against the detail_config schema.
+    @param json The JSON value to validate (Yojson.Basic.t)
+    @return Ok () if valid, Error with detailed message if invalid *)
+let validate_config_json (json : Yojson.Basic.t) : (unit, validation_error) result =
+  let validator = get_config_validator () in
+  match Jsonschema.validate validator json with
+  | Ok () -> Ok ()
+  | Error err -> Error (validation_error_of_jsonschema err)
+
+(** Validate a JSON string against the detail_config schema.
+    @param json_str The JSON string to validate
+    @return Ok () if valid, Error with message if invalid (including parse errors) *)
+let validate_config_string (json_str : string) : (unit, string) result =
+  try
+    let json = Yojson.Basic.from_string json_str in
+    match validate_config_json json with
+    | Ok () -> Ok ()
+    | Error err -> Error err.details
+  with
+  | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
+
+(** Validate a config file against the detail_config schema.
+    @param file_path Path to the JSON config file
+    @return Ok () if valid, Error with detailed message if invalid *)
+let validate_config_file (file_path : string) : (unit, string) result =
+  try
+    let json = Yojson.Basic.from_file file_path in
+    match validate_config_json json with
+    | Ok () -> Ok ()
+    | Error err -> Error (Printf.sprintf "Validation failed for %s:\n%s" file_path err.details)
+  with
+  | Yojson.Json_error msg -> Error (Printf.sprintf "JSON parse error in %s: %s" file_path msg)
+  | Sys_error msg -> Error (Printf.sprintf "File error: %s" msg)
+
+(** Load and validate a config file, returning the parsed config or an error.
+    This combines validation and parsing in one step.
+    @param file_path Path to the JSON config file
+    @return Ok detail_config if valid and parsed, Error with message otherwise *)
+let load_and_validate_config (file_path : string) : (detail_config, string) result =
+  try
+    (* Read file content once *)
+    let json_str = In_channel.with_open_text file_path In_channel.input_all in
+
+    (* Parse as Basic for validation *)
+    let json_basic = Yojson.Basic.from_string json_str in
+
+    (* Validate against schema *)
+    match validate_config_json json_basic with
+    | Error err ->
+        Error (Printf.sprintf "Config validation failed in %s:\n%s" file_path err.details)
+    | Ok () ->
+        (* Parse as Safe for yojson deserialization *)
+        let json_safe = Yojson.Safe.from_string json_str in
+        match detail_config_of_yojson json_safe with
+        | Ok cfg -> Ok cfg
+        | Error msg -> Error (Printf.sprintf "Config parsing failed in %s: %s" file_path msg)
+  with
+  | Yojson.Json_error msg ->
+      Error (Printf.sprintf "JSON error in %s: %s" file_path msg)
+  | Sys_error msg ->
+      Error (Printf.sprintf "File error: %s" msg)

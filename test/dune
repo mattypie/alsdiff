@@ -148,3 +148,8 @@
  (name test_text_renderer)
  (modules test_text_renderer)
  (libraries alsdiff_lib alcotest test_utils))
+
+(test
+ (name test_detail_config_json)
+ (modules test_detail_config_json)
+ (libraries alsdiff_lib alcotest test_utils))
