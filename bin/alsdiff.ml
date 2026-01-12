@@ -40,7 +40,7 @@ type config = {
   prefix_unchanged: string option;
   note_name_style: note_display_style option;
   max_collection_items: int option;
-  dump_schema: string option;
+  dump_schema: string;
   validate_config: string option;
 }
 
@@ -65,17 +65,36 @@ let find_git_root () =
   in
   search (Sys.getcwd ())
 
-let discover_config_file () =
-  match find_git_root () with
-  | Some git_root ->
-      let git_config = Filename.concat git_root ".alsdiff.json" in
-      if Sys.file_exists git_config then Some git_config
-      else
-        let home_config = Filename.concat (Sys.getenv "HOME") ".alsdiff.json" in
-        if Sys.file_exists home_config then Some home_config else None
+let get_home_dir () =
+  match Sys.getenv_opt "HOME" with
+  | Some home -> Some home
   | None ->
-      let home_config = Filename.concat (Sys.getenv "HOME") ".alsdiff.json" in
-      if Sys.file_exists home_config then Some home_config else None
+      (* Fallback for Windows systems *)
+      match Sys.getenv_opt "USERPROFILE" with
+      | Some userprofile -> Some userprofile
+      | None -> None
+
+let discover_config_file () =
+  (* Try git root config first *)
+  let check_git_config () =
+    match find_git_root () with
+    | Some git_root ->
+        let git_config = Filename.concat git_root ".alsdiff.json" in
+        if Sys.file_exists git_config then Some git_config else None
+    | None -> None
+  in
+  (* Try home directory config *)
+  let check_home_config () =
+    match get_home_dir () with
+    | Some home ->
+        let home_config = Filename.concat home ".alsdiff.json" in
+        if Sys.file_exists home_config then Some home_config else None
+    | None -> None
+  in
+  (* Priority: git config > home config *)
+  match check_git_config () with
+  | Some _ as result -> result
+  | None -> check_home_config ()
 
 let load_and_report_config config_path =
   Fmt.pr "Loading configuration from %s@." config_path;
@@ -181,8 +200,8 @@ let max_collection_items =
   Arg.(value & opt (some int) None & info ["max-collection-items"] ~docv:"N" ~doc)
 
 let dump_schema =
-  let doc = "Dump JSON schema for configuration to stdout (if no FILE given) or to FILE and exit. Does not require FILE1.als or FILE2.als." in
-  Arg.(value & opt (some string) None & info ["dump-schema"] ~docv:"FILE" ~doc)
+  let doc = "Dump JSON schema for configuration to stdout (or to FILE if specified) and exit. Does not require FILE1.als or FILE2.als." in
+  Arg.(value & opt ~vopt:"-" string "" & info ["dump-schema"] ~docv:"FILE" ~doc)
 
 let validate_config =
   let doc = "Validate a configuration file against the JSON schema and exit. Reports validation errors without running diff." in
@@ -274,18 +293,17 @@ let main () =
                 1)
         | None ->
             (* Handle --dump-schema *)
-            match cfg.dump_schema with
-            | Some path ->
-                (* Dump to file or stdout *)
-                if path = "" || path = "-" then begin
-                  print_endline (Text_renderer.detail_config_schema_to_string ());
-                  0
-                end else begin
-                  Text_renderer.write_schema_to_file path;
-                  Fmt.pr "Schema written to %s@." path;
-                  0
-                end
-            | None ->
+            if cfg.dump_schema <> "" then begin
+              (* Dump to file or stdout *)
+              if cfg.dump_schema = "-" then begin
+                print_endline (Text_renderer.detail_config_schema_to_string ());
+                0
+              end else begin
+                Text_renderer.write_schema_to_file cfg.dump_schema;
+                Fmt.pr "Schema written to %s@." cfg.dump_schema;
+                0
+              end
+            end else begin
                 (* Normal diff operation - requires both files *)
                 match cfg.file1, cfg.file2 with
                 | Some _, Some _ ->
@@ -297,7 +315,8 @@ let main () =
                     Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
                     Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
                     Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
-                    1)
+                    1
+            end)
   else
     exit exit_code
 
