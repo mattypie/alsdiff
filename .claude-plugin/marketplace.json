@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Project-specific tools for Ableton Live Set development and diffing",
-    "version": "1.0.0"
+    "version": "1.2.0"
   },
   "plugins": [
     {
@@ -58,11 +58,22 @@
       "description": "LSP integration for OCaml via ocamllsp",
       "version": "0.1.0",
       "author": {
-        "name": "krfantasy"
+        "name": "Jay Xu"
       },
       "source": "./plugins/ocaml-lsp",
       "category": "development",
       "tags": ["ocaml", "lsp", "language-server", "ocamllsp"]
+    },
+    {
+      "name": "ocaml-code-indent",
+      "description": "Automatically format OCaml files with ocp-indent after edits",
+      "version": "0.1.0",
+      "author": {
+        "name": "Jay Xu"
+      },
+      "source": "./plugins/ocaml-code-indent",
+      "category": "development",
+      "tags": ["ocaml", "formatting", "indentation", "ocp-indent", "automation"]
     }
   ]
 }

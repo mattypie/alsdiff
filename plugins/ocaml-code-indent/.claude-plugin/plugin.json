@@ -1,0 +1,9 @@
+{
+  "name": "ocaml-code-indent",
+  "version": "0.1.0",
+  "description": "Automatically format OCaml files with ocp-indent after edits",
+  "author": {
+    "name": "Jay Xu",
+    "email": "jay.xu.krfantasy@gmail.com"
+  }
+}

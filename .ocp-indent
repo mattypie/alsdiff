@@ -1,0 +1,7 @@
+base = 2
+type = 2
+in = 0
+with = 0
+match_clause = 2
+ppx_stritem_ext = 2
+max_indent = 4

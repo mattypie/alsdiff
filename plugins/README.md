@@ -34,6 +34,12 @@ This directory contains custom Claude Code plugins for the ALSDiff project, prov
 - **Use Case**: Real-time code intelligence for OCaml files
 - **LSP Server**: `ocamllsp`
 
+### ✨ ocaml-code-indent
+- **Purpose**: Automatically format OCaml files with ocp-indent after edits
+- **Category**: Development
+- **Use Case**: Maintain consistent OCaml code indentation automatically
+- **Hook**: PostToolUse (Edit/Write operations)
+
 ## Installation
 
 These plugins are automatically installed when team members trust the ALSDiff repository folder in Claude Code.
@@ -54,6 +60,7 @@ If automatic installation doesn't work:
    /plugin install security-data-leak-scanner@alsdiff-tools
    /plugin install zen-code-reviewer@alsdiff-tools
    /plugin install ocaml-lsp@alsdiff-tools
+   /plugin install ocaml-code-indent@alsdiff-tools
    ```
 
 ## Usage Examples
@@ -84,6 +91,13 @@ Show me the type information for this function
 Go to definition of the Xml.read_file function
 ```
 
+### OCaml Code Indent
+```
+Edit the Xml.read_file function to add error handling
+(add this code in a new OCaml file)
+```
+The ocaml-code-indent plugin automatically formats your OCaml code after each edit using ocp-indent.
+
 ## Configuration
 
 The plugins are configured through:
@@ -113,6 +127,7 @@ plugins/
 │   ├── skills/           # Agent skills
 │   ├── agents/           # Custom agents
 │   ├── commands/         # Slash commands
+│   ├── hooks/            # Event hooks (optional)
 │   └── README.md         # Plugin documentation
 ```
 
@@ -133,3 +148,6 @@ For issues or questions about these plugins:
 
 - **v1.1.0**: Added OCaml LSP integration
   - ocaml-lsp plugin for real-time OCaml code intelligence
+
+- **v1.2.0**: Added OCaml code formatting
+  - ocaml-code-indent plugin for automatic OCaml indentation
