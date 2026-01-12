@@ -53,6 +53,8 @@ let load_config_from_json file_path =
   with
   | Yojson.Json_error msg ->
     failwith ("JSON error in " ^ file_path ^ ": " ^ msg)
+  | Sys_error msg ->
+    failwith ("I/O error reading " ^ file_path ^ ": " ^ msg)
 
 let find_git_root () =
   let rec search path =
