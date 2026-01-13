@@ -24,9 +24,9 @@ The project is structured into a library (`lib`) and a binary (`bin`).
 *   **`lib`:** Contains the core logic for parsing and manipulating Ableton Live Sets, organized into sublibraries:
     *   `lib/base/` - Base functionality modules: `xml.ml`, `upath.ml`, `file.ml`, `equality.ml`, `diff.ml`.
     *   `lib/live/` - Ableton Live specific modules: `automation.ml`, `clip.ml`, `track.ml`, `device.ml`, `liveset.ml`.
-    *   `lib/output/` - Output formatting and view models: `output.ml`, `text_output.ml`, `view_model.ml`.
+    *   `lib/output/` - Output formatting and view models: `output.ml`, `text_renderer.ml`, `view_model.ml`.
 *   **`bin`:** Contains the executable entry point.
-    *   `main.ml`: The main executable.
+    *   `alsdiff.ml`: The main executable.
 
 # Building and Running
 
@@ -68,7 +68,7 @@ dune runtest
 
 # Project Structure
 
-- `bin/main.ml` - Main executable entry point
+- `bin/alsdiff.ml` - Main executable entry point
 - `lib/` - Core library modules organized into sublibraries:
   - `lib/base/` - Base functionality modules:
     - `xml.ml` - XML parsing and data structures
@@ -84,8 +84,15 @@ dune runtest
     - `liveset.ml` - LiveSet structure and locator handling
   - `lib/output/` - Output formatting:
     - `output.ml` - Output interface definitions
-    - `text_output.ml` - Plain text output rendering
+    - `text_renderer.ml` - Plain text output rendering
     - `view_model.ml` - Intermediate representation for UI rendering
+- `plugins/` - Project plugins:
+  - `ableton-test-generator`
+  - `ocaml-code-indent`
+  - `ocaml-lsp`
+  - `security-data-leak-scanner`
+  - `xml-element-extractor`
+  - `zen-code-reviewer`
 - `test/` - Test suites (all use specific module opens for cleaner code):
   - `test_upath.ml` - Tests for XPath-like functionality
   - `test_xml.ml` - Tests for XML parsing
@@ -154,7 +161,7 @@ open Alsdiff_live.Device
 open Alsdiff_live.Liveset
 
 (* Output modules *)
-open Alsdiff_output.Text_output.TextOutput
+open Alsdiff_output.Text_renderer
 ```
 
 This allows you to write `Automation.t` instead of `Alsdiff_lib_live.Automation.Automation.t` and `Xml.read_file` instead of `Alsdiff_lib_base.Xml.read_file`.

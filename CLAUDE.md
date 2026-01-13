@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     - `liveset.ml` - Live set management
   - `lib/output/` - Output formatting:
     - `output.ml` - Output interface definitions
-    - `text_output.ml` - Plain text output rendering
+    - `text_renderer.ml` - Plain text output rendering
     - `view_model.ml` - View model for output formatting
 - `test/` - Test suites (all use specific module opens for cleaner code):
   - `test_upath.ml` - Tests for XPath-like functionality
@@ -48,35 +48,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `test_clip_patch.ml` - Tests for clip patching functionality
   - `test_liveset.ml` - Tests for liveset functionality
   - `test_regex_match.ml` - Tests for regex matching functionality
+  - `test_view_model.ml` - Tests for view model functionality
+  - `test_detail_config_json.ml` - Tests for JSON config handling
+  - `test_text_renderer.ml` - Tests for text renderer
   - `utils.ml` - Shared test utilities
 
-## Key Dependencies
+## Dependencies
 
-- `xmlm` - XML parsing
-- `camlzip` - Gzip decompression for .als files
-- `angstrom` - Parser combinators for Upath
-- `eio` - Effects-based IO
-- `alcotest` - Testing framework
-- `yojson` - JSON parsing and serialization
-- `ppx_deriving.eq` - PPX extension for deriving equality functions
-- `ppx_deriving_jsonschema` - PPX extension for JSON schema generation
-- `ppx_deriving_yojson` - PPX extension for Yojson serialization
-- `re` - Regular expression library
-- `cmdliner` - Command line interface library
+All dependencies with their repositories:
 
-## Third-Party Dependency Repositories
-
-- `camlzip` - https://github.com/xavierleroy/camlzip
-- `xmlm` - https://github.com/dbuenzli/xmlm
-- `angstrom` - https://github.com/inhabitedtype/angstrom
-- `eio` - https://github.com/ocaml-multicore/eio
-- `eio_main` - https://github.com/ocaml-multicore/eio
-- `alcotest` - https://github.com/mirage/alcotest
-- `ppx_deriving` - https://github.com/ocaml-ppx/ppx_deriving
-- `ppx_deriving_yojson` - https://github.com/ocaml-ppx/ppx_deriving_yojson
-- `ppx_deriving_jsonschema` - https://github.com/ahrefs/ppx_deriving_jsonschema
-- `cmdliner` - https://github.com/dbuenzli/cmdliner
-- `re` - https://github.com/ocaml/ocaml-re
+| Dependency | Version | Description | Repository |
+|------------|---------|-------------|------------|
+| `ocaml` | >= 5.0.0 | OCaml compiler | https://ocaml.org |
+| `xmlm` | - | XML parsing | https://github.com/dbuenzli/xmlm |
+| `camlzip` | - | Gzip decompression for .als files | https://github.com/xavierleroy/camlzip |
+| `angstrom` | - | Parser combinators for Upath | https://github.com/inhabitedtype/angstrom |
+| `eio` | - | Effects-based IO | https://github.com/ocaml-multicore/eio |
+| `eio_main` | - | EIO main | https://github.com/ocaml-multicore/eio |
+| `alcotest` | - | Testing framework | https://github.com/mirage/alcotest |
+| `re` | - | Regular expression library | https://github.com/ocaml/ocaml-re |
+| `cmdliner` | >= 2.0.0 | Command line interface library | https://github.com/dbuenzli/cmdliner |
+| `ppx_deriving` | - | PPX extension for deriving equality functions | https://github.com/ocaml-ppx/ppx_deriving |
+| `ppx_deriving_yojson` | - | PPX extension for Yojson serialization | https://github.com/ocaml-ppx/ppx_deriving_yojson |
+| `ppx_deriving_jsonschema` | - | PPX extension for JSON schema generation | https://github.com/ahrefs/ppx_deriving_jsonschema |
+| `jsonschema` | - | JSON schema validation | https://github.com/ocaml-community/jsonschema |
+| `fmt` | - | Pretty-printing | https://github.com/dbuenzli/fmt |
+| `ptime` | - | Time handling | https://github.com/dbuenzli/ptime |
+| `yojson` | - | JSON parsing and serialization | https://github.com/ocaml-community/yojson |
 
 ## Architecture Overview
 
@@ -159,7 +157,7 @@ open Alsdiff_live.Track.AudioTrack
 open Alsdiff_live.Track.MainTrack
 
 (* Output modules *)
-open Alsdiff_output.Text_output.TextOutput
+open Alsdiff_output.Text_renderer
 ```
 
 This allows you to write:
@@ -192,11 +190,5 @@ To inspect code after PPX rewriting (e.g., to see generated equality functions f
 - `dune describe pp lib/live/device.ml` - Show PPX-expanded code for a specific file
 
 ## Git commits conventions
-- Using Conventional Commits, https://www.conventionalcommits.org/en/v1.0.0/
-- Always adding the texts inside the code block to the end of the git commit message,
-```
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
+- Follow the Conventional Commits specification: https://www.conventionalcommits.org/en/v1.0.0/
+- It is recommended to use a 1-3 line summary and list the specific changes.
