@@ -5,6 +5,7 @@ open Eio.Std
 open View_model
 open Cmdliner
 open Cmdliner.Term.Syntax
+open Build_info.V1
 
 let load_liveset ~domain_mgr file =
   Eio.Domain_manager.run domain_mgr @@ fun () ->
@@ -22,9 +23,9 @@ let render_views config (views : View_model.view list) : string =
   Fmt.set_style_renderer ppf `None;
 
   List.iter (fun view ->
-    Text_renderer.pp config ppf view;
-    Fmt.pf ppf "@.";
-  ) views;
+      Text_renderer.pp config ppf view;
+      Fmt.pf ppf "@.";
+    ) views;
 
   Format.pp_print_flush ppf ();
   Buffer.contents buffer
@@ -71,26 +72,26 @@ let get_home_dir () =
   match Sys.getenv_opt "HOME" with
   | Some home -> Some home
   | None ->
-      (* Fallback for Windows systems *)
-      match Sys.getenv_opt "USERPROFILE" with
-      | Some userprofile -> Some userprofile
-      | None -> None
+    (* Fallback for Windows systems *)
+    match Sys.getenv_opt "USERPROFILE" with
+    | Some userprofile -> Some userprofile
+    | None -> None
 
 let discover_config_file () =
   (* Try git root config first *)
   let check_git_config () =
     match find_git_root () with
     | Some git_root ->
-        let git_config = Filename.concat git_root ".alsdiff.json" in
-        if Sys.file_exists git_config then Some git_config else None
+      let git_config = Filename.concat git_root ".alsdiff.json" in
+      if Sys.file_exists git_config then Some git_config else None
     | None -> None
   in
   (* Try home directory config *)
   let check_home_config () =
     match get_home_dir () with
     | Some home ->
-        let home_config = Filename.concat home ".alsdiff.json" in
-        if Sys.file_exists home_config then Some home_config else None
+      let home_config = Filename.concat home ".alsdiff.json" in
+      if Sys.file_exists home_config then Some home_config else None
     | None -> None
   in
   (* Priority: git config > home config *)
@@ -115,36 +116,36 @@ let diff_cmd ~config ~domain_mgr =
   let base_renderer_config =
     match config.config_file with
     | Some config_path ->
-        load_config_from_json config_path
+      load_config_from_json config_path
     | None ->
-        match config.preset with
-        | Some preset ->
-            let base = match preset with
-                  | `Compact -> Text_renderer.compact
-                  | `Full -> Text_renderer.full
-                  | `Midi -> Text_renderer.midi_friendly
-                  | `Quiet -> Text_renderer.quiet
-                  | `Verbose -> Text_renderer.verbose
-            in base
-        | None ->
-            (* Auto-discover .alsdiff.json when neither --config nor --preset specified *)
-            match discover_config_file () with
-            | Some auto_config -> load_and_report_config auto_config
-            | None -> Text_renderer.quiet
+      match config.preset with
+      | Some preset ->
+        let base = match preset with
+          | `Compact -> Text_renderer.compact
+          | `Full -> Text_renderer.full
+          | `Midi -> Text_renderer.midi_friendly
+          | `Quiet -> Text_renderer.quiet
+          | `Verbose -> Text_renderer.verbose
+        in base
+      | None ->
+        (* Auto-discover .alsdiff.json when neither --config nor --preset specified *)
+        match discover_config_file () with
+        | Some auto_config -> load_and_report_config auto_config
+        | None -> Text_renderer.quiet
   in
 
   let renderer_config = { base_renderer_config with
-    prefix_added = (match config.prefix_added with Some s -> s | None -> base_renderer_config.prefix_added);
-    prefix_removed = (match config.prefix_removed with Some s -> s | None -> base_renderer_config.prefix_removed);
-    prefix_modified = (match config.prefix_modified with Some s -> s | None -> base_renderer_config.prefix_modified);
-    prefix_unchanged = (match config.prefix_unchanged with Some s -> s | None -> base_renderer_config.prefix_unchanged);
-    note_name_style = (match config.note_name_style with Some s -> s | None -> base_renderer_config.note_name_style);
-    max_collection_items = (match config.max_collection_items with Some n -> Some n | None -> base_renderer_config.max_collection_items);
-  } in
+                          prefix_added = (match config.prefix_added with Some s -> s | None -> base_renderer_config.prefix_added);
+                          prefix_removed = (match config.prefix_removed with Some s -> s | None -> base_renderer_config.prefix_removed);
+                          prefix_modified = (match config.prefix_modified with Some s -> s | None -> base_renderer_config.prefix_modified);
+                          prefix_unchanged = (match config.prefix_unchanged with Some s -> s | None -> base_renderer_config.prefix_unchanged);
+                          note_name_style = (match config.note_name_style with Some s -> s | None -> base_renderer_config.note_name_style);
+                          max_collection_items = (match config.max_collection_items with Some n -> Some n | None -> base_renderer_config.max_collection_items);
+                        } in
 
   let liveset1, liveset2 = Fiber.pair
-    (fun () -> load_liveset ~domain_mgr file1)
-    (fun () -> load_liveset ~domain_mgr file2)
+      (fun () -> load_liveset ~domain_mgr file1)
+      (fun () -> load_liveset ~domain_mgr file2)
   in
 
   let liveset_patch = Liveset.diff liveset1 liveset2 in
@@ -154,7 +155,7 @@ let diff_cmd ~config ~domain_mgr =
       `Unchanged
     else
       `Modified liveset_patch
-    in
+  in
 
   let views = create_views liveset_change in
 
@@ -270,7 +271,9 @@ let cmd =
     `S Manpage.s_bugs;
     `P "Report bugs at https://github.com/krfantasy/alsdiff/issues";
   ] in
-  Cmd.make (Cmd.info "alsdiff" ~version:"%%VERSION%%" ~doc ~man) @@
+  Cmd.make (Cmd.info "alsdiff" ~version:(match version () with
+      | None -> "dev"
+      | Some v -> Version.to_string v) ~doc ~man) @@
   let+ file1 and+ file2 and+ config_file and+ preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items and+ dump_schema and+ validate_config in
   let cfg = { file1; file2; config_file; preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items; dump_schema; validate_config } in
   config_ref := Some cfg;
@@ -281,44 +284,44 @@ let main () =
   let exit_code = Cmd.eval cmd in
   if exit_code = 0 then
     match !config_ref with
-      | None -> 0
-      | Some cfg ->
-        (* Handle --validate-config first *)
-        (match cfg.validate_config with
-        | Some config_path ->
-            (match Text_renderer.validate_config_file config_path with
-            | Ok () ->
-                Fmt.pr "Configuration file %s is valid@." config_path;
-                0
-            | Error msg ->
-                Fmt.epr "%s@." msg;
-                1)
-        | None ->
-            (* Handle --dump-schema *)
-            if cfg.dump_schema <> "" then begin
-              (* Dump to file or stdout *)
-              if cfg.dump_schema = "-" then begin
-                print_endline (Text_renderer.detail_config_schema_to_string ());
-                0
-              end else begin
-                Text_renderer.write_schema_to_file cfg.dump_schema;
-                Fmt.pr "Schema written to %s@." cfg.dump_schema;
-                0
-              end
-            end else begin
-                (* Normal diff operation - requires both files *)
-                match cfg.file1, cfg.file2 with
-                | Some _, Some _ ->
-                    Eio_main.run @@ fun env ->
-                    let domain_mgr = Eio.Stdenv.domain_mgr env in
-                    diff_cmd ~config:cfg ~domain_mgr;
-                    0
-                | _ ->
-                    Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
-                    Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
-                    Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
-                    1
-            end)
+    | None -> 0
+    | Some cfg ->
+      (* Handle --validate-config first *)
+      (match cfg.validate_config with
+       | Some config_path ->
+         (match Text_renderer.validate_config_file config_path with
+          | Ok () ->
+            Fmt.pr "Configuration file %s is valid@." config_path;
+            0
+          | Error msg ->
+            Fmt.epr "%s@." msg;
+            1)
+       | None ->
+         (* Handle --dump-schema *)
+         if cfg.dump_schema <> "" then begin
+           (* Dump to file or stdout *)
+           if cfg.dump_schema = "-" then begin
+             print_endline (Text_renderer.detail_config_schema_to_string ());
+             0
+           end else begin
+             Text_renderer.write_schema_to_file cfg.dump_schema;
+             Fmt.pr "Schema written to %s@." cfg.dump_schema;
+             0
+           end
+         end else begin
+           (* Normal diff operation - requires both files *)
+           match cfg.file1, cfg.file2 with
+           | Some _, Some _ ->
+             Eio_main.run @@ fun env ->
+             let domain_mgr = Eio.Stdenv.domain_mgr env in
+             diff_cmd ~config:cfg ~domain_mgr;
+             0
+           | _ ->
+             Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
+             Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
+             Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
+             1
+         end)
   else
     exit exit_code
 

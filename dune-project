@@ -2,6 +2,8 @@
 
 (name alsdiff)
 
+(version 0.0.1-dev)
+
 (generate_opam_files true)
 
 (source
@@ -26,6 +28,7 @@
     xmlm
     angstrom
    (cmdliner (>= 2.0.0))
+    dune-build-info
     eio
     eio_main
     alcotest

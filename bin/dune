@@ -1,6 +1,6 @@
 (executable
  (public_name alsdiff)
  (name alsdiff)
- (modules alsdiff)
  (modes byte exe)
- (libraries alsdiff_lib eio_main cmdliner))
+ (libraries alsdiff_lib eio_main cmdliner dune-build-info)
+ (promote (until-clean)))
