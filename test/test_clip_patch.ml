@@ -40,8 +40,8 @@ let test_modified_start_time () =
   (* Check that start_time was modified *)
   match patch.start_time with
   | `Modified { oldval; newval } ->
-      Alcotest.(check (float 0.001)) "old start_time" clip1.start_time oldval;
-      Alcotest.(check (float 0.001)) "new start_time" modified_clip2.start_time newval
+    Alcotest.(check (float 0.001)) "old start_time" clip1.start_time oldval;
+    Alcotest.(check (float 0.001)) "new start_time" modified_clip2.start_time newval
   | _ -> Alcotest.fail "Expected start_time to be Modified"
 
 let test_modified_name () =
@@ -62,8 +62,8 @@ let test_modified_name () =
   (* Check that name was modified *)
   match patch.name with
   | `Modified { oldval; newval } ->
-      Alcotest.(check string) "old name" clip1.name oldval;
-      Alcotest.(check string) "new name" modified_clip2.name newval
+    Alcotest.(check string) "old name" clip1.name oldval;
+    Alcotest.(check string) "new name" modified_clip2.name newval
   | _ -> Alcotest.fail "Expected name to be Modified"
 
 let () =

@@ -51,22 +51,22 @@ let test_liveset_track_parsing () =
 
   (* Count tracks by type to verify proper parsing *)
   let midi_track_count = List.fold_left (fun acc track ->
-    match track with
-    | Track.Midi _ -> acc + 1
-    | _ -> acc
-  ) 0 liveset.tracks in
+      match track with
+      | Track.Midi _ -> acc + 1
+      | _ -> acc
+    ) 0 liveset.tracks in
 
   let audio_track_count = List.fold_left (fun acc track ->
-    match track with
-    | Track.Audio _ -> acc + 1
-    | _ -> acc
-  ) 0 liveset.tracks in
+      match track with
+      | Track.Audio _ -> acc + 1
+      | _ -> acc
+    ) 0 liveset.tracks in
 
   let group_track_count = List.fold_left (fun acc track ->
-    match track with
-    | Track.Group _ -> acc + 1
-    | _ -> acc
-  ) 0 liveset.tracks in
+      match track with
+      | Track.Group _ -> acc + 1
+      | _ -> acc
+    ) 0 liveset.tracks in
 
   (* Verify track counting logic works *)
   let total_tracks = List.length liveset.tracks in
@@ -112,20 +112,20 @@ let test_liveset_locators_parsing () =
 
   (* Validate each locator *)
   List.iter (fun (expected_id, expected_name, expected_time) ->
-    let locator = find_locator_by_id expected_id in
+      let locator = find_locator_by_id expected_id in
 
-    (* Check ID *)
-    Alcotest.(check int) ("locator " ^ (string_of_int expected_id) ^ " id")
-      expected_id locator.Liveset.Locator.id;
+      (* Check ID *)
+      Alcotest.(check int) ("locator " ^ (string_of_int expected_id) ^ " id")
+        expected_id locator.Liveset.Locator.id;
 
-    (* Check name *)
-    Alcotest.(check string) ("locator " ^ (string_of_int expected_id) ^ " name")
-      expected_name locator.Liveset.Locator.name;
+      (* Check name *)
+      Alcotest.(check string) ("locator " ^ (string_of_int expected_id) ^ " name")
+        expected_name locator.Liveset.Locator.name;
 
-    (* Check time with float tolerance *)
-    Alcotest.(check (float 0.001)) ("locator " ^ (string_of_int expected_id) ^ " time")
-      expected_time locator.Liveset.Locator.time
-  ) expected_locators
+      (* Check time with float tolerance *)
+      Alcotest.(check (float 0.001)) ("locator " ^ (string_of_int expected_id) ^ " time")
+        expected_time locator.Liveset.Locator.time
+    ) expected_locators
 
 let test_liveset_main_track_parsing () =
   (* Read and parse the XML file *)
@@ -135,34 +135,34 @@ let test_liveset_main_track_parsing () =
   (* 1. Verify MainTrack type detection *)
   match liveset.main with
   | Track.Main main_track ->
-      (* 2. Test basic MainTrack properties *)
-      Alcotest.(check string) "main track name" "Main" main_track.name;
+    (* 2. Test basic MainTrack properties *)
+    Alcotest.(check string) "main track name" "Main" main_track.name;
 
-      (* 3. Test device count (from t4.xml we expect devices) *)
-      let device_count = List.length main_track.devices in
-      Alcotest.(check bool) "main track has devices" true (device_count > 0);
+    (* 3. Test device count (from t4.xml we expect devices) *)
+    let device_count = List.length main_track.devices in
+    Alcotest.(check bool) "main track has devices" true (device_count > 0);
 
-      (* 4. Test automation count *)
-      let automation_count = List.length main_track.automations in
-      Alcotest.(check int) "automation count" 2 automation_count;
+    (* 4. Test automation count *)
+    let automation_count = List.length main_track.automations in
+    Alcotest.(check int) "automation count" 2 automation_count;
 
-      (* 5. Test MainMixer-specific properties *)
-      (match main_track.mixer.Alsdiff_live.Track.MainMixer.tempo.value with
-       | Alsdiff_live.Device.Float tempo_value ->
-           Alcotest.(check (float 0.001)) "tempo value" 120.0 tempo_value
-       | _ -> Alcotest.fail "expected Float tempo value");
+    (* 5. Test MainMixer-specific properties *)
+    (match main_track.mixer.Alsdiff_live.Track.MainMixer.tempo.value with
+     | Alsdiff_live.Device.Float tempo_value ->
+       Alcotest.(check (float 0.001)) "tempo value" 120.0 tempo_value
+     | _ -> Alcotest.fail "expected Float tempo value");
 
-      (* 6. Test routing configuration *)
-      Alcotest.(check string) "audio out target" "AudioOut/External/S0"
-        main_track.routings.Alsdiff_live.Track.RoutingSet.audio_out.target;
+    (* 6. Test routing configuration *)
+    Alcotest.(check string) "audio out target" "AudioOut/External/S0"
+      main_track.routings.Alsdiff_live.Track.RoutingSet.audio_out.target;
 
-      (* 7. Verify MainTrack singleton behavior *)
-      Alcotest.(check bool) "MainTrack has_same_id returns true"
-        true (Alsdiff_live.Track.MainTrack.has_same_id main_track main_track);
-      (* Test that id_hash is consistent (same value for same instance) *)
-      let hash_value = Alsdiff_live.Track.MainTrack.id_hash main_track in
-      let hash_value2 = Alsdiff_live.Track.MainTrack.id_hash main_track in
-      Alcotest.(check int) "MainTrack id_hash consistent" hash_value hash_value2
+    (* 7. Verify MainTrack singleton behavior *)
+    Alcotest.(check bool) "MainTrack has_same_id returns true"
+      true (Alsdiff_live.Track.MainTrack.has_same_id main_track main_track);
+    (* Test that id_hash is consistent (same value for same instance) *)
+    let hash_value = Alsdiff_live.Track.MainTrack.id_hash main_track in
+    let hash_value2 = Alsdiff_live.Track.MainTrack.id_hash main_track in
+    Alcotest.(check int) "MainTrack id_hash consistent" hash_value hash_value2
 
   | _ -> Alcotest.fail "Expected Track.Main type for main track"
 
@@ -176,11 +176,11 @@ let test_pointee_name_fallback_in_patch () =
 
   (* Test 1: Known ID should resolve from new_pointees *)
   let known_ids = Liveset.IntHashtbl.to_seq_keys patch.Liveset.Patch.new_pointees
-                  |> List.of_seq in
+    |> List.of_seq in
   (match known_ids with
    | id :: _ ->
-       let result = Liveset.get_pointee_name_from_table_opt patch.Liveset.Patch.new_pointees id in
-       Alcotest.(check bool) "known ID resolves from new_pointees" true (Option.is_some result)
+     let result = Liveset.get_pointee_name_from_table_opt patch.Liveset.Patch.new_pointees id in
+     Alcotest.(check bool) "known ID resolves from new_pointees" true (Option.is_some result)
    | [] -> ());
 
   (* Test 2: Unknown ID should return None *)

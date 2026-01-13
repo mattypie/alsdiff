@@ -4,3 +4,17 @@
  (modes byte exe)
  (libraries alsdiff_lib eio_main cmdliner dune-build-info)
  (promote (until-clean)))
+
+;; Auto indent files with `dune build @fmt`
+(subdir
+ run
+ (dynamic_include ../rules/dune.ocp-indent))
+
+(subdir
+ rules
+ (rule
+  (deps
+   (glob_files ../*.{ml,mli}))
+  (target dune.ocp-indent)
+  (action
+   (run ocp-indent-gen-rules -o %{target}))))

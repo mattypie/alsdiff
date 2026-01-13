@@ -20,10 +20,10 @@ let test_create_audio_clip () =
     SampleRef.last_modified_date = 1742403845;
   } in
   let expected_loop = Some {
-    Loop.start_time = 26.13179997086247;
-    Loop.end_time = 46.631799970862474;
-    Loop.on = false;
-  } in
+      Loop.start_time = 26.13179997086247;
+      Loop.end_time = 46.631799970862474;
+      Loop.on = false;
+    } in
 
   (* Test basic fields *)
   Alcotest.(check int) "id" expected_id audio_clip.id;

@@ -30,11 +30,11 @@ module Routing = struct
   (** Parse route type from XML element name *)
   let parse_route_type xml =
     match Xml.get_name xml with
-      | "MidiInputRouting" -> MidiIn
-      | "MidiOutputRouting" -> MidiOut
-      | "AudioInputRouting" -> AudioIn
-      | "AudioOutputRouting" -> AudioOut
-      | name -> raise (Xml.Xml_error (xml, "Invalid routing element: " ^ name))
+    | "MidiInputRouting" -> MidiIn
+    | "MidiOutputRouting" -> MidiOut
+    | "AudioInputRouting" -> AudioIn
+    | "AudioOutputRouting" -> AudioOut
+    | name -> raise (Xml.Xml_error (xml, "Invalid routing element: " ^ name))
 
   (** [create xml] creates a routing object from an XML element *)
   let create (xml : Xml.t) : t =
@@ -253,8 +253,8 @@ module MidiTrack = struct
       |> Seq.map (fun x -> x |> snd |> Automation.create)
       |> List.of_seq in
     let clips = Upath.find_all_seq "/**/ClipTimeable/ArrangerAutomation/Events/MidiClip" xml
-              |> Seq.map (fun x -> x |> snd |> Clip.MidiClip.create)
-              |> List.of_seq in
+      |> Seq.map (fun x -> x |> snd |> Clip.MidiClip.create)
+      |> List.of_seq in
     let devices = Upath.find_all_seq "/DeviceChain/*/Devices" xml
       |> Seq.map snd
       |> Seq.concat_map (fun devs ->
@@ -337,8 +337,8 @@ module AudioTrack = struct
       |> Seq.map (fun x -> x |> snd |> Automation.create)
       |> List.of_seq in
     let clips = Upath.find_all_seq "/**/AudioClip" xml
-              |> Seq.map (fun x -> x |> snd |> Clip.AudioClip.create)
-              |> List.of_seq in
+      |> Seq.map (fun x -> x |> snd |> Clip.AudioClip.create)
+      |> List.of_seq in
     let devices = Upath.find_all_seq "/DeviceChain/*/Devices" xml
       |> Seq.map snd
       |> Seq.concat_map (fun devs ->

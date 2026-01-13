@@ -50,12 +50,12 @@ let test_group_device_macros_from_xml () =
 
   (* Check that all macros have expected structure *)
   List.iter (fun macro ->
-    (match macro.Device.Macro.base.Device.GenericParam.value with
-     | Device.Float v -> ignore (v : float)
-     | _ -> ());
-    ignore (macro.Device.Macro.base.Device.GenericParam.automation : int);
-    ignore (macro.Device.Macro.base.Device.GenericParam.modulation : int);
-  ) macros
+      (match macro.Device.Macro.base.Device.GenericParam.value with
+       | Device.Float v -> ignore (v : float)
+       | _ -> ());
+      ignore (macro.Device.Macro.base.Device.GenericParam.automation : int);
+      ignore (macro.Device.Macro.base.Device.GenericParam.modulation : int);
+    ) macros
 
 let test_group_device_structure_from_xml () =
   (* Load the group device XML file *)
@@ -90,7 +90,7 @@ let test_group_device_structure_from_xml () =
   let first_device = List.hd first_branch.devices in
   (match first_device with
    | Device.Regular reg ->
-       Alcotest.(check string) "first device name" "Operator" reg.device_name
+     Alcotest.(check string) "first device name" "Operator" reg.device_name
    |  _ -> Alcotest.fail "Expected Regular device in branch")
 
 let test_group_device_snapshots_from_xml () =

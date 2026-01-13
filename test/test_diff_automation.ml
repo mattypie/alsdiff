@@ -8,12 +8,12 @@ let load_automation_from_file (path : string) : Automation.t =
   let envelope_element =
     match xml with
     | Element { name = "AutomationEnvelopes"; _ } as root ->
-        (* Extract the first AutomationEnvelope from the list *)
-        let envelopes = Upath.find_all "/Envelopes/AutomationEnvelope" root in
-        if List.length envelopes = 0 then
-          failwith ("No AutomationEnvelope elements found in " ^ path)
-        else
-          snd (List.hd envelopes)  (* Get the first envelope element *)
+      (* Extract the first AutomationEnvelope from the list *)
+      let envelopes = Upath.find_all "/Envelopes/AutomationEnvelope" root in
+      if List.length envelopes = 0 then
+        failwith ("No AutomationEnvelope elements found in " ^ path)
+      else
+        snd (List.hd envelopes)  (* Get the first envelope element *)
     | Element { name = "AutomationEnvelope"; _ } as envelope -> envelope
     | _ -> failwith ("Root element in " ^ path ^ " is neither AutomationEnvelopes nor AutomationEnvelope")
   in

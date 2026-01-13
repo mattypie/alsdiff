@@ -107,7 +107,7 @@ struct
       many (p_escaped <|> p_unescaped) >>| String.concat ""
     in
     char '\'' *> p_regex_content <* char '\'' >>| fun pattern ->
-      Regex (pattern, compile_regex pattern)
+    Regex (pattern, compile_regex pattern)
 
   (* Parse either a raw identifier or a quoted regex *)
   let p_name_component =
@@ -512,10 +512,10 @@ let pp_path fmt path =
     | Tag (name_comp, attrs) ->
       Format.fprintf fmt "%a" pp_name_component name_comp;
       List.iter (fun {name; value} ->
-        match value with
-        | Any -> Format.fprintf fmt "@%s" name
-        | Exact v -> Format.fprintf fmt "@%s=\"%s\"" name v
-      ) attrs
+          match value with
+          | Any -> Format.fprintf fmt "@%s" name
+          | Exact v -> Format.fprintf fmt "@%s=\"%s\"" name v
+        ) attrs
     | Index (i, name_comp_opt) ->
       (match name_comp_opt with
        | Some name_comp -> Format.fprintf fmt "%a" pp_name_component name_comp
@@ -524,17 +524,17 @@ let pp_path fmt path =
     | SingleWildcard attrs ->
       Format.fprintf fmt "*";
       List.iter (fun {name; value} ->
-        match value with
-        | Any -> Format.fprintf fmt "@%s" name
-        | Exact v -> Format.fprintf fmt "@%s=\"%s\"" name v
-      ) attrs
+          match value with
+          | Any -> Format.fprintf fmt "@%s" name
+          | Exact v -> Format.fprintf fmt "@%s=\"%s\"" name v
+        ) attrs
     | MultiWildcard attrs ->
       Format.fprintf fmt "**";
       List.iter (fun {name; value} ->
-        match value with
-        | Any -> Format.fprintf fmt "@%s" name
-        | Exact v -> Format.fprintf fmt "@%s=\"%s\"" name v
-      ) attrs
+          match value with
+          | Any -> Format.fprintf fmt "@%s" name
+          | Exact v -> Format.fprintf fmt "@%s=\"%s\"" name v
+        ) attrs
     | CurrentNode ->
       Format.fprintf fmt "."
     | ParentNode ->
@@ -543,7 +543,7 @@ let pp_path fmt path =
   match path with
   | [] -> Format.fprintf fmt "/"
   | components ->
-      Format.fprintf fmt "/%s"
-        (String.concat "/" (List.map (fun c ->
+    Format.fprintf fmt "/%s"
+      (String.concat "/" (List.map (fun c ->
            Format.asprintf "%a" pp_component c
          ) components))

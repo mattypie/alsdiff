@@ -4,22 +4,22 @@ open Alsdiff_live
 let test_device_param_with_missing_values () =
   (* Create a parameter XML structure with missing values *)
   let param_xml = Element {
-    name = "TestParam";
-    attrs = [("Id", "101")];
-    childs = [
-      Element {
-        name = "LomId";
-        attrs = [("Value", "0")];
-        childs = [];
-      };
-      Element {
-        name = "Manual";
-        attrs = [("Value", "0.0")];
-        childs = [];
-      }
-      (* Missing AutomationTarget element - should default to 0 *)
-    ];
-  } in
+      name = "TestParam";
+      attrs = [("Id", "101")];
+      childs = [
+        Element {
+          name = "LomId";
+          attrs = [("Value", "0")];
+          childs = [];
+        };
+        Element {
+          name = "Manual";
+          attrs = [("Value", "0.0")];
+          childs = [];
+        }
+        (* Missing AutomationTarget element - should default to 0 *)
+      ];
+    } in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
@@ -41,7 +41,7 @@ let test_device_creation_with_invalid_xml () =
   (* This should raise an exception *)
   (try ignore (Device.RegularDevice.create invalid_xml); false
    with Alsdiff_base.Xml.Xml_error (_, msg) when msg = "Invalid XML element for creating Device" -> true
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "invalid xml raises exception" true
 
 let test_param_creation_with_invalid_xml () =
@@ -51,95 +51,95 @@ let test_param_creation_with_invalid_xml () =
   (* This should raise an exception *)
   (try ignore (Device.DeviceParam.create "test" invalid_xml); false
    with Alsdiff_base.Xml.Xml_error (_, msg) when msg = "Invalid XML element for creating DeviceParam" -> true
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "invalid xml raises exception" true
 
 let test_device_param_with_continuous_macro_mapping () =
   (* Create a parameter XML structure with continuous macro mapping *)
   let param_xml = Element {
-    name = "Coarse";
-    attrs = [("Id", "100")];
-    childs = [
-      Element {
-        name = "LomId";
-        attrs = [("Value", "0")];
-        childs = [];
-      };
-      Element {
-        name = "KeyMidi";
-        attrs = [];
-        childs = [
-          Element {
-            name = "PersistentKeyString";
-            attrs = [("Value", "")];
-            childs = [];
-          };
-          Element {
-            name = "IsNote";
-            attrs = [("Value", "true")];
-            childs = [];
-          };
-          Element {
-            name = "Channel";
-            attrs = [("Value", "16")];
-            childs = [];
-          };
-          Element {
-            name = "NoteOrController";
-            attrs = [("Value", "3")];
-            childs = [];
-          };
-          Element {
-            name = "LowerRangeNote";
-            attrs = [("Value", "-1")];
-            childs = [];
-          };
-          Element {
-            name = "UpperRangeNote";
-            attrs = [("Value", "-1")];
-            childs = [];
-          };
-          Element {
-            name = "ControllerMapMode";
-            attrs = [("Value", "1")];
-            childs = [];
-          };
-        ];
-      };
-      Element {
-        name = "Manual";
-        attrs = [("Value", "31")];
-        childs = [];
-      };
-      Element {
-        name = "MidiControllerRange";
-        attrs = [];
-        childs = [
-          Element {
-            name = "Min";
-            attrs = [("Value", "0")];
-            childs = [];
-          };
-          Element {
-            name = "Max";
-            attrs = [("Value", "48")];
-            childs = [];
-          };
-        ];
-      };
-      Element {
-        name = "AutomationTarget";
-        attrs = [("Id", "200")];
-        childs = [
-          Element {
-            name = "LockEnvelope";
-            attrs = [("Value", "0")];
-            childs = [];
-          }
-        ];
-      }
-    ];
-  } in
+      name = "Coarse";
+      attrs = [("Id", "100")];
+      childs = [
+        Element {
+          name = "LomId";
+          attrs = [("Value", "0")];
+          childs = [];
+        };
+        Element {
+          name = "KeyMidi";
+          attrs = [];
+          childs = [
+            Element {
+              name = "PersistentKeyString";
+              attrs = [("Value", "")];
+              childs = [];
+            };
+            Element {
+              name = "IsNote";
+              attrs = [("Value", "true")];
+              childs = [];
+            };
+            Element {
+              name = "Channel";
+              attrs = [("Value", "16")];
+              childs = [];
+            };
+            Element {
+              name = "NoteOrController";
+              attrs = [("Value", "3")];
+              childs = [];
+            };
+            Element {
+              name = "LowerRangeNote";
+              attrs = [("Value", "-1")];
+              childs = [];
+            };
+            Element {
+              name = "UpperRangeNote";
+              attrs = [("Value", "-1")];
+              childs = [];
+            };
+            Element {
+              name = "ControllerMapMode";
+              attrs = [("Value", "1")];
+              childs = [];
+            };
+          ];
+        };
+        Element {
+          name = "Manual";
+          attrs = [("Value", "31")];
+          childs = [];
+        };
+        Element {
+          name = "MidiControllerRange";
+          attrs = [];
+          childs = [
+            Element {
+              name = "Min";
+              attrs = [("Value", "0")];
+              childs = [];
+            };
+            Element {
+              name = "Max";
+              attrs = [("Value", "48")];
+              childs = [];
+            };
+          ];
+        };
+        Element {
+          name = "AutomationTarget";
+          attrs = [("Id", "200")];
+          childs = [
+            Element {
+              name = "LockEnvelope";
+              attrs = [("Value", "0")];
+              childs = [];
+            }
+          ];
+        }
+      ];
+    } in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
@@ -166,89 +166,89 @@ let test_device_param_with_continuous_macro_mapping () =
 let test_device_param_with_onoff_macro_mapping () =
   (* Create a parameter XML structure with On/Off macro mapping *)
   let param_xml = Element {
-    name = "IsOn";
-    attrs = [("Id", "101")];
-    childs = [
-      Element {
-        name = "LomId";
-        attrs = [("Value", "0")];
-        childs = [];
-      };
-      Element {
-        name = "KeyMidi";
-        attrs = [];
-        childs = [
-          Element {
-            name = "PersistentKeyString";
-            attrs = [("Value", "")];
-            childs = [];
-          };
-          Element {
-            name = "IsNote";
-            attrs = [("Value", "true")];
-            childs = [];
-          };
-          Element {
-            name = "Channel";
-            attrs = [("Value", "16")];
-            childs = [];
-          };
-          Element {
-            name = "NoteOrController";
-            attrs = [("Value", "0")];
-            childs = [];
-          };
-          Element {
-            name = "LowerRangeNote";
-            attrs = [("Value", "-1")];
-            childs = [];
-          };
-          Element {
-            name = "UpperRangeNote";
-            attrs = [("Value", "-1")];
-            childs = [];
-          };
-          Element {
-            name = "ControllerMapMode";
-            attrs = [("Value", "1")];
-            childs = [];
-          };
-        ];
-      };
-      Element {
-        name = "Manual";
-        attrs = [("Value", "true")];
-        childs = [];
-      };
-      Element {
-        name = "MidiCCOnOffThresholds";
-        attrs = [];
-        childs = [
-          Element {
-            name = "Min";
-            attrs = [("Value", "64")];
-            childs = [];
-          };
-          Element {
-            name = "Max";
-            attrs = [("Value", "127")];
-            childs = [];
-          };
-        ];
-      };
-      Element {
-        name = "AutomationTarget";
-        attrs = [("Id", "201")];
-        childs = [
-          Element {
-            name = "LockEnvelope";
-            attrs = [("Value", "0")];
-            childs = [];
-          }
-        ];
-      }
-    ];
-  } in
+      name = "IsOn";
+      attrs = [("Id", "101")];
+      childs = [
+        Element {
+          name = "LomId";
+          attrs = [("Value", "0")];
+          childs = [];
+        };
+        Element {
+          name = "KeyMidi";
+          attrs = [];
+          childs = [
+            Element {
+              name = "PersistentKeyString";
+              attrs = [("Value", "")];
+              childs = [];
+            };
+            Element {
+              name = "IsNote";
+              attrs = [("Value", "true")];
+              childs = [];
+            };
+            Element {
+              name = "Channel";
+              attrs = [("Value", "16")];
+              childs = [];
+            };
+            Element {
+              name = "NoteOrController";
+              attrs = [("Value", "0")];
+              childs = [];
+            };
+            Element {
+              name = "LowerRangeNote";
+              attrs = [("Value", "-1")];
+              childs = [];
+            };
+            Element {
+              name = "UpperRangeNote";
+              attrs = [("Value", "-1")];
+              childs = [];
+            };
+            Element {
+              name = "ControllerMapMode";
+              attrs = [("Value", "1")];
+              childs = [];
+            };
+          ];
+        };
+        Element {
+          name = "Manual";
+          attrs = [("Value", "true")];
+          childs = [];
+        };
+        Element {
+          name = "MidiCCOnOffThresholds";
+          attrs = [];
+          childs = [
+            Element {
+              name = "Min";
+              attrs = [("Value", "64")];
+              childs = [];
+            };
+            Element {
+              name = "Max";
+              attrs = [("Value", "127")];
+              childs = [];
+            };
+          ];
+        };
+        Element {
+          name = "AutomationTarget";
+          attrs = [("Id", "201")];
+          childs = [
+            Element {
+              name = "LockEnvelope";
+              attrs = [("Value", "0")];
+              childs = [];
+            }
+          ];
+        }
+      ];
+    } in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in
@@ -276,63 +276,63 @@ let test_device_param_with_onoff_macro_mapping () =
 let test_device_param_with_invalid_controller_map_mode () =
   (* Create a parameter XML structure with ControllerMapMode != "0" *)
   let param_xml = Element {
-    name = "NonMacroParam";
-    attrs = [("Id", "103")];
-    childs = [
-      Element {
-        name = "LomId";
-        attrs = [("Value", "0")];
-        childs = [];
-      };
-      Element {
-        name = "KeyMidi";
-        attrs = [];
-        childs = [
-          Element {
-            name = "PersistentKeyString";
-            attrs = [("Value", "")];
-            childs = [];
-          };
-          Element {
-            name = "IsNote";
-            attrs = [("Value", "false")];
-            childs = [];
-          };
-          Element {
-            name = "Channel";
-            attrs = [("Value", "16")];
-            childs = [];
-          };
-          Element {
-            name = "NoteOrController";
-            attrs = [("Value", "1")];
-            childs = [];
-          };
-          Element {
-            name = "ControllerMapMode";
-            attrs = [("Value", "1")]; (* Not 0, so no macro mapping *)
-            childs = [];
-          };
-        ];
-      };
-      Element {
-        name = "Manual";
-        attrs = [("Value", "0.5")];
-        childs = [];
-      };
-      Element {
-        name = "AutomationTarget";
-        attrs = [("Id", "203")];
-        childs = [
-          Element {
-            name = "LockEnvelope";
-            attrs = [("Value", "0")];
-            childs = [];
-          }
-        ];
-      }
-    ];
-  } in
+      name = "NonMacroParam";
+      attrs = [("Id", "103")];
+      childs = [
+        Element {
+          name = "LomId";
+          attrs = [("Value", "0")];
+          childs = [];
+        };
+        Element {
+          name = "KeyMidi";
+          attrs = [];
+          childs = [
+            Element {
+              name = "PersistentKeyString";
+              attrs = [("Value", "")];
+              childs = [];
+            };
+            Element {
+              name = "IsNote";
+              attrs = [("Value", "false")];
+              childs = [];
+            };
+            Element {
+              name = "Channel";
+              attrs = [("Value", "16")];
+              childs = [];
+            };
+            Element {
+              name = "NoteOrController";
+              attrs = [("Value", "1")];
+              childs = [];
+            };
+            Element {
+              name = "ControllerMapMode";
+              attrs = [("Value", "1")]; (* Not 0, so no macro mapping *)
+              childs = [];
+            };
+          ];
+        };
+        Element {
+          name = "Manual";
+          attrs = [("Value", "0.5")];
+          childs = [];
+        };
+        Element {
+          name = "AutomationTarget";
+          attrs = [("Id", "203")];
+          childs = [
+            Element {
+              name = "LockEnvelope";
+              attrs = [("Value", "0")];
+              childs = [];
+            }
+          ];
+        }
+      ];
+    } in
 
   (* Create a parameter from the XML *)
   let open Device.DeviceParam in

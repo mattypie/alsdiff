@@ -343,8 +343,8 @@ module PresetRef = struct
       (* Extract FileRef element *)
       let file_ref_xml =
         try List.find (function
-          | Xml.Element { name = "FileRef"; _ } -> true
-          | _ -> false) childs
+            | Xml.Element { name = "FileRef"; _ } -> true
+            | _ -> false) childs
         with Not_found -> raise (Xml.Xml_error (xml, "FileRef element not found in PresetRef"))
       in
 
@@ -437,8 +437,8 @@ module PatchRef = struct
       (* Extract FileRef element *)
       let file_ref_xml =
         try List.find (function
-          | Xml.Element { name = "FileRef"; _ } -> true
-          | _ -> false) childs
+            | Xml.Element { name = "FileRef"; _ } -> true
+            | _ -> false) childs
         with Not_found -> raise (Xml.Xml_error (xml, "FileRef element not found in MxPatchRef"))
       in
 
@@ -488,22 +488,22 @@ module PatchRef = struct
     (* if old_patch.id <> new_patch.id then *)
     (*   failwith "cannot diff two PatchRefs with different Ids" *)
     (* else *)
-      let relative_path_change = diff_atomic_value (module String) old_patch.relative_path new_patch.relative_path in
-      let path_change = diff_atomic_value (module String) old_patch.path new_patch.path in
-      let pack_name_change = diff_atomic_value (module String) old_patch.pack_name new_patch.pack_name in
-      let pack_id_change = diff_atomic_value (module Int) old_patch.pack_id new_patch.pack_id in
-      let file_size_change = diff_atomic_value (module Int) old_patch.file_size new_patch.file_size in
-      let crc_change = diff_atomic_value (module Int) old_patch.crc new_patch.crc in
-      let last_mod_date_change = diff_atomic_value (module Int) old_patch.last_mod_date new_patch.last_mod_date in
-      {
-        relative_path = relative_path_change;
-        path = path_change;
-        pack_name = pack_name_change;
-        pack_id = pack_id_change;
-        file_size = file_size_change;
-        crc = crc_change;
-        last_mod_date = last_mod_date_change;
-      }
+    let relative_path_change = diff_atomic_value (module String) old_patch.relative_path new_patch.relative_path in
+    let path_change = diff_atomic_value (module String) old_patch.path new_patch.path in
+    let pack_name_change = diff_atomic_value (module String) old_patch.pack_name new_patch.pack_name in
+    let pack_id_change = diff_atomic_value (module Int) old_patch.pack_id new_patch.pack_id in
+    let file_size_change = diff_atomic_value (module Int) old_patch.file_size new_patch.file_size in
+    let crc_change = diff_atomic_value (module Int) old_patch.crc new_patch.crc in
+    let last_mod_date_change = diff_atomic_value (module Int) old_patch.last_mod_date new_patch.last_mod_date in
+    {
+      relative_path = relative_path_change;
+      path = path_change;
+      pack_name = pack_name_change;
+      pack_id = pack_id_change;
+      file_size = file_size_change;
+      crc = crc_change;
+      last_mod_date = last_mod_date_change;
+    }
 end
 
 
@@ -802,8 +802,8 @@ module Max4LiveParam = struct
       let name_elements = Upath.find_all "/Names/Name/Name" xml in
       let enums =
         List.map (fun (_, name_xml) ->
-          Xml.get_attr "Value" name_xml
-        ) name_elements
+            Xml.get_attr "Value" name_xml
+          ) name_elements
         |> Array.of_list
       in
       if Array.length enums > 0 then
@@ -941,8 +941,8 @@ let diff_atomic_list (old_list : float list) (new_list : float list) : float ato
     failwith "diff_atomic_list requires lists of same length"
   else
     List.map2 (fun old_elem new_elem ->
-      (diff_atomic_value (module Float) old_elem new_elem :> float atomic_change)
-    ) old_list new_list
+        (diff_atomic_value (module Float) old_elem new_elem :> float atomic_change)
+      ) old_list new_list
 
 
 module Macro = struct
@@ -962,7 +962,7 @@ module Macro = struct
     if name_id <> control_id then
       raise (Xml.Xml_error (name_xml, "Macro name ID " ^ string_of_int name_id ^ " does not match control ID " ^ string_of_int control_id ^ ". Macro names and controls must be paired correctly."))
     else
-    { id=name_id; base; }
+      { id=name_id; base; }
 
   module Patch = struct
     type t = {
@@ -1003,14 +1003,14 @@ module Snapshot = struct
       (* Build ordered list of values from MacroValues *)
       let values =
         List.map (fun (_, xml_elem) ->
-          let element_name = match xml_elem with
-            | Xml.Element { name; _ } -> name
-            | Xml.Data _ -> raise (Xml.Xml_error (xml_elem, "Expected Element, got Data"))
-          in
-          let index = extract_index_from_name element_name in
-          let value = Xml.get_float_attr "Value" xml_elem in
-          (index, value)
-        ) macro_values_xml
+            let element_name = match xml_elem with
+              | Xml.Element { name; _ } -> name
+              | Xml.Data _ -> raise (Xml.Xml_error (xml_elem, "Expected Element, got Data"))
+            in
+            let index = extract_index_from_name element_name in
+            let value = Xml.get_float_attr "Value" xml_elem in
+            (index, value)
+          ) macro_values_xml
         |> List.sort (fun (i1, _) (i2, _) -> Stdlib.compare i1 i2)
         |> List.map snd
       in
@@ -1401,8 +1401,8 @@ module PluginDevice = struct
     let device_name = Xml.get_name xml in
 
     let preset = Upath.find_opt "/LastPresetRef/Value/*" xml
-               |> Option.map snd
-               |> Option.map PresetRef.create in
+      |> Option.map snd
+      |> Option.map PresetRef.create in
     let display_name = get_display_name preset xml in
 
     (* Get pointee ID *)
@@ -1545,8 +1545,8 @@ module Max4LiveDevice = struct
     let device_name = Xml.get_name xml in
 
     let preset = Upath.find_opt "/LastPresetRef/Value/*" xml
-               |> Option.map snd
-               |> Option.map PresetRef.create in
+      |> Option.map snd
+      |> Option.map PresetRef.create in
     let display_name = get_display_name preset xml in
 
     (* Get pointee ID *)
@@ -1677,10 +1677,10 @@ and device_patch_is_empty = function
 (* Note: Patch.t and device_patch are nominally different types in OCaml,
    so we need this wrapper to convert between them *)
 let () = Patch.is_empty_ref := (function
-  | Patch.RegularPatch p -> device_patch_is_empty (RegularPatch p)
-  | Patch.PluginPatch p -> device_patch_is_empty (PluginPatch p)
-  | Patch.Max4LivePatch p -> device_patch_is_empty (Max4LivePatch p)
-  | Patch.GroupPatch p -> device_patch_is_empty (GroupPatch p))
+    | Patch.RegularPatch p -> device_patch_is_empty (RegularPatch p)
+    | Patch.PluginPatch p -> device_patch_is_empty (PluginPatch p)
+    | Patch.Max4LivePatch p -> device_patch_is_empty (Max4LivePatch p)
+    | Patch.GroupPatch p -> device_patch_is_empty (GroupPatch p))
 
 let () = device_patch_is_empty_ref := device_patch_is_empty
 let () = branch_patch_is_empty_ref := branch_patch_is_empty

@@ -38,7 +38,7 @@ let () =
   (match result1 with
    | [] -> Printf.printf "  No matches found\n"
    | matches ->
-       List.iter (fun (path, _) -> Printf.printf "  Found: %s\n" path) matches);
+     List.iter (fun (path, _) -> Printf.printf "  Found: %s\n" path) matches);
 
   Printf.printf "\n";
 
@@ -48,4 +48,4 @@ let () =
   (match result2 with
    | [] -> Printf.printf "  No matches found\n"
    | matches ->
-       List.iter (fun (path, _) -> Printf.printf "  Found: %s\n" path) matches);
+     List.iter (fun (path, _) -> Printf.printf "  Found: %s\n" path) matches);

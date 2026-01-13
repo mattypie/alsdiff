@@ -108,7 +108,7 @@ let test_m4l_device_param_creation () =
    | Device.Int _ -> () (* Could be any int value *)
    | Device.Bool _ -> () (* Could be any bool value *)
    | Device.Enum (_, _) -> () (* Could be any enum *)
-   );
+  );
 
   (* Verify basic structure *)
   Alcotest.(check bool) "parameter id > 0" true (param.id > 0);
@@ -170,32 +170,32 @@ let test_m4l_device_parameter_values () =
 
   (* Check that we can find parameters with specific names and values *)
   let found_am_mod_offset = List.exists (fun (_, xml_elem) ->
-    let open Device.Max4LiveParam in
-    let param = create "" xml_elem in
-    param.base.Device.GenericParam.name = "AM Mod Offset"
-  ) param_xmls in
+      let open Device.Max4LiveParam in
+      let param = create "" xml_elem in
+      param.base.Device.GenericParam.name = "AM Mod Offset"
+    ) param_xmls in
 
   let found_clear_grid = List.exists (fun (_, xml_elem) ->
-    let open Device.Max4LiveParam in
-    let param = create "" xml_elem in
-    param.base.Device.GenericParam.name = "Clear Grid"
-  ) param_xmls in
+      let open Device.Max4LiveParam in
+      let param = create "" xml_elem in
+      param.base.Device.GenericParam.name = "Clear Grid"
+    ) param_xmls in
 
   let found_float_param = List.exists (fun (_, xml_elem) ->
-    let open Device.Max4LiveParam in
-    let param = create "" xml_elem in
-    match param.base.Device.GenericParam.value with
-    | Device.Float _ -> true
-    | _ -> false
-  ) param_xmls in
+      let open Device.Max4LiveParam in
+      let param = create "" xml_elem in
+      match param.base.Device.GenericParam.value with
+      | Device.Float _ -> true
+      | _ -> false
+    ) param_xmls in
 
   let found_enum_param = List.exists (fun (_, xml_elem) ->
-    let open Device.Max4LiveParam in
-    let param = create "" xml_elem in
-    match param.base.Device.GenericParam.value with
-    | Device.Enum _ -> true
-    | _ -> false
-  ) param_xmls in
+      let open Device.Max4LiveParam in
+      let param = create "" xml_elem in
+      match param.base.Device.GenericParam.value with
+      | Device.Enum _ -> true
+      | _ -> false
+    ) param_xmls in
 
   Alcotest.(check bool) "found AM Mod Offset parameter" true found_am_mod_offset;
   Alcotest.(check bool) "found Clear Grid parameter" true found_clear_grid;

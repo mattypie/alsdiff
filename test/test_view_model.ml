@@ -27,22 +27,22 @@ let get_collection = function
 let find_view_by_name name views =
   try
     List.find (fun v ->
-      match v with
-      | Field f -> f.name = name
-      | Item i -> i.name = name
-      | Collection c -> c.name = name
-    ) views
+        match v with
+        | Field f -> f.name = name
+        | Item i -> i.name = name
+        | Collection c -> c.name = name
+      ) views
   with Not_found -> failwith ("View with name '" ^ name ^ "' not found")
 
 (* Helper: Find item in collection items by checking name prefix *)
 let find_item_in_collection name (col : collection) =
   try
     List.find (fun v ->
-      match v with
-      | Item i -> String.length i.name >= String.length name &&
-                  String.sub i.name 0 (String.length name) = name
-      | _ -> false
-    ) col.items |> get_item
+        match v with
+        | Item i -> String.length i.name >= String.length name &&
+                    String.sub i.name 0 (String.length name) = name
+        | _ -> false
+      ) col.items |> get_item
   with Not_found -> failwith ("Item starting with '" ^ name ^ "' not found in collection")
 
 
@@ -52,36 +52,36 @@ let test_change_type_of () =
   (* Test Added *)
   let added_change = `Added 42 in
   check (Alcotest.of_pp (fun fmt ct ->
-    Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
-  )) "Added change" Added (ViewBuilder.change_type_of added_change);
+      Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
+    )) "Added change" Added (ViewBuilder.change_type_of added_change);
 
   (* Test Removed *)
   let removed_change = `Removed "hello" in
   check (Alcotest.of_pp (fun fmt ct ->
-    Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
-  )) "Removed change" Removed (ViewBuilder.change_type_of removed_change);
+      Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
+    )) "Removed change" Removed (ViewBuilder.change_type_of removed_change);
 
   (* Test Modified *)
   let modified_change = `Modified { oldval = 1; newval = 2 } in
   check (Alcotest.of_pp (fun fmt ct ->
-    Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
-  )) "Modified change" Modified (ViewBuilder.change_type_of modified_change);
+      Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
+    )) "Modified change" Modified (ViewBuilder.change_type_of modified_change);
 
   (* Test Unchanged *)
   let unchanged_change = `Unchanged in
   check (Alcotest.of_pp (fun fmt ct ->
-    Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
-  )) "Unchanged change" Unchanged (ViewBuilder.change_type_of unchanged_change)
+      Fmt.pf fmt "%s" (match ct with Added -> "Added" | Removed -> "Removed" | Modified -> "Modified" | Unchanged -> "Unchanged")
+    )) "Unchanged change" Unchanged (ViewBuilder.change_type_of unchanged_change)
 
 
 let test_build_field_added () =
   (* Create a simple field descriptor *)
   let fd : (int, int atomic_patch) field_descriptor = FieldDesc {
-    name = "TestField";
-    of_parent_value = (fun x -> x);
-    of_parent_patch = (fun p -> `Modified p);
-    wrapper = int_value;
-  } in
+      name = "TestField";
+      of_parent_value = (fun x -> x);
+      of_parent_patch = (fun p -> `Modified p);
+      wrapper = int_value;
+    } in
 
   let change = `Added 42 in
   let field = ViewBuilder.build_field change fd ~domain_type:DTOther in
@@ -96,11 +96,11 @@ let test_build_field_added () =
 
 let test_build_field_removed () =
   let fd : (string, string atomic_patch) field_descriptor = FieldDesc {
-    name = "StringField";
-    of_parent_value = Fun.id;
-    of_parent_patch = (fun p -> `Modified p);
-    wrapper = string_value;
-  } in
+      name = "StringField";
+      of_parent_value = Fun.id;
+      of_parent_patch = (fun p -> `Modified p);
+      wrapper = string_value;
+    } in
 
   let change = `Removed "goodbye" in
   let field = ViewBuilder.build_field change fd ~domain_type:DTOther in
@@ -115,11 +115,11 @@ let test_build_field_removed () =
 
 let test_build_field_modified () =
   let fd : (float, float atomic_patch) field_descriptor = FieldDesc {
-    name = "FloatField";
-    of_parent_value = Fun.id;
-    of_parent_patch = (fun p -> `Modified p);
-    wrapper = float_value;
-  } in
+      name = "FloatField";
+      of_parent_value = Fun.id;
+      of_parent_patch = (fun p -> `Modified p);
+      wrapper = float_value;
+    } in
 
   let patch = { oldval = 1.5; newval = 2.5 } in
   let change = `Modified patch in
@@ -129,30 +129,30 @@ let test_build_field_modified () =
   check bool "Field is Modified" true (field.change = Modified);
   (match field.oldval, field.newval with
    | Some (Ffloat o), Some (Ffloat n) ->
-       check (float 0.001) "Old value" 1.5 o;
-       check (float 0.001) "New value" 2.5 n
+     check (float 0.001) "Old value" 1.5 o;
+     check (float 0.001) "New value" 2.5 n
    | _ -> fail "Expected Ffloat old and new values")
 
 
 let test_build_item_from_fields () =
   let fd1 : (int * string, (int atomic_patch * string atomic_patch)) field_descriptor = FieldDesc {
-    name = "IntField";
-    of_parent_value = fst;
-    of_parent_patch = (fun (p, _) -> `Modified p);
-    wrapper = int_value;
-  } in
+      name = "IntField";
+      of_parent_value = fst;
+      of_parent_patch = (fun (p, _) -> `Modified p);
+      wrapper = int_value;
+    } in
   let fd2 : (int * string, (int atomic_patch * string atomic_patch)) field_descriptor = FieldDesc {
-    name = "StrField";
-    of_parent_value = snd;
-    of_parent_patch = (fun (_, p) -> `Modified p);
-    wrapper = string_value;
-  } in
+      name = "StrField";
+      of_parent_value = snd;
+      of_parent_patch = (fun (_, p) -> `Modified p);
+      wrapper = string_value;
+    } in
 
   let change = `Added (10, "hello") in
   let item = ViewBuilder.build_item_from_fields change
-    ~name:"TestItem"
-    ~domain_type:DTOther
-    ~field_descs:[fd1; fd2] in
+      ~name:"TestItem"
+      ~domain_type:DTOther
+      ~field_descs:[fd1; fd2] in
 
   check string "Item name" "TestItem" item.name;
   check bool "Item is Added" true (item.change = Added);
@@ -205,8 +205,8 @@ let test_create_note_item_modified () =
   check bool "Time field is Modified" true (time_field.change = Modified);
   (match time_field.oldval, time_field.newval with
    | Some (Ffloat o), Some (Ffloat n) ->
-       check (float 0.001) "Old time" 0.0 o;
-       check (float 0.001) "New time" 0.5 n
+     check (float 0.001) "Old time" 0.0 o;
+     check (float 0.001) "New time" 0.5 n
    | _ -> fail "Expected Ffloat old and new for Time")
 
 
@@ -250,8 +250,8 @@ let test_create_midi_clip_item () =
    | Modified ->
      (match name_view.oldval, name_view.newval with
       | Some (Fstring o), Some (Fstring n) ->
-          check string "Old name" "Clip A" o;
-          check string "New name" "Clip B" n
+        check string "Old name" "Clip A" o;
+        check string "New name" "Clip B" n
       | _ -> fail "Invalid values for Name field")
    | _ -> fail "Expected Name field to be Modified");
 
@@ -259,25 +259,25 @@ let test_create_midi_clip_item () =
   let sig_item = get_item (find_view_by_name "TimeSignature" item.children) in
   let numer_view = get_field (find_view_by_name "Numerator" sig_item.children) in
   (match numer_view.change with
-    | Modified ->
-        (match numer_view.oldval, numer_view.newval with
-        | Some (Fint o), Some (Fint n) ->
-            check int "Old numer" 4 o;
-            check int "New numer" 3 n
-        | _ -> fail "Invalid values for Numerator field")
-    | _ -> fail "Expected Numerator to be Modified");
+   | Modified ->
+     (match numer_view.oldval, numer_view.newval with
+      | Some (Fint o), Some (Fint n) ->
+        check int "Old numer" 4 o;
+        check int "New numer" 3 n
+      | _ -> fail "Invalid values for Numerator field")
+   | _ -> fail "Expected Numerator to be Modified");
 
   (* Check Loop item *)
   let loop_item = get_item (find_view_by_name "Loop" item.children) in
   let on_view = get_field (find_view_by_name "On" loop_item.children) in
   (match on_view.change with
-    | Modified ->
-      (match on_view.oldval, on_view.newval with
+   | Modified ->
+     (match on_view.oldval, on_view.newval with
       | Some (Fbool o), Some (Fbool n) ->
-          check bool "Old on" false o;
-          check bool "New on" true n
+        check bool "Old on" false o;
+        check bool "New on" true n
       | _ -> fail "Invalid values for On field")
-    | _ -> fail "Expected On field to be Modified");
+   | _ -> fail "Expected On field to be Modified");
 
   (* Check Notes collection *)
   let notes_collection = get_collection (find_view_by_name "Notes" item.children) in
@@ -286,13 +286,13 @@ let test_create_midi_clip_item () =
   let note_item = find_item_in_collection "Note" notes_collection in
   let time_view = get_field (find_view_by_name "Time" note_item.children) in
   (match time_view.change with
-  | Modified ->
-      (match time_view.oldval, time_view.newval with
+   | Modified ->
+     (match time_view.oldval, time_view.newval with
       | Some (Ffloat o), Some (Ffloat n) ->
-          check (float 0.001) "Old note time" 0.0 o;
-          check (float 0.001) "New note time" 0.5 n
+        check (float 0.001) "Old note time" 0.0 o;
+        check (float 0.001) "New note time" 0.5 n
       | _ -> fail "Invalid values for Note Time field")
-  | _ -> fail "Expected Note Time to be Modified")
+   | _ -> fail "Expected Note Time to be Modified")
 
 
 let test_create_audio_clip_item_added () =

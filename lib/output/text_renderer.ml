@@ -37,7 +37,7 @@ type detail_config = {
      Use `uniform_override level` to set all changes to the same level (preserves legacy behavior).
      Use `override ~added:Full ~removed:Summary ()` for fine-grained control.
      None means use the base change_type default.
-   *)
+  *)
   type_overrides : (domain_type * per_change_override) list;
 
   max_collection_items : int option;
@@ -97,20 +97,20 @@ let get_effective_detail (cfg : detail_config) (ct : change_type) (dt : domain_t
     (* Step 2: Check for change-specific override within this type *)
     (match ct with
      | Added -> begin match overrides.added with
-       | Some level -> level
-       | None -> cfg.added
+         | Some level -> level
+         | None -> cfg.added
        end
      | Removed -> begin match overrides.removed with
-       | Some level -> level
-       | None -> cfg.removed
+         | Some level -> level
+         | None -> cfg.removed
        end
      | Modified -> begin match overrides.modified with
-       | Some level -> level
-       | None -> cfg.modified
+         | Some level -> level
+         | None -> cfg.modified
        end
      | Unchanged -> begin match overrides.unchanged with
-       | Some level -> level
-       | None -> cfg.unchanged
+         | Some level -> level
+         | None -> cfg.unchanged
        end
     )
   | None ->
@@ -136,11 +136,11 @@ let should_show_fields (cfg : detail_config) (elem : item) : bool =
 let is_element_like_item (elem : item) : bool =
   elem.children <> [] &&
   List.for_all (fun (v : view) ->
-    match v with
-    | Field _ -> true
-    | Item _ -> false
-    | Collection _ -> false
-  ) elem.children
+      match v with
+      | Field _ -> true
+      | Item _ -> false
+      | Collection _ -> false
+    ) elem.children
 
 (* Helper to filter and limit collection elements *)
 let filter_collection_elements
@@ -154,8 +154,8 @@ let filter_collection_elements
       List.filter_map (fun (v : view) ->
           match v with
           | Item e ->
-              let elem_level : detail_level = get_effective_detail cfg e.change e.domain_type in
-              if should_render_level elem_level then Some e else None
+            let elem_level : detail_level = get_effective_detail cfg e.change e.domain_type in
+            if should_render_level elem_level then Some e else None
           | _ -> None
         ) col.items
     in
@@ -166,10 +166,10 @@ let filter_collection_elements
 (* Count changed fields in an element *)
 let count_changed_fields (elem : item) : int =
   List.filter (fun (v : view) ->
-    match v with
-    | Field f -> f.change <> Unchanged
-    | _ -> false
-  ) elem.children
+      match v with
+      | Field f -> f.change <> Unchanged
+      | _ -> false
+    ) elem.children
   |> List.length
 
 (* Count filtered elements in a collection *)
@@ -230,10 +230,10 @@ let increment_breakdown (acc : change_breakdown) (ct : change_type) : change_bre
 (* Count fields by change type *)
 let count_fields_breakdown (elem : item) : change_breakdown =
   List.fold_left (fun (acc : change_breakdown) (v : view) ->
-    match v with
-    | Field f -> increment_breakdown acc f.change
-    | _ -> acc
-  ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) elem.children
+      match v with
+      | Field f -> increment_breakdown acc f.change
+      | _ -> acc
+    ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) elem.children
 
 (* Count filtered elements by change type *)
 let count_elements_breakdown (cfg : detail_config) (col : collection) : change_breakdown =
@@ -266,11 +266,11 @@ let count_sub_views_breakdown (cfg : detail_config) (section : item) : change_br
   in
   (* Count by change type using helper *)
   List.fold_left (fun (acc : change_breakdown) v ->
-    match v with
-    | Field f -> increment_breakdown acc f.change
-    | Item e -> increment_breakdown acc e.change
-    | Collection c -> increment_breakdown acc c.change
-  ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) sub_views
+      match v with
+      | Field f -> increment_breakdown acc f.change
+      | Item e -> increment_breakdown acc e.change
+      | Collection c -> increment_breakdown acc c.change
+    ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) sub_views
 
 (* Preset configurations for common use cases *)
 
@@ -375,11 +375,11 @@ let with_type_override cfg dt
   in
   (* Merge options: Some (Some v) means set to v, Some None means set to None, None means keep existing *)
   let new_override = override
-    ~added:(match added with Some (Some v) -> Some v | Some None -> None | None -> existing.added)
-    ~removed:(match removed with Some (Some v) -> Some v | Some None -> None | None -> existing.removed)
-    ~modified:(match modified with Some (Some v) -> Some v | Some None -> None | None -> existing.modified)
-    ~unchanged:(match unchanged with Some (Some v) -> Some v | Some None -> None | None -> existing.unchanged)
-    ()
+      ~added:(match added with Some (Some v) -> Some v | Some None -> None | None -> existing.added)
+      ~removed:(match removed with Some (Some v) -> Some v | Some None -> None | None -> existing.removed)
+      ~modified:(match modified with Some (Some v) -> Some v | Some None -> None | None -> existing.modified)
+      ~unchanged:(match unchanged with Some (Some v) -> Some v | Some None -> None | None -> existing.unchanged)
+      ()
   in
   (* Remove old entry if exists, add new one *)
   let filtered = List.filter (fun (d, _) -> d <> dt) cfg.type_overrides in
@@ -416,7 +416,7 @@ let validate_config (cfg : detail_config) : string list =
   |> List.filter_map (fun ((dt : domain_type), (ov : per_change_override)) ->
       if ov.added = None && ov.removed = None && ov.modified = None && ov.unchanged = None then
         Some (Printf.sprintf "Type override for %s has all None values (no effect)"
-          (domain_type_to_string dt))
+                (domain_type_to_string dt))
       else
         None)
 
@@ -474,24 +474,24 @@ let rec pp_item cfg fmt (elem : item) =
     Fmt.cut fmt ();
     (* Render Field children *)
     let fields = List.filter_map (fun (v : view) ->
-      match v with
-      | Field f -> Some f
-      | _ -> None
-    ) elem.children in
+        match v with
+        | Field f -> Some f
+        | _ -> None
+      ) elem.children in
     Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt fields;
     (* Render Item and Collection children *)
     let nested = List.filter (fun (v : view) ->
-      match v with
-      | Item _ | Collection _ -> true
-      | _ -> false
-    ) elem.children in
+        match v with
+        | Item _ | Collection _ -> true
+        | _ -> false
+      ) elem.children in
     List.iter (fun v ->
-      Fmt.cut fmt ();
-      match v with
-      | Item e -> pp_item cfg fmt e
-      | Collection c -> pp_collection cfg fmt c
-      | _ -> ()
-    ) nested
+        Fmt.cut fmt ();
+        match v with
+        | Item e -> pp_item cfg fmt e
+        | Collection c -> pp_collection cfg fmt c
+        | _ -> ()
+      ) nested
   );
   Fmt.pf fmt "@]"
 
@@ -560,8 +560,8 @@ let rec pp_section cfg fmt (section : item) =
     if level <> Summary || section.domain_type = DTLiveset then (
       let views_to_render = match level with
         | Compact ->
-            (* Compact mode: only show Item and Collection subviews, no Fields *)
-            List.filter (fun v ->
+          (* Compact mode: only show Item and Collection subviews, no Fields *)
+          List.filter (fun v ->
               match v with
               | Item _ | Collection _ -> true
               | Field _ -> false
@@ -636,16 +636,16 @@ let get_config_validator () : Jsonschema.validator =
   match !cached_validator with
   | Some v -> v
   | None ->
-      let schema = detail_config_json_schema () in
-      match Jsonschema.create_validator_from_json ~schema () with
-      | Ok v ->
-          cached_validator := Some v;
-          v
-      | Error err ->
-          (* This should never happen since our schema is generated correctly *)
-          let msg = Format.asprintf "Internal error: invalid schema: %a"
-            Jsonschema.pp_compile_error err in
-          failwith msg
+    let schema = detail_config_json_schema () in
+    match Jsonschema.create_validator_from_json ~schema () with
+    | Ok v ->
+      cached_validator := Some v;
+      v
+    | Error err ->
+      (* This should never happen since our schema is generated correctly *)
+      let msg = Format.asprintf "Internal error: invalid schema: %a"
+          Jsonschema.pp_compile_error err in
+      failwith msg
 
 (** Validation error type with detailed information *)
 type validation_error = {
@@ -710,15 +710,15 @@ let load_and_validate_config (file_path : string) : (detail_config, string) resu
     (* Validate against schema *)
     match validate_config_json json_basic with
     | Error err ->
-        Error (Printf.sprintf "Config validation failed in %s:\n%s" file_path err.details)
+      Error (Printf.sprintf "Config validation failed in %s:\n%s" file_path err.details)
     | Ok () ->
-        (* Parse as Safe for yojson deserialization *)
-        let json_safe = Yojson.Safe.from_string json_str in
-        match detail_config_of_yojson json_safe with
-        | Ok cfg -> Ok cfg
-        | Error msg -> Error (Printf.sprintf "Config parsing failed in %s: %s" file_path msg)
+      (* Parse as Safe for yojson deserialization *)
+      let json_safe = Yojson.Safe.from_string json_str in
+      match detail_config_of_yojson json_safe with
+      | Ok cfg -> Ok cfg
+      | Error msg -> Error (Printf.sprintf "Config parsing failed in %s: %s" file_path msg)
   with
   | Yojson.Json_error msg ->
-      Error (Printf.sprintf "JSON error in %s: %s" file_path msg)
+    Error (Printf.sprintf "JSON error in %s: %s" file_path msg)
   | Sys_error msg ->
-      Error (Printf.sprintf "File error: %s" msg)
+    Error (Printf.sprintf "File error: %s" msg)

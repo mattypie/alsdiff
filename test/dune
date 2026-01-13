@@ -153,3 +153,17 @@
  (name test_detail_config_json)
  (modules test_detail_config_json)
  (libraries alsdiff_lib alcotest test_utils))
+
+;; Auto indent files with `dune build @fmt`
+(subdir
+ run
+ (dynamic_include ../rules/dune.ocp-indent))
+
+(subdir
+ rules
+ (rule
+  (deps
+   (glob_files ../*.{ml,mli}))
+  (target dune.ocp-indent)
+  (action
+   (run ocp-indent-gen-rules -o %{target}))))

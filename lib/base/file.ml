@@ -1,6 +1,6 @@
 (** Estimate buffer size based on compressed file size and typical compression ratios.
-   Ableton Live sets typically compress around 10-20:1, so we use a conservative
-   15:1 estimate with minimum buffer sizes to handle small files efficiently.
+    Ableton Live sets typically compress around 10-20:1, so we use a conservative
+    15:1 estimate with minimum buffer sizes to handle small files efficiently.
 *)
 let estimate_buffer_size compressed_size =
   let min_buffer = 65536 in (* 64KB minimum for small files *)

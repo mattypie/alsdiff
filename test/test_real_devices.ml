@@ -387,7 +387,7 @@ let test_create_wavetable_device () =
   Alcotest.(check string) "wavetable display name" "InstrumentVector" regular_device.display_name;
   Alcotest.(check int) "wavetable pointee id" 25826 regular_device.pointee;
 
-    Alcotest.(check bool) "preset exists" true (Option.is_some regular_device.preset);
+  Alcotest.(check bool) "preset exists" true (Option.is_some regular_device.preset);
 
   let preset = Option.get regular_device.preset in
   (* Verify preset information *)
@@ -524,21 +524,21 @@ let test_wavetable_parameter_values () =
 
   (* Test that all parameters have valid values *)
   List.iter (fun param ->
-    match param.base.Device.GenericParam.value with
-    | Device.Bool _ -> () (* Boolean values are always valid *)
-    | Device.Float f ->
-      (* Float values should be finite *)
-      if not (Float.is_finite f) then
-        Alcotest.fail (Printf.sprintf "wavetable Parameter %s has non-finite float value: %f" param.base.Device.GenericParam.name f)
-    | Device.Int i ->
-      (* Int values should be reasonable *)
-      if abs i > 1000000 then
-        Alcotest.fail (Printf.sprintf "wavetable Parameter %s has suspicious int value: %d" param.base.Device.GenericParam.name i)
-    | Device.Enum (value, desc) ->
-      (* Enum values should be within valid range *)
-      if value < desc.min || value > desc.max then
-        Alcotest.fail (Printf.sprintf "wavetable Parameter %s has enum value %d outside range [%d, %d]" param.base.Device.GenericParam.name value desc.min desc.max)
-  ) regular_device.params;
+      match param.base.Device.GenericParam.value with
+      | Device.Bool _ -> () (* Boolean values are always valid *)
+      | Device.Float f ->
+        (* Float values should be finite *)
+        if not (Float.is_finite f) then
+          Alcotest.fail (Printf.sprintf "wavetable Parameter %s has non-finite float value: %f" param.base.Device.GenericParam.name f)
+      | Device.Int i ->
+        (* Int values should be reasonable *)
+        if abs i > 1000000 then
+          Alcotest.fail (Printf.sprintf "wavetable Parameter %s has suspicious int value: %d" param.base.Device.GenericParam.name i)
+      | Device.Enum (value, desc) ->
+        (* Enum values should be within valid range *)
+        if value < desc.min || value > desc.max then
+          Alcotest.fail (Printf.sprintf "wavetable Parameter %s has enum value %d outside range [%d, %d]" param.base.Device.GenericParam.name value desc.min desc.max)
+    ) regular_device.params;
 
   (* Test that automation IDs are unique and positive *)
   let automation_ids = List.map (fun p -> p.base.Device.GenericParam.automation) regular_device.params in
@@ -548,16 +548,16 @@ let test_wavetable_parameter_values () =
 
   (* All automation IDs should be non-negative *)
   List.iter (fun id ->
-    if id < 0 then
-      Alcotest.fail (Printf.sprintf "wavetable Negative automation ID found: %d" id)
-  ) automation_ids;
+      if id < 0 then
+        Alcotest.fail (Printf.sprintf "wavetable Negative automation ID found: %d" id)
+    ) automation_ids;
 
   (* Test that modulation IDs are non-negative *)
   let modulation_ids = List.map (fun p -> p.base.Device.GenericParam.modulation) regular_device.params in
   List.iter (fun id ->
-    if id < 0 then
-      Alcotest.fail (Printf.sprintf "wavetable Negative modulation ID found: %d" id)
-  ) modulation_ids
+      if id < 0 then
+        Alcotest.fail (Printf.sprintf "wavetable Negative modulation ID found: %d" id)
+    ) modulation_ids
 
 let () =
   Alcotest.run "RealDevices" [

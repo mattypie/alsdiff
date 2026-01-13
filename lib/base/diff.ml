@@ -393,22 +393,22 @@ let diff_list (type a p k) (module EQ : DIFFABLE_EQ with type t = a and type Pat
   diff_list_generic
     ~compare:EQ.equal
     ~on_match:(fun old_item new_item ->
-      if EQ.equal old_item new_item then
-        `Unchanged
-      else
-        `Modified (EQ.diff old_item new_item)
-    )
+        if EQ.equal old_item new_item then
+          `Unchanged
+        else
+          `Modified (EQ.diff old_item new_item)
+      )
     old_list new_list
 
 let diff_list_id (type a p k) (module ID : DIFFABLE_ID with type t = a and type Patch.t = p) (old_list : a list) (new_list : a list) : (a, p, k) change list =
   diff_list_generic
     ~compare:ID.has_same_id
     ~on_match:(fun old_item new_item ->
-      if ID.equal old_item new_item then
-        `Unchanged
-      else
-        `Modified (ID.diff old_item new_item)
-    )
+        if ID.equal old_item new_item then
+          `Unchanged
+        else
+          `Modified (ID.diff old_item new_item)
+      )
     old_list new_list
 
 (* Utility functions *)
@@ -454,7 +454,7 @@ let merge_adjacent_changes (type a p k)
     (changes : (a, p, k) change list) : (a, p, k) change list =
   let rec aux = function
     | `Removed old :: `Added new_ :: rest ->
-        `Modified (diff old new_) :: aux rest
+      `Modified (diff old new_) :: aux rest
     | x :: rest -> x :: aux rest
     | [] -> []
   in

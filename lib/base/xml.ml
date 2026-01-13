@@ -102,13 +102,13 @@ let escape_xml s =
   let len = String.length s in
   let buf = Buffer.create (len * 2) in
   String.iter (function
-    | '<' -> Buffer.add_string buf "&lt;"
-    | '>' -> Buffer.add_string buf "&gt;"
-    | '&' -> Buffer.add_string buf "&amp;"
-    | '"' -> Buffer.add_string buf "&quot;"
-    | '\'' -> Buffer.add_string buf "&apos;"
-    | c -> Buffer.add_char buf c
-  ) s;
+      | '<' -> Buffer.add_string buf "&lt;"
+      | '>' -> Buffer.add_string buf "&gt;"
+      | '&' -> Buffer.add_string buf "&amp;"
+      | '"' -> Buffer.add_string buf "&quot;"
+      | '\'' -> Buffer.add_string buf "&apos;"
+      | c -> Buffer.add_char buf c
+    ) s;
   Buffer.contents buf
 
 let pp_attrs fmt attrs =

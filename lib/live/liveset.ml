@@ -116,58 +116,58 @@ let get_track_devices = function
 let rec process_device_recursive (pointees : pointee IntHashtbl.t) (device : Device.t) : unit =
   (* 1. Add the device itself to the pointees table *)
   let pointee_id = match device with
-  | Device.Regular reg -> reg.pointee
-  | Device.Plugin plugin -> plugin.pointee
-  | Device.Max4Live m4l -> m4l.pointee
-  | Device.Group group -> group.pointee
+    | Device.Regular reg -> reg.pointee
+    | Device.Plugin plugin -> plugin.pointee
+    | Device.Max4Live m4l -> m4l.pointee
+    | Device.Group group -> group.pointee
   in
   IntHashtbl.add pointees pointee_id (DevicePointee device);
 
   (* 2. Process parameters based on device type *)
   match device with
   | Device.Regular reg ->
-      List.iter (fun (param : Device.DeviceParam.t) ->
+    List.iter (fun (param : Device.DeviceParam.t) ->
         IntHashtbl.add pointees param.base.automation (DeviceParamPointee param);
         IntHashtbl.add pointees param.base.modulation (DeviceParamPointee param)
       ) reg.params
 
   | Device.Plugin plugin ->
-      List.iter (fun (param : Device.PluginParam.t) ->
+    List.iter (fun (param : Device.PluginParam.t) ->
         IntHashtbl.add pointees param.base.automation (PluginParamPointee param);
         IntHashtbl.add pointees param.base.modulation (PluginParamPointee param)
       ) plugin.params
 
   | Device.Max4Live m4l ->
-      List.iter (fun (param : Device.Max4LiveParam.t) ->
+    List.iter (fun (param : Device.Max4LiveParam.t) ->
         IntHashtbl.add pointees param.base.automation (Max4LiveParamPointee param);
         IntHashtbl.add pointees param.base.modulation (Max4LiveParamPointee param)
       ) m4l.params
 
   | Device.Group group ->
-      (* Process Macros *)
-      List.iter (fun (macro : Device.Macro.t) ->
+    (* Process Macros *)
+    List.iter (fun (macro : Device.Macro.t) ->
         IntHashtbl.add pointees macro.base.automation (MacroPointee macro);
         IntHashtbl.add pointees macro.base.modulation (MacroPointee macro)
       ) group.macros;
 
-      (* Process Branches Recursively *)
-      process_group_branches pointees group.branches
+    (* Process Branches Recursively *)
+    process_group_branches pointees group.branches
 
 (* Helper to traverse Device.Group branches *)
 and process_group_branches (pointees : pointee IntHashtbl.t) (branches : Device.branch list) : unit =
   List.iter (fun (branch : Device.branch) ->
-    (* A. Recursively process devices in this branch *)
-    List.iter (process_device_recursive pointees) branch.devices;
+      (* A. Recursively process devices in this branch *)
+      List.iter (process_device_recursive pointees) branch.devices;
 
-    (* B. Process Branch Mixer Parameters *)
-    (* Branch mixer has: volume, pan, speaker, on *)
-    let mixer = branch.mixer in
-    let mixer_params = [mixer.volume; mixer.pan; mixer.speaker; mixer.on] in
-    List.iter (fun (param : Device.DeviceParam.t) ->
-      IntHashtbl.add pointees param.base.automation (DeviceParamPointee param);
-      IntHashtbl.add pointees param.base.modulation (DeviceParamPointee param)
-    ) mixer_params
-  ) branches
+      (* B. Process Branch Mixer Parameters *)
+      (* Branch mixer has: volume, pan, speaker, on *)
+      let mixer = branch.mixer in
+      let mixer_params = [mixer.volume; mixer.pan; mixer.speaker; mixer.on] in
+      List.iter (fun (param : Device.DeviceParam.t) ->
+          IntHashtbl.add pointees param.base.automation (DeviceParamPointee param);
+          IntHashtbl.add pointees param.base.modulation (DeviceParamPointee param)
+        ) mixer_params
+    ) branches
 
 and process_mixer_automation (pointees : pointee IntHashtbl.t)
     (mixer : Track.Mixer.t) (track_name : string) : unit =
@@ -182,14 +182,14 @@ and process_mixer_automation (pointees : pointee IntHashtbl.t)
     (mixer.Track.Mixer.solo.modulation, track_name ^ ": Solo Modulation");
   ] in
   List.iter (fun (param_id, param_name) ->
-    IntHashtbl.add pointees param_id (TrackParamPointee (track_name, param_name))
-  ) mixer_params;
+      IntHashtbl.add pointees param_id (TrackParamPointee (track_name, param_name))
+    ) mixer_params;
   List.iter (fun send ->
-    IntHashtbl.add pointees send.Track.Send.amount.automation
-      (TrackParamPointee (track_name, "Send to " ^ send.Track.Send.amount.name));
-    IntHashtbl.add pointees send.Track.Send.amount.modulation
-      (TrackParamPointee (track_name, "Send to " ^ send.Track.Send.amount.name ^ " Modulation"))
-  ) mixer.Track.Mixer.sends
+      IntHashtbl.add pointees send.Track.Send.amount.automation
+        (TrackParamPointee (track_name, "Send to " ^ send.Track.Send.amount.name));
+      IntHashtbl.add pointees send.Track.Send.amount.modulation
+        (TrackParamPointee (track_name, "Send to " ^ send.Track.Send.amount.name ^ " Modulation"))
+    ) mixer.Track.Mixer.sends
 
 let build_pointees_table (liveset : t) : unit =
   (* Clear the existing hashtable *)
@@ -197,30 +197,30 @@ let build_pointees_table (liveset : t) : unit =
 
   (* Process each track *)
   List.iter (fun track ->
-    let devices = get_track_devices track in
-    (* Use the recursive function instead of the flat one *)
-    List.iter (process_device_recursive liveset.pointees) devices;
+      let devices = get_track_devices track in
+      (* Use the recursive function instead of the flat one *)
+      List.iter (process_device_recursive liveset.pointees) devices;
 
-    (* Process track mixer parameters *)
-    let track_name = match track with
-    | Track.Midi t -> t.Track.MidiTrack.name
-    | Track.Audio t -> t.Track.AudioTrack.name
-    | Track.Group t -> t.Track.AudioTrack.name
-    | Track.Return t -> t.Track.AudioTrack.name
-    | Track.Main t -> t.Track.MainTrack.name
-    in
+      (* Process track mixer parameters *)
+      let track_name = match track with
+        | Track.Midi t -> t.Track.MidiTrack.name
+        | Track.Audio t -> t.Track.AudioTrack.name
+        | Track.Group t -> t.Track.AudioTrack.name
+        | Track.Return t -> t.Track.AudioTrack.name
+        | Track.Main t -> t.Track.MainTrack.name
+      in
 
-    (* Add track mixer automation IDs to pointees *)
-    (match track with
-     | Track.Midi t ->
+      (* Add track mixer automation IDs to pointees *)
+      (match track with
+       | Track.Midi t ->
          process_mixer_automation liveset.pointees t.Track.MidiTrack.mixer track_name
-     | Track.Audio t ->
+       | Track.Audio t ->
          process_mixer_automation liveset.pointees t.Track.AudioTrack.mixer track_name
-     | Track.Group t ->
+       | Track.Group t ->
          process_mixer_automation liveset.pointees t.Track.AudioTrack.mixer track_name
-     | Track.Return t ->
+       | Track.Return t ->
          process_mixer_automation liveset.pointees t.Track.AudioTrack.mixer track_name
-     | Track.Main t ->
+       | Track.Main t ->
          let mixer = t.Track.MainTrack.mixer in
          let mixer_base = mixer.Track.MainMixer.base in
          (* Process base mixer parameters *)
@@ -237,24 +237,24 @@ let build_pointees_table (liveset : t) : unit =
            (mixer.Track.MainMixer.global_groove.modulation, track_name ^ ": Global Groove Modulation");
          ] in
          List.iter (fun (param_id, param_name) ->
-           IntHashtbl.add liveset.pointees param_id (TrackParamPointee (track_name, param_name))
-         ) main_mixer_params
-    )
-  ) (liveset.main :: liveset.tracks @ liveset.returns)
+             IntHashtbl.add liveset.pointees param_id (TrackParamPointee (track_name, param_name))
+           ) main_mixer_params
+      )
+    ) (liveset.main :: liveset.tracks @ liveset.returns)
 
 
 let create (xml : Xml.t) (file_path : string) : t =
   (* 1. Validate XML structure *)
   (match xml with
-  | Xml.Element { name = "Ableton"; _ } ->
-      (* Check for LiveSet child *)
-      (match Upath.find_opt "LiveSet" xml with
-       | Some _ -> ()
-       | None -> raise (Xml.Xml_error (xml, "Invalid Ableton file: missing LiveSet element")))
-  | Xml.Element { name; _ } ->
-      raise (Xml.Xml_error (xml, "Invalid Ableton file: expected root element 'Ableton', got '" ^ name ^ "'"))
-  | _ ->
-      raise (Xml.Xml_error (xml, "Invalid Ableton file: root is not an element"))
+   | Xml.Element { name = "Ableton"; _ } ->
+     (* Check for LiveSet child *)
+     (match Upath.find_opt "LiveSet" xml with
+      | Some _ -> ()
+      | None -> raise (Xml.Xml_error (xml, "Invalid Ableton file: missing LiveSet element")))
+   | Xml.Element { name; _ } ->
+     raise (Xml.Xml_error (xml, "Invalid Ableton file: expected root element 'Ableton', got '" ^ name ^ "'"))
+   | _ ->
+     raise (Xml.Xml_error (xml, "Invalid Ableton file: root is not an element"))
   );
 
   (* 2. Extract version information *)
@@ -286,21 +286,21 @@ let create (xml : Xml.t) (file_path : string) : t =
   let tracks_xml = Upath.find "Tracks" liveset_xml |> snd in
 
   let tracks =
-      Xml.get_childs tracks_xml
-      |> List.filter_map (fun track_xml ->
-          match Xml.get_name track_xml with
-          | "MidiTrack" | "AudioTrack" | "GroupTrack" -> Some (Track.create track_xml)
-          | _ -> None
-        )
+    Xml.get_childs tracks_xml
+    |> List.filter_map (fun track_xml ->
+        match Xml.get_name track_xml with
+        | "MidiTrack" | "AudioTrack" | "GroupTrack" -> Some (Track.create track_xml)
+        | _ -> None
+      )
   in
 
   let returns =
-      Xml.get_childs tracks_xml
-      |> List.filter_map (fun track_xml ->
-          match Xml.get_name track_xml with
-          | "ReturnTrack" -> Some (Track.create track_xml)
-          | _ -> None
-        )
+    Xml.get_childs tracks_xml
+    |> List.filter_map (fun track_xml ->
+        match Xml.get_name track_xml with
+        | "ReturnTrack" -> Some (Track.create track_xml)
+        | _ -> None
+      )
   in
 
   let main =
@@ -409,24 +409,24 @@ let get_pointee_name_from_table_opt (pointees : pointee IntHashtbl.t) (pointee_i
   match IntHashtbl.find_opt pointees pointee_id with
   | None -> None
   | Some pointee ->
-      Some (match pointee with
-      | DevicePointee device ->
+    Some (match pointee with
+        | DevicePointee device ->
           let device_name = match device with
-          | Device.Regular d -> d.Device.device_name
-          | Device.Plugin d -> d.Device.device_name
-          | Device.Max4Live d -> d.Device.device_name
-          | Device.Group d -> d.Device.device_name
+            | Device.Regular d -> d.Device.device_name
+            | Device.Plugin d -> d.Device.device_name
+            | Device.Max4Live d -> d.Device.device_name
+            | Device.Group d -> d.Device.device_name
           in
           Printf.sprintf "Device: %s" device_name
-      | DeviceParamPointee param ->
+        | DeviceParamPointee param ->
           Printf.sprintf "Parameter: %s" param.Device.DeviceParam.base.name
-      | PluginParamPointee param ->
+        | PluginParamPointee param ->
           Printf.sprintf "Plugin Parameter: %s" param.Device.PluginParam.base.name
-      | Max4LiveParamPointee param ->
+        | Max4LiveParamPointee param ->
           Printf.sprintf "M4L Parameter: %s" param.Device.Max4LiveParam.base.name
-      | MacroPointee macro ->
+        | MacroPointee macro ->
           Printf.sprintf "Macro: %s" macro.Device.Macro.base.name
-      | TrackParamPointee (track_name, param_name) ->
+        | TrackParamPointee (track_name, param_name) ->
           Printf.sprintf "%s: %s" track_name param_name)
 
 (** [get_pointee_name_from_table] resolves a pointee ID to a human-readable name

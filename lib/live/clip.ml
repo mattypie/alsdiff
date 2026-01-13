@@ -131,10 +131,10 @@ module Loop = struct
 
 
   let diff (old_loop : t) (new_loop : t) : Patch.t =
-      let start_time_change = diff_atomic_value (module Float) old_loop.start_time new_loop.start_time in
-      let end_time_change = diff_atomic_value (module Float) old_loop.end_time new_loop.end_time in
-      let on_change = diff_atomic_value (module Bool) old_loop.on new_loop.on in
-      { start_time = start_time_change; end_time = end_time_change; on = on_change }
+    let start_time_change = diff_atomic_value (module Float) old_loop.start_time new_loop.start_time in
+    let end_time_change = diff_atomic_value (module Float) old_loop.end_time new_loop.end_time in
+    let on_change = diff_atomic_value (module Bool) old_loop.on new_loop.on in
+    { start_time = start_time_change; end_time = end_time_change; on = on_change }
 end
 
 
@@ -171,8 +171,8 @@ module MidiClip = struct
         |> Seq.flat_map (fun keytrack ->
             let key = Upath.get_int_attr "MidiKey" "Value" keytrack in
             Upath.find_all_seq "/Notes/MidiNoteEvent" keytrack
-              |> Seq.map snd
-              |> Seq.map @@ MidiNote.create key)
+            |> Seq.map snd
+            |> Seq.map @@ MidiNote.create key)
         |> List.of_seq
       in
 
@@ -218,21 +218,21 @@ module MidiClip = struct
       let end_time_change = diff_atomic_value (module Float) old_end new_end in
       let signature_change =
         diff_complex_value (module TimeSignature) old_sig new_sig in
-    (* Use diff_list for notes - cleaner and more consistent *)
-    let notes_change =
-      diff_list_id (module MidiNote) old_notes new_notes
-    in
-    let loop_change = diff_complex_value (module Loop) old_loop new_loop in
+      (* Use diff_list for notes - cleaner and more consistent *)
+      let notes_change =
+        diff_list_id (module MidiNote) old_notes new_notes
+      in
+      let loop_change = diff_complex_value (module Loop) old_loop new_loop in
 
-    {
-      id = new_id;
-      name = name_change;
-      start_time = start_time_change;
-      end_time = end_time_change;
-      loop = loop_change;
-      signature = signature_change;
-      notes = notes_change;
-    }
+      {
+        id = new_id;
+        name = name_change;
+        start_time = start_time_change;
+        end_time = end_time_change;
+        loop = loop_change;
+        signature = signature_change;
+        notes = notes_change;
+      }
 end
 
 

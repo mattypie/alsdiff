@@ -14,10 +14,10 @@ let test_midi_clip_parsing () =
   let expected_end_time = 100.0 in
   let expected_signature = { TimeSignature.numer = 4; TimeSignature.denom = 4 } in
   let expected_loop = Some {
-    Loop.start_time = 92.0;
-    Loop.end_time = 112.0;
-    Loop.on = false;
-  } in
+      Loop.start_time = 92.0;
+      Loop.end_time = 112.0;
+      Loop.on = false;
+    } in
 
   (* Test basic fields *)
   Alcotest.(check int) "id" expected_id midi_clip.id;
@@ -28,9 +28,9 @@ let test_midi_clip_parsing () =
   (* Test loop section *)
   match expected_loop with
   | Some expected_loop ->
-      Alcotest.(check (float 0.001)) "loop.start_time" expected_loop.Loop.start_time midi_clip.loop.start_time;
-      Alcotest.(check (float 0.001)) "loop.end_time" expected_loop.Loop.end_time midi_clip.loop.end_time;
-      Alcotest.(check bool) "loop.on" expected_loop.Loop.on midi_clip.loop.on
+    Alcotest.(check (float 0.001)) "loop.start_time" expected_loop.Loop.start_time midi_clip.loop.start_time;
+    Alcotest.(check (float 0.001)) "loop.end_time" expected_loop.Loop.end_time midi_clip.loop.end_time;
+    Alcotest.(check bool) "loop.on" expected_loop.Loop.on midi_clip.loop.on
   | None -> Alcotest.fail "Expected expected_loop to be Some"
 
 let () =

@@ -16,43 +16,43 @@ let test_get_attr_missing () =
   let xml = Element { name = "Test"; attrs = []; childs = [] } in
   (try ignore (get_attr "Missing" xml); false
    with Xml_error (_, msg) when msg = "Attribute 'Missing' not found" -> true
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "get_attr missing attribute raises Xml_error" true
 
 let test_get_attr_data_node () =
   let xml = Data "test" in
   (try ignore (get_attr "Id" xml); false
    with Xml_error (_, msg) when msg = "Cannot get attribute from XML Data node" -> true
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "get_attr on Data node raises Xml_error" true
 
 let test_get_int_attr_invalid () =
   let xml = Element { name = "Test"; attrs = ["Id", "abc"]; childs = [] } in
   (try ignore (get_int_attr "Id" xml); false
    with Xml_error (_, msg) -> String.starts_with ~prefix:"Invalid integer value for attribute 'Id'" msg
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "get_int_attr with invalid value raises Xml_error" true
 
 let test_get_float_attr_invalid () =
   let xml = Element { name = "Test"; attrs = ["Time", "12.34.56"]; childs = [] } in
   (try ignore (get_float_attr "Time" xml); false
    with Xml_error (_, msg) -> String.starts_with ~prefix:"Invalid float value for attribute 'Time'" msg
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "get_float_attr with invalid value raises Xml_error" true
 
 let test_get_int64_attr_invalid () =
   let xml = Element { name = "Test"; attrs = ["Date", "invalid"]; childs = [] } in
   (try ignore (get_int64_attr "Date" xml); false
    with Xml_error (_, msg) -> String.starts_with ~prefix:"Invalid int64 value for attribute 'Date'" msg
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "get_int64_attr with invalid value raises Xml_error" true
 
 let test_successful_operations () =
   let xml = Element {
-    name = "Test";
-    attrs = ["Id", "123"; "Time", "1.5"; "Date", "12345678901234"];
-    childs = []
-  } in
+      name = "Test";
+      attrs = ["Id", "123"; "Time", "1.5"; "Date", "12345678901234"];
+      childs = []
+    } in
   let id = get_int_attr "Id" xml in
   let time = get_float_attr "Time" xml in
   let date = get_int64_attr "Date" xml in

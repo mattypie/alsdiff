@@ -137,50 +137,50 @@ let test_audio_track_comprehensive () =
 let test_audio_track_edge_case_empty_clips () =
   (* Create a minimal audio track XML with no clips *)
   let empty_clips_xml = Xml.Element {
-    name = "AudioTrack";
-    attrs = ["Id", "100"];
-    childs = [
-      Xml.Element { name = "Name"; attrs = [];
-        childs = [Xml.Element { name = "EffectiveName"; attrs = ["Value", "Empty Track"]; childs = [] }] };
-      Xml.Element { name = "AutomationEnvelopes"; attrs = [];
-        childs = [Xml.Element { name = "Envelopes"; attrs = []; childs = [] }] };
-      Xml.Element { name = "DeviceChain"; attrs = [];
-        childs = [
-          Xml.Element { name = "Devices"; attrs = []; childs = [] };
-          Xml.Element { name = "Mixer"; attrs = [];
-            childs = [
-              Xml.Element { name = "Volume"; attrs = [];
-                childs = [Xml.Element { name = "Manual"; attrs = ["Value", "0.0"]; childs = [] }] };
-              Xml.Element { name = "Pan"; attrs = [];
-                childs = [Xml.Element { name = "Manual"; attrs = ["Value", "0.0"]; childs = [] }] };
-              Xml.Element { name = "On"; attrs = [];
-                childs = [Xml.Element { name = "Manual"; attrs = ["Value", "false"]; childs = [] }] };
-              Xml.Element { name = "SoloSink"; attrs = ["Value", "false"]; childs = [] };
-              Xml.Element { name = "Sends"; attrs = []; childs = [] }
-            ] };
-          Xml.Element { name = "AudioInputRouting"; attrs = []; childs = [
-              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
-          ] };
-          Xml.Element { name = "AudioOutputRouting"; attrs = []; childs = [
-              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
-          ] };
-          Xml.Element { name = "MidiInputRouting"; attrs = []; childs = [
-              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
-          ] };
-          Xml.Element { name = "MidiOutputRouting"; attrs = []; childs = [
-              Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
-              Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
-          ] }
-        ] }
-    ]
-  } in
+      name = "AudioTrack";
+      attrs = ["Id", "100"];
+      childs = [
+        Xml.Element { name = "Name"; attrs = [];
+                      childs = [Xml.Element { name = "EffectiveName"; attrs = ["Value", "Empty Track"]; childs = [] }] };
+        Xml.Element { name = "AutomationEnvelopes"; attrs = [];
+                      childs = [Xml.Element { name = "Envelopes"; attrs = []; childs = [] }] };
+        Xml.Element { name = "DeviceChain"; attrs = [];
+                      childs = [
+                        Xml.Element { name = "Devices"; attrs = []; childs = [] };
+                        Xml.Element { name = "Mixer"; attrs = [];
+                                      childs = [
+                                        Xml.Element { name = "Volume"; attrs = [];
+                                                      childs = [Xml.Element { name = "Manual"; attrs = ["Value", "0.0"]; childs = [] }] };
+                                        Xml.Element { name = "Pan"; attrs = [];
+                                                      childs = [Xml.Element { name = "Manual"; attrs = ["Value", "0.0"]; childs = [] }] };
+                                        Xml.Element { name = "On"; attrs = [];
+                                                      childs = [Xml.Element { name = "Manual"; attrs = ["Value", "false"]; childs = [] }] };
+                                        Xml.Element { name = "SoloSink"; attrs = ["Value", "false"]; childs = [] };
+                                        Xml.Element { name = "Sends"; attrs = []; childs = [] }
+                                      ] };
+                        Xml.Element { name = "AudioInputRouting"; attrs = []; childs = [
+                            Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+                          ] };
+                        Xml.Element { name = "AudioOutputRouting"; attrs = []; childs = [
+                            Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+                          ] };
+                        Xml.Element { name = "MidiInputRouting"; attrs = []; childs = [
+                            Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+                          ] };
+                        Xml.Element { name = "MidiOutputRouting"; attrs = []; childs = [
+                            Xml.Element { name = "Target"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "UpperDisplayString"; attrs = ["Value", ""]; childs = [] };
+                            Xml.Element { name = "LowerDisplayString"; attrs = ["Value", ""]; childs = [] }
+                          ] }
+                      ] }
+      ]
+    } in
 
   let audio_track = AudioTrack.create empty_clips_xml in
   Alcotest.(check int) "empty track id" 100 audio_track.id;

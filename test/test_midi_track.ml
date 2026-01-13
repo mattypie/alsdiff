@@ -82,38 +82,38 @@ let test_midi_track_devices_order () =
 
   (* Check device names are in expected order *)
   let actual_device_names = List.map (fun device ->
-    match device with
-    | Device.Regular reg -> reg.device_name
-    | Device.Plugin plug -> plug.device_name
-    | Device.Group group -> group.device_name
-    | Device.Max4Live m4l -> m4l.device_name
-  ) midi_track.devices in
+      match device with
+      | Device.Regular reg -> reg.device_name
+      | Device.Plugin plug -> plug.device_name
+      | Device.Group group -> group.device_name
+      | Device.Max4Live m4l -> m4l.device_name
+    ) midi_track.devices in
   let expected_device_names = [
     "InstrumentGroupDevice";
     "MxDeviceAudioEffect"
   ] in
 
   let actual_display_names = List.map (fun device ->
-    match device with
-    | Device.Regular reg -> reg.display_name
-    | Device.Plugin plug -> plug.display_name
-    | Device.Group group -> group.display_name
-    | Device.Max4Live m4l -> m4l.display_name
-  ) midi_track.devices in
+      match device with
+      | Device.Regular reg -> reg.display_name
+      | Device.Plugin plug -> plug.display_name
+      | Device.Group group -> group.display_name
+      | Device.Max4Live m4l -> m4l.display_name
+    ) midi_track.devices in
   let expected_display_names = [
     "Galaxy Voices Philipp & Fiona";
     "Envelope Follower"
   ] in
 
   List.iteri (fun i expected_name ->
-    let actual_name = List.nth actual_device_names i in
-    Alcotest.(check string) ("device name " ^ string_of_int i) expected_name actual_name
-  ) expected_device_names;
+      let actual_name = List.nth actual_device_names i in
+      Alcotest.(check string) ("device name " ^ string_of_int i) expected_name actual_name
+    ) expected_device_names;
 
   List.iteri (fun i expected_name ->
-    let actual_name = List.nth actual_display_names i in
-    Alcotest.(check string) ("display name " ^ string_of_int i) expected_name actual_name
-  ) expected_display_names
+      let actual_name = List.nth actual_display_names i in
+      Alcotest.(check string) ("display name " ^ string_of_int i) expected_name actual_name
+    ) expected_display_names
 
 
 

@@ -5,7 +5,7 @@ synopsis: "Git helper for Ableton Live Set(.als)"
 description: "Git helper for Ableton Live Set(.als)"
 maintainer: ["Jay Xu <jay.xu.krfantasy@gmail.com>"]
 authors: ["Jay Xu <jay.xu.krfantasy@gmail.com>"]
-license: "LICENSE.txt"
+license: "THE-LICENSE.txt"
 tags: ["ableton live" "git" "version control"]
 homepage: "https://github.com/krfantasy/alsdiff"
 doc: "https://github.com/krfantasy/alsdiff"
@@ -19,6 +19,7 @@ depends: [
   "angstrom"
   "cmdliner" {>= "2.0.0"}
   "dune-build-info"
+  "ocp-indent" {build}
   "eio"
   "eio_main"
   "alcotest"

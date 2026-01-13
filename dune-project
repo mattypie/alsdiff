@@ -4,8 +4,6 @@
 
 (version 0.0.1-dev)
 
-(generate_opam_files true)
-
 (source
  (github krfantasy/alsdiff))
 
@@ -13,7 +11,7 @@
 
 (maintainers "Jay Xu <jay.xu.krfantasy@gmail.com>")
 
-(license LICENSE.txt)
+(license THE-LICENSE.txt)
 
 (documentation https://github.com/krfantasy/alsdiff)
 
@@ -29,6 +27,7 @@
     angstrom
    (cmdliner (>= 2.0.0))
     dune-build-info
+   (ocp-indent :build)
     eio
     eio_main
     alcotest
@@ -40,5 +39,9 @@
     ptime)
  (tags
   ("ableton live" "git" "version control")))
+
+(generate_opam_files true)
+
+(formatting disabled)
 
 ; See the complete stanza docs at https://dune.readthedocs.io/en/stable/reference/dune-project/index.html

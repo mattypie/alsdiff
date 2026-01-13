@@ -66,31 +66,31 @@ let test_midi_track_diff () =
 
   (* Check that we got a MidiPatch *)
   (match patch with
-  | Track.Patch.MidiPatch midi_patch ->
-      (* Check name change *)
-      (match midi_patch.Track.MidiTrack.Patch.name with
+   | Track.Patch.MidiPatch midi_patch ->
+     (* Check name change *)
+     (match midi_patch.Track.MidiTrack.Patch.name with
       | `Modified m ->
-          Alcotest.(check string) "old name" "Midi Track" m.oldval;
-          Alcotest.(check string) "new name" "Midi Track Renamed" m.newval
+        Alcotest.(check string) "old name" "Midi Track" m.oldval;
+        Alcotest.(check string) "new name" "Midi Track Renamed" m.newval
       | _ -> Alcotest.fail "Expected name to be modified");
 
-      (* Check mixer volume change *)
-      (match midi_patch.Track.MidiTrack.Patch.mixer with
+     (* Check mixer volume change *)
+     (match midi_patch.Track.MidiTrack.Patch.mixer with
       | `Modified mixer_patch ->
-          (match mixer_patch.Track.Mixer.Patch.volume with
-          | `Modified volume_patch ->
-              (match volume_patch.Device.GenericParam.Patch.value with
-              | `Modified v ->
-                  (match v.Diff.oldval with
-                  | Device.Float old_val -> Alcotest.(check (float 0.01)) "old volume" 0.8 old_val
-                  | _ -> Alcotest.fail "Expected Float value");
-                  (match v.Diff.newval with
-                  | Device.Float new_val -> Alcotest.(check (float 0.01)) "new volume" 0.5 new_val
-                  | _ -> Alcotest.fail "Expected Float value")
-              | _ -> Alcotest.fail "Expected volume value to be modified")
-          | _ -> Alcotest.fail "Expected volume to be modified")
+        (match mixer_patch.Track.Mixer.Patch.volume with
+         | `Modified volume_patch ->
+           (match volume_patch.Device.GenericParam.Patch.value with
+            | `Modified v ->
+              (match v.Diff.oldval with
+               | Device.Float old_val -> Alcotest.(check (float 0.01)) "old volume" 0.8 old_val
+               | _ -> Alcotest.fail "Expected Float value");
+              (match v.Diff.newval with
+               | Device.Float new_val -> Alcotest.(check (float 0.01)) "new volume" 0.5 new_val
+               | _ -> Alcotest.fail "Expected Float value")
+            | _ -> Alcotest.fail "Expected volume value to be modified")
+         | _ -> Alcotest.fail "Expected volume to be modified")
       | _ -> Alcotest.fail "Expected mixer to be modified")
-  | _ -> Alcotest.fail "Expected MidiPatch")
+   | _ -> Alcotest.fail "Expected MidiPatch")
 
 let () =
   Alcotest.run "Diff Track" [

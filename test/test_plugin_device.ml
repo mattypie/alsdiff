@@ -114,11 +114,11 @@ let test_plugin_parameter_validation () =
 
   (* Check all automation IDs are non-negative *)
   List.iteri (fun i param ->
-    if param.PluginParam.base.Device.GenericParam.automation < 0 then
-      Alcotest.fail (Printf.sprintf "Parameter %d has negative automation ID: %d" i param.PluginParam.base.Device.GenericParam.automation);
-    if param.PluginParam.base.Device.GenericParam.modulation < 0 then
-      Alcotest.fail (Printf.sprintf "Parameter %d has negative modulation ID: %d" i param.PluginParam.base.Device.GenericParam.modulation)
-  ) plugin_device.params
+      if param.PluginParam.base.Device.GenericParam.automation < 0 then
+        Alcotest.fail (Printf.sprintf "Parameter %d has negative automation ID: %d" i param.PluginParam.base.Device.GenericParam.automation);
+      if param.PluginParam.base.Device.GenericParam.modulation < 0 then
+        Alcotest.fail (Printf.sprintf "Parameter %d has negative modulation ID: %d" i param.PluginParam.base.Device.GenericParam.modulation)
+    ) plugin_device.params
 
 let test_plugin_parameter_invalid_type_raises_exception () =
   (* Test that invalid parameter types raise exception *)
@@ -138,7 +138,7 @@ let test_plugin_parameter_invalid_type_raises_exception () =
   (* Should raise an exception *)
   (try ignore (PluginParam.create xml); false
    with Alsdiff_base.Xml.Xml_error (_, msg) when msg = "Invalid parameter type InvalidParameterType" -> true
-   | _ -> false)
+      | _ -> false)
   |> Alcotest.(check bool) "invalid parameter type raises exception" true
 
 let () =

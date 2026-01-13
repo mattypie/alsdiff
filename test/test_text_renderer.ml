@@ -55,7 +55,7 @@ let test_collection () =
           change = Added;
           domain_type = DTOther;
           children = [
-             Field { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint 60) }
+            Field { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint 60) }
           ]
         }
       ]
@@ -94,8 +94,8 @@ let test_removed_summary () =
 (* New test: Collection item limiting *)
 let test_collection_limit () =
   let items = List.init 100 (fun i ->
-    Item { name = "Note"; change = Added; domain_type = DTOther; children = [Field { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint i) }] }
-  ) in
+      Item { name = "Note"; change = Added; domain_type = DTOther; children = [Field { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint i) }] }
+    ) in
   let view = Collection { name = "Notes"; change = Added; domain_type = DTOther; items } in
   let cfg = { full with max_collection_items = Some 10 } in
   let buffer = Buffer.create 1024 in
@@ -138,10 +138,10 @@ let test_nested_type_overrides () =
     removed = Summary;
     type_overrides = [
       (DTDevice, override
-        ~added:(Some Full)
-        ~removed:(Some Summary)
-        ~modified:(Some Full)
-        ());
+         ~added:(Some Full)
+         ~removed:(Some Summary)
+         ~modified:(Some Full)
+         ());
     ];
   } in
   (* Verify: Added Device = Full *)
@@ -184,10 +184,10 @@ let test_uniform_override () =
 (* 11d. Test smart constructor *)
 let test_smart_constructor () =
   let cfg = with_type_override midi_friendly DTDevice
-    ~added:(Some (Some Full))
-    ~removed:(Some (Some Summary))
-    ~modified:(Some (Some Full))
-    ~unchanged:None
+      ~added:(Some (Some Full))
+      ~removed:(Some (Some Summary))
+      ~modified:(Some (Some Full))
+      ~unchanged:None
   in
   Alcotest.(check bool) "added device" true (get_effective_detail cfg Added DTDevice = Full);
   Alcotest.(check bool) "removed device" true (get_effective_detail cfg Removed DTDevice = Summary);
@@ -195,10 +195,10 @@ let test_smart_constructor () =
 
   (* Test: Adding second override merges correctly *)
   let cfg2 = with_type_override cfg DTClip
-    ~added:None
-    ~removed:(Some None)  (* Explicitly set removed to None (use default) *)
-    ~modified:None
-    ~unchanged:None
+      ~added:None
+      ~removed:(Some None)  (* Explicitly set removed to None (use default) *)
+      ~modified:None
+      ~unchanged:None
   in
   (* Device override should be preserved *)
   Alcotest.(check bool) "added device still full" true (get_effective_detail cfg2 Added DTDevice = Full);
@@ -247,18 +247,18 @@ let test_rendering_with_nested_overrides () =
 
   (* Create test views *)
   let added_device = Item {
-    name = "Operator";
-    change = Added;
-    domain_type = DTDevice;
-    children = [Field {name = "Preset"; change = Added; domain_type = DTDevice; oldval = None; newval = Some (Fstring "Init")}];
-  } in
+      name = "Operator";
+      change = Added;
+      domain_type = DTDevice;
+      children = [Field {name = "Preset"; change = Added; domain_type = DTDevice; oldval = None; newval = Some (Fstring "Init")}];
+    } in
 
   let removed_device = Item {
-    name = "Echo";
-    change = Removed;
-    domain_type = DTDevice;
-    children = [];
-  } in
+      name = "Echo";
+      change = Removed;
+      domain_type = DTDevice;
+      children = [];
+    } in
 
   (* Render and verify output differs *)
   let buffer1 = Buffer.create 1024 in
