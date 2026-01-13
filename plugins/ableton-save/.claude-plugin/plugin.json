@@ -1,0 +1,13 @@
+{
+  "name": "ableton-save",
+  "version": "0.1.0",
+  "description": "Save Ableton Live projects via natural language or slash command using AppleScript automation",
+  "author": {
+    "name": "Jay Xu",
+    "email": "jay.xu.krfantasy@gmail.com"
+  },
+  "homepage": "https://github.com/krfantasy/alsdiff",
+  "repository": "https://github.com/krfantasy/alsdiff",
+  "license": "MIT",
+  "keywords": ["ableton live", "save", "applescript", "automation", "macos"]
+}

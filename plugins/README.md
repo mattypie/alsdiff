@@ -40,6 +40,13 @@ This directory contains custom Claude Code plugins for the ALSDiff project, prov
 - **Use Case**: Maintain consistent OCaml code indentation automatically
 - **Hook**: PostToolUse (Edit/Write operations)
 
+### 💾 ableton-save
+- **Purpose**: Save Ableton Live projects via AppleScript automation
+- **Category**: Utilities
+- **Use Case**: Automated saving of Ableton Live projects with natural language or slash command
+- **Command**: `/ableton-save:save-live-set`
+- **Requirements**: macOS, Ableton Live, Terminal Accessibility permissions
+
 ## Installation
 
 These plugins are automatically installed when team members trust the ALSDiff repository folder in Claude Code.
@@ -61,6 +68,7 @@ If automatic installation doesn't work:
    /plugin install zen-code-reviewer@alsdiff-tools
    /plugin install ocaml-lsp@alsdiff-tools
    /plugin install ocaml-code-indent@alsdiff-tools
+   /plugin install ableton-save@alsdiff-tools
    ```
 
 ## Usage Examples
@@ -97,6 +105,13 @@ Edit the Xml.read_file function to add error handling
 (add this code in a new OCaml file)
 ```
 The ocaml-code-indent plugin automatically formats your OCaml code after each edit using ocp-indent.
+
+### Ableton Save
+```
+Save the ableton project to ~/Music/Ableton/Projects/song.als
+/ableton-save:save-live-set ../backups/test.als
+```
+The ableton-save plugin automates saving Ableton Live projects using AppleScript on macOS.
 
 ## Configuration
 
@@ -151,3 +166,8 @@ For issues or questions about these plugins:
 
 - **v1.2.0**: Added OCaml code formatting
   - ocaml-code-indent plugin for automatic OCaml indentation
+
+- **v1.3.0**: Added Ableton Live project automation
+  - ableton-save plugin for macOS AppleScript automation
+  - Natural language and slash command support for saving projects
+  - Automatic directory navigation and filename entry
