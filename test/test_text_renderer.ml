@@ -19,8 +19,10 @@ let test_compact () =
   pp compact ppf view;  (* Use compact preset *)
   Format.pp_print_flush ppf ();
   let output = Buffer.contents buffer in
-  (* Compact mode should show the element name and change, but NOT the fields *)
-  Alcotest.(check string) "compact output" "* MidiClip" (String.trim output)
+  (* Compact mode now shows Summary level for DTOther (not in type_overrides) *)
+  (* which includes the change count. For types with type_overrides (Track, Clip, etc.) *)
+  (* it would show structure without field details. *)
+  Alcotest.(check string) "compact output" "* MidiClip (1 Modified)" (String.trim output)
 
 let test_full () =
   let view =

@@ -274,19 +274,42 @@ let count_sub_views_breakdown (cfg : detail_config) (section : item) : change_br
 
 (* Preset configurations for common use cases *)
 
-(* Legacy Compact equivalent: hide fields, show compact view *)
+(* Compact: structure overview - show first-level children without field details *)
 let compact = {
-  added = Compact;
-  removed = Compact;
-  modified = Compact;
+  (* Base: show structure with change counts *)
+  added = Summary;
+  removed = Summary;
+  modified = Summary;
   unchanged = DLNone;
-  type_overrides = [];
-  max_collection_items = None;  (* This is still option None, not detail_level None *)
+
+  (* Key: show first-level structure for important types *)
+  type_overrides = [
+    (* Tracks: show track sections (Clips, Mixer, Devices, etc.) *)
+    (DTTrack, uniform_override Compact);
+
+    (* Clips: show clip structure (Loop, Notes, TimeSignature, etc.) *)
+    (DTClip, uniform_override Compact);
+
+    (* Devices: show device structure (Parameters, Preset, etc.) *)
+    (DTDevice, uniform_override Compact);
+
+    (* LiveSet: show top-level structure *)
+    (DTLiveset, uniform_override Compact);
+  ];
+
+  (* Limit output to prevent overwhelming - more than quiet (10) but bounded *)
+  max_collection_items = Some 20;
+
+  (* Hide unchanged fields *)
   show_unchanged_fields = false;
+
+  (* Standard prefixes *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
-  prefix_unchanged = "";
+  prefix_unchanged = "=";
+
+  (* Use Sharp note names *)
   note_name_style = Sharp;
 }
 
@@ -302,7 +325,7 @@ let full = {
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
-  prefix_unchanged = "";
+  prefix_unchanged = "=";
   note_name_style = Sharp;
 }
 
@@ -318,7 +341,7 @@ let midi_friendly = {
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
-  prefix_unchanged = "";
+  prefix_unchanged = "=";
   note_name_style = Sharp;
 }
 
@@ -334,7 +357,7 @@ let quiet = {
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
-  prefix_unchanged = "";
+  prefix_unchanged = "=";
   note_name_style = Sharp;
 }
 
@@ -350,7 +373,7 @@ let verbose = {
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
-  prefix_unchanged = "";
+  prefix_unchanged = "=";
   note_name_style = Sharp;
 }
 
