@@ -1,5 +1,6 @@
 (library
  (name alsdiff_live)
+ (public_name alsdiff.live)
  (modules
    automation
    clip

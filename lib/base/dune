@@ -1,5 +1,6 @@
 (library
  (name alsdiff_base)
+ (public_name alsdiff.base)
  (modules
    file
    xml

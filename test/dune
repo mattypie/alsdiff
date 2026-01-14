@@ -1,158 +1,163 @@
 (library
  (name test_utils)
  (modules utils)
- (libraries alsdiff_lib alcotest))
+ (libraries alsdiff_base alcotest))
 
+;; Tests needing only alsdiff_base
 (test
  (name test_upath)
  (modules test_upath)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_base alcotest test_utils))
 
 (test
  (name test_xml)
  (modules test_xml)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_base alcotest test_utils))
 
 (test
  (name test_wildcard)
  (modules test_wildcard)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_base alcotest test_utils))
 
 (test
  (name test_complex)
  (modules test_complex)
- (libraries alsdiff_lib alcotest test_utils))
-
-(test
- (name test_diff_automation)
- (modules test_diff_automation)
- (libraries alsdiff_lib alcotest test_utils)
- (deps automation.xml automation_old.xml))
+ (libraries alsdiff_base alcotest test_utils))
 
 (test
  (name test_diff_list)
  (modules test_diff_list)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_base alcotest test_utils))
+
+(test
+ (name test_regex_match)
+ (modules test_regex_match)
+ (libraries alsdiff_base alcotest test_utils)
+ (deps regex_match.xml))
+
+;; Tests needing alsdiff_base + alsdiff_live
+(test
+ (name test_diff_automation)
+ (modules test_diff_automation)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
+ (deps automation.xml automation_old.xml))
 
 (test
  (name test_diff_mixer)
  (modules test_diff_mixer)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps mixer.xml mixer_old.xml))
 
 (test
  (name test_audio_clip)
  (modules test_audio_clip)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps audio_clip.xml))
 
 (test
  (name test_clip_patch)
  (modules test_clip_patch)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps audio_clip.xml))
 
 (test
  (name test_midi_clip)
  (modules test_midi_clip)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps midi_clip.xml))
 
 (test
  (name test_diff_audio_clip)
  (modules test_diff_audio_clip)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps audio_clip.xml audio_clip_old.xml))
 
 (test
  (name test_diff_midi_clip)
  (modules test_diff_midi_clip)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps midi_clip.xml midi_clip_old.xml))
 
 (test
  (name test_device)
  (modules test_device)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_base alsdiff_live alcotest test_utils))
 
 (test
  (name test_real_devices)
  (modules test_real_devices)
- (libraries alsdiff_lib alcotest test_utils str)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils str)
  (deps compressor_device.xml eq8_device.xml wavetable_device.xml))
 
 (test
  (name test_group_device)
  (modules test_group_device)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps group_device.xml))
 
 (test
  (name test_midi_track)
  (modules test_midi_track)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps midi_track.xml))
 
 (test
  (name test_audio_track)
  (modules test_audio_track)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps audio_track.xml))
-
-(test
- (name test_regex_match)
- (modules test_regex_match)
- (libraries alsdiff_lib alcotest test_utils)
- (deps regex_match.xml))
 
 (test
  (name test_m4l_device)
  (modules test_m4l_device)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps m4l_device.xml))
 
 (test
  (name test_plugin_device)
  (modules test_plugin_device)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps plugin_device.xml))
-
-(test
- (name test_diff_device)
- (modules test_diff_device)
- (libraries alsdiff_lib alcotest test_utils))
 
 (test
  (name test_diff_track)
  (modules test_diff_track)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_base alsdiff_live alcotest test_utils))
 
 (test
  (name test_liveset)
  (modules test_liveset)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps t4.xml))
 
 (test
  (name test_main_track)
  (modules test_main_track)
- (libraries alsdiff_lib alcotest test_utils)
+ (libraries alsdiff_base alsdiff_live alcotest test_utils)
  (deps main_track.xml))
 
+;; Test needing only alsdiff_live
 (test
- (name test_view_model)
- (modules test_view_model)
- (libraries alsdiff_lib alcotest test_utils))
+ (name test_diff_device)
+ (modules test_diff_device)
+ (libraries alsdiff_live alcotest test_utils))
 
+;; Tests needing only alsdiff_output
 (test
  (name test_text_renderer)
  (modules test_text_renderer)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_output alcotest test_utils))
 
 (test
  (name test_detail_config_json)
  (modules test_detail_config_json)
- (libraries alsdiff_lib alcotest test_utils))
+ (libraries alsdiff_output alcotest test_utils))
+
+;; Test needing all three libraries
+(test
+ (name test_view_model)
+ (modules test_view_model)
+ (libraries alsdiff_base alsdiff_live alsdiff_output alcotest test_utils))
 
 ;; Auto indent files with `dune build @fmt`
 (subdir
