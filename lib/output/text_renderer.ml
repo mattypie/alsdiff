@@ -329,22 +329,6 @@ let full = {
   note_name_style = Sharp;
 }
 
-(* MIDI-friendly: don't show details for removed clips *)
-let midi_friendly = {
-  added = Full;
-  removed = Summary;  (* Just show "MidiClip: Name" when deleted *)
-  modified = Full;
-  unchanged = DLNone;
-  type_overrides = [];
-  max_collection_items = Some 50;  (* Limit note output *)
-  show_unchanged_fields = false;
-  prefix_added = "+";
-  prefix_removed = "-";
-  prefix_modified = "*";
-  prefix_unchanged = "=";
-  note_name_style = Sharp;
-}
-
 (* Quiet mode: minimal output *)
 let quiet = {
   added = Summary;
@@ -374,6 +358,118 @@ let verbose = {
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
+  note_name_style = Sharp;
+}
+
+(* Mixing preset: optimized for stem track mixing workflows *)
+let mixing = {
+  (* Base: summary for overview, focusing on important changes *)
+  added = Summary;
+  removed = Summary;
+  modified = Summary;
+  unchanged = DLNone;
+
+  (* Type-specific overrides for mixing workflow *)
+  type_overrides = [
+    (* Clips: summary only - stem tracks don't change clip content/position *)
+    (DTClip, uniform_override Summary);
+
+    (* Automations: full details - critical for mixing adjustments *)
+    (DTAutomation, uniform_override Full);
+
+    (* Devices: full details - plugin changes are important *)
+    (DTDevice, uniform_override Full);
+
+    (* Mixer: full details - volume/pan/mute/solo are core mixing concerns *)
+    (DTMixer, uniform_override Full);
+
+    (* Parameters: show in context *)
+    (DTParam, uniform_override Full);
+
+    (* Routing: compact overview *)
+    (DTRouting, uniform_override Compact);
+
+    (* Sends: summary for send routing *)
+    (DTSend, uniform_override Summary);
+
+    (* Liveset: compact structure overview *)
+    (DTLiveset, uniform_override Compact);
+
+    (* Tracks: compact structure with sections *)
+    (DTTrack, uniform_override Compact);
+  ];
+
+  (* Allow more items for automation-heavy workflows *)
+  max_collection_items = Some 50;
+
+  (* Hide unchanged fields for cleaner output *)
+  show_unchanged_fields = false;
+
+  (* Standard prefixes *)
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "=";
+
+  (* Sharp note names for consistency *)
+  note_name_style = Sharp;
+}
+
+(* Composer preset: focused on MIDI composition and sample processing *)
+(* Shows ONLY audio/MIDI clips, hides all mixing/engineering elements *)
+let composer = {
+  (* Base: show summary of structural changes *)
+  added = Summary;
+  removed = Summary;
+  modified = Summary;
+  unchanged = DLNone;
+
+  (* Type-specific overrides - show ONLY clips *)
+  type_overrides = [
+    (* Clips: full details for composition work *)
+    (DTClip, uniform_override Full);
+
+    (* Tracks: show structure but we'll filter the sections *)
+    (DTTrack, uniform_override Compact);
+
+    (* Hide all mixing/engineering sections *)
+    (DTMixer, uniform_override DLNone);
+    (DTDevice, uniform_override DLNone);
+    (DTAutomation, uniform_override DLNone);
+    (DTRouting, uniform_override DLNone);
+
+    (* Hide other domain types *)
+    (DTLocator, uniform_override DLNone);
+    (DTParam, uniform_override DLNone);
+    (DTNote, uniform_override DLNone);  (* Will be shown as part of clips *)
+    (DTEvent, uniform_override DLNone);  (* Will be shown as part of clips *)
+    (DTSend, uniform_override DLNone);
+    (DTPreset, uniform_override DLNone);
+    (DTMacro, uniform_override DLNone);
+    (DTSnapshot, uniform_override DLNone);
+    (DTLoop, uniform_override DLNone);     (* Will be shown as part of clips *)
+    (DTSignature, uniform_override DLNone); (* Will be shown as part of clips *)
+    (DTSampleRef, uniform_override DLNone); (* Will be shown as part of clips *)
+    (DTVersion, uniform_override DLNone);
+    (DTOther, uniform_override DLNone);
+
+    (* Liveset: show minimal structure *)
+    (DTLiveset, uniform_override Compact);
+  ];
+
+  (* No limit - composers need to see ALL clips in their arrangements *)
+  max_collection_items = None;
+
+  (* Show clip details even for structure *)
+  show_unchanged_fields = false;
+
+  (* Standard prefixes *)
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "=";
+
+  (* Sharp note names for MIDI work *)
   note_name_style = Sharp;
 }
 

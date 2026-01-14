@@ -334,11 +334,12 @@ module ViewBuilder = struct
         patch |> of_patch |> List.map (fun item_change -> Item (build_item item_change))
       | `Unchanged -> []
     in
-    (* Filter out placeholder items (for unchanged items where we don't have values) *)
+    (* Filter out Unchanged items and placeholder items (for unchanged items where we don't have values) *)
     let items = List.filter (fun (i : view) ->
         match i with
-        | Item item -> item.name <> ""
-        | _ -> true
+        | Item item -> item.change <> Unchanged && item.name <> ""
+        | Collection col -> col.change <> Unchanged
+        | Field _ -> true
       ) items in
     if items = [] then None
     else Some { name; change = change_type; domain_type; items }

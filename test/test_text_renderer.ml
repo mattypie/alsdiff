@@ -87,7 +87,7 @@ let test_removed_summary () =
   let buffer = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buffer in
   Fmt.set_style_renderer ppf `None;
-  pp midi_friendly ppf view;  (* midi_friendly has removed = Summary *)
+  pp compact ppf view;  (* compact has removed = Summary *)
   Format.pp_print_flush ppf ();
   let output = Buffer.contents buffer in
   (* Summary mode shows name with change symbol *)
@@ -173,7 +173,7 @@ let test_override_with_none () =
 (* 11c. Test uniform_override preserves old behavior *)
 let test_uniform_override () =
   let cfg = {
-    midi_friendly with
+    compact with
     type_overrides = [
       (DTClip, uniform_override Summary);
     ];
@@ -185,7 +185,7 @@ let test_uniform_override () =
 
 (* 11d. Test smart constructor *)
 let test_smart_constructor () =
-  let cfg = with_type_override midi_friendly DTDevice
+  let cfg = with_type_override compact DTDevice
       ~added:(Some (Some Full))
       ~removed:(Some (Some Summary))
       ~modified:(Some (Some Full))
@@ -204,7 +204,7 @@ let test_smart_constructor () =
   in
   (* Device override should be preserved *)
   Alcotest.(check bool) "added device still full" true (get_effective_detail cfg2 Added DTDevice = Full);
-  (* Clip override should use midi_friendly's removed=Summary *)
+  (* Clip override should use compact's removed=Summary *)
   Alcotest.(check bool) "removed clip" true (get_effective_detail cfg2 Removed DTClip = Summary)
 
 (* 11e. Test validation *)

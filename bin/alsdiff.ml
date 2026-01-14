@@ -34,7 +34,7 @@ type config = {
   file1: string option;
   file2: string option;
   config_file: string option;
-  preset: [ `Compact | `Full | `Midi | `Quiet | `Verbose ] option;
+  preset: [ `Compact | `Composer | `Full | `Mixing | `Quiet | `Verbose ] option;
   prefix_added: string option;
   prefix_removed: string option;
   prefix_modified: string option;
@@ -122,8 +122,9 @@ let diff_cmd ~config ~domain_mgr =
       | Some preset ->
         let base = match preset with
           | `Compact -> Text_renderer.compact
+          | `Composer -> Text_renderer.composer
           | `Full -> Text_renderer.full
-          | `Midi -> Text_renderer.midi_friendly
+          | `Mixing -> Text_renderer.mixing
           | `Quiet -> Text_renderer.quiet
           | `Verbose -> Text_renderer.verbose
         in base
@@ -175,8 +176,8 @@ let config_file =
   Arg.(value & opt (some string) None & info ["config"] ~docv:"CONFIG.json" ~doc)
 
 let preset =
-  let doc = "Output detail preset. Ignored when --config is specified. $(b,compact)=show names+symbols only, $(b,full)=show all details, $(b,midi)=MIDI-friendly, $(b,quiet)=minimal output, $(b,verbose)=show everything including unchanged" in
-  Arg.(value & opt (some (enum ["compact", `Compact; "full", `Full; "midi", `Midi; "quiet", `Quiet; "verbose", `Verbose])) None & info ["preset"] ~docv:"PRESET" ~doc)
+  let doc = "Output detail preset. Ignored when --config is specified. $(b,compact)=show names+symbols only, $(b,full)=show all details, $(b,mixing)=optimized for stem track mixing workflows, $(b,composer)=MIDI composition and sample processing only, $(b,quiet)=minimal output, $(b,verbose)=show everything including unchanged" in
+  Arg.(value & opt (some (enum ["compact", `Compact; "composer", `Composer; "full", `Full; "mixing", `Mixing; "quiet", `Quiet; "verbose", `Verbose])) None & info ["preset"] ~docv:"PRESET" ~doc)
 
 let prefix_added =
   let doc = "Prefix for added items (default from preset: '+')" in
@@ -226,8 +227,6 @@ let cmd =
     `Pre "$(cmd) v1.als v2.als --preset compact";
     `P "Compare with full details:";
     `Pre "$(cmd) v1.als v2.als --preset full";
-    `P "MIDI-friendly comparison (limits note output):";
-    `Pre "$(cmd) v1.als v2.als --preset midi";
     `P "Verbose comparison (show everything including unchanged):";
     `Pre "$(cmd) v1.als v2.als --preset verbose";
     `P "Customize prefixes:";
@@ -259,7 +258,7 @@ let cmd =
     `P "4. quiet preset (default)";
     `S Manpage.s_options;
     `P "$(b,--config FILE) loads configuration from JSON file. Takes precedence over auto-discovery. The --preset option is ignored when --config is specified. Individual CLI options override values from config file.";
-    `P "$(b,--preset PRESET) sets the output detail preset. Available presets: $(b,compact), $(b,full), $(b,midi), $(b,quiet) (default), $(b,verbose). Takes precedence over auto-discovery but ignored when --config is specified.";
+    `P "$(b,--preset PRESET) sets the output detail preset. Available presets: $(b,compact), $(b,composer), $(b,full), $(b,mixing), $(b,quiet) (default), $(b,verbose). Takes precedence over auto-discovery but ignored when --config is specified.";
     `P "$(b,--prefix-added PREFIX) overrides prefix for added items from config file.";
     `P "$(b,--prefix-removed PREFIX) overrides prefix for removed items from config file.";
     `P "$(b,--prefix-modified PREFIX) overrides prefix for modified items from config file.";
