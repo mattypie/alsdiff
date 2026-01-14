@@ -22,7 +22,11 @@ The command uses Python and AppleScript to:
 2. Open the Save As dialog (Cmd+Shift+S)
 3. Navigate to the target directory using Cmd+Shift+G
 4. Enter the filename automatically
-5. Prompt you to press Enter to complete the save
+5. Wait for you to press Enter (up to 30 seconds)
+6. Detect when the Save As dialog closes
+7. Find and return the full path of the saved .als file
+
+**Note**: Ableton Live automatically creates a project folder (e.g., "song Project/") and the script correctly returns the full path including this folder.
 
 ## Usage
 

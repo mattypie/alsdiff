@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Project-specific tools for Ableton Live Set development and diffing",
-    "version": "1.3.0"
+    "version": "1.3.1"
   },
   "plugins": [
     {
@@ -78,7 +78,7 @@
     {
       "name": "ableton-save",
       "description": "Save Ableton Live projects via natural language or slash command using AppleScript automation",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "author": {
         "name": "Jay Xu"
       },

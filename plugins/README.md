@@ -171,3 +171,7 @@ For issues or questions about these plugins:
   - ableton-save plugin for macOS AppleScript automation
   - Natural language and slash command support for saving projects
   - Automatic directory navigation and filename entry
+
+- **v1.3.1**: Enhanced ableton-save plugin
+  - Returns full path of saved .als file after Save As dialog closes
+  - Correctly handles Ableton's automatic "Project" folder creation

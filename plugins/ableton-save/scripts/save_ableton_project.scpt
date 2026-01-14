@@ -1,5 +1,5 @@
 -- AppleScript to save the current Ableton Live project with path support
--- Navigates to directory and enters the filename
+-- Navigates to directory, enters filename, waits for dialog close, and returns saved file path
 
 on run argv
 	tell application "System Events"
@@ -76,10 +76,55 @@ on run argv
 
 					keystroke baseName
 					delay 0.2
+				end if
 
-					return "Navigated to: " & dirPath & " and entered filename '" & fileName & "'. Press Enter to save."
+				-- Wait for Save As dialog to close (user presses Enter or cancels)
+				-- Check for sheet existence (the Save As dialog appears as a sheet in newer macOS)
+				set dialogClosed to false
+				repeat 300 times -- Wait up to 30 seconds (300 * 0.1s)
+					try
+						-- Look for the Save sheet/dialog
+						set saveSheet to missing value
+						tell process "Live"
+							try
+								-- Try to find sheet by various identifiers
+								if (exists sheet 1) then
+									set saveSheet to sheet 1
+								else if (exists sheet "Save") then
+									set saveSheet to sheet "Save"
+								else if (exists window "Save") then
+									set saveSheet to window "Save"
+								end if
+							end try
+						end tell
+
+						-- If no sheet/window found, dialog has closed
+						if saveSheet is missing value then
+							set dialogClosed to true
+							exit repeat
+						end if
+					on error
+						-- If there's an error accessing the sheet, assume it's closed
+						set dialogClosed to true
+						exit repeat
+					end try
+					delay 0.1
+				end repeat
+
+				-- Find the most recently created .als file in the target directory
+				if dialogClosed and dirPath is not "" then
+					-- Use python -c to get absolute path since realpath is not available on macOS
+					set recentFile to (do shell script "python3 -c \"import os, glob, time; files = glob.glob('" & dirPath & "' + '/**/*.als', recursive=True); files = [(os.path.getmtime(f), f) for f in files]; print(max(files)[1]) if files else ''\"")
+
+					if recentFile is not "" then
+						return "Saved to: " & recentFile
+					else
+						return "Save completed, but could not locate the .als file in: " & dirPath
+					end if
+				else if dialogClosed then
+					return "Save completed"
 				else
-					return "Navigated to folder: " & dirPath & ". Please enter filename and save."
+					return "Save operation timed out or was cancelled"
 				end if
 
 			else if actionString contains ".als" then

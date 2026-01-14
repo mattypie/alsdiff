@@ -9,6 +9,7 @@ Save Ableton Live projects via natural language or slash command using AppleScri
 - **Automatic navigation**: Script navigates to the target directory
 - **Filename entry**: Automatically enters the filename in the Save As dialog
 - **Relative and absolute paths**: Supports both path formats
+- **Returns saved path**: After saving, returns the full path of the saved .als file
 
 ## Requirements
 
@@ -51,6 +52,15 @@ Save my live set to ../backups/test.als
 3. Navigates to your target directory using Cmd+Shift+G
 4. Enters the filename automatically
 5. You press Enter to complete the save
+6. **Script waits for the dialog to close**
+7. **Finds and returns the full path of the saved .als file**
+
+**Example output:**
+```
+Saved to: /Users/jane/Music/Ableton/Projects/song Project/song.als
+```
+
+Note: Ableton Live automatically creates a project folder (e.g., "song Project/") and the script correctly detects this.
 
 ## Permissions
 
@@ -65,8 +75,8 @@ You must grant Accessibility permissions to Terminal (or your terminal app):
 
 - **macOS only**: Requires AppleScript support
 - **Ableton must be running**: Shows error if Ableton Live is not open
-- **Manual completion**: You must press Enter in the Save As dialog
-- **Project folders**: Ableton automatically creates a project folder (e.g., "song Project/")
+- **Manual completion**: You must press Enter in the Save As dialog (script waits up to 30 seconds)
+- **Project folders**: Ableton automatically creates a project folder (e.g., "song Project/") - script now correctly detects this and returns the full path
 
 ## Troubleshooting
 
