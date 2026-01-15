@@ -749,6 +749,21 @@ let create_audio_clip_item
   { name = section_name; change = change_type; domain_type = DTClip; children }
 
 
+(** [event_value_to_field_value] converts an Automation.event_value to a field_value *)
+let event_value_to_field_value v =
+  match v with
+  | Automation.FloatEvent f -> Ffloat f
+  | Automation.IntEvent i -> Fint i
+  | Automation.EnumEvent e -> Fint e
+
+(** [event_value_atomic_to_field_value] converts an event_value atomic_update to field_value atomic_update *)
+let event_value_atomic_to_field_value (update : Automation.event_value atomic_update) : field_value atomic_update =
+  match update with
+  | `Modified { oldval; newval } ->
+    `Modified { oldval = event_value_to_field_value oldval; newval = event_value_to_field_value newval }
+  | `Unchanged -> `Unchanged
+
+
 (** [create_events_item] builds a [item] for an envelope event change (new type system).
     @param c the envelope event structured change
 *)
@@ -765,9 +780,9 @@ let create_events_item
     };
     FieldDesc {
       name = "Value";
-      of_parent_value = (fun x -> x.EnvelopeEvent.value);
-      of_parent_patch = (fun x -> x.EnvelopeEvent.Patch.value);
-      wrapper = float_value;
+      of_parent_value = (fun x -> event_value_to_field_value x.EnvelopeEvent.value);
+      of_parent_patch = (fun x -> event_value_atomic_to_field_value x.EnvelopeEvent.Patch.value);
+      wrapper = Fun.id;
     }
   ]
   in
@@ -1624,6 +1639,12 @@ let create_send_item
     @param get_pointee_name function to resolve pointee IDs to names
     @param c the automation structured change
 *)
+let format_event_value v =
+  match v with
+  | Automation.FloatEvent f -> Printf.sprintf "%.2f" f
+  | Automation.IntEvent i -> string_of_int i
+  | Automation.EnumEvent e -> Printf.sprintf "%d" e
+
 let create_automation_item
     ~(get_pointee_name : int -> string)
     (c : (Automation.t, Automation.Patch.t) structured_change)
@@ -1654,10 +1675,14 @@ let create_automation_item
           (match event_change with
            | `Added e ->
              Some (Field { name = prefix ^ " Added"; change = Added; domain_type = DTEvent; oldval = None;
-                           newval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%.2f" e.Automation.EnvelopeEvent.time e.Automation.EnvelopeEvent.value)) })
+                           newval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%s"
+                                                     e.Automation.EnvelopeEvent.time
+                                                     (format_event_value e.Automation.EnvelopeEvent.value))) })
            | `Removed e ->
              Some (Field { name = prefix ^ " Removed"; change = Removed; domain_type = DTEvent;
-                           oldval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%.2f" e.Automation.EnvelopeEvent.time e.Automation.EnvelopeEvent.value));
+                           oldval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%s"
+                                                     e.Automation.EnvelopeEvent.time
+                                                     (format_event_value e.Automation.EnvelopeEvent.value)));
                            newval = None })
            | `Modified ep ->
              (* Create fields for modified events showing time and/or value changes *)
@@ -1671,7 +1696,7 @@ let create_automation_item
                | `Unchanged -> None
                | `Modified { oldval; newval } ->
                  Some (Field { name = prefix ^ " Value"; change = Modified; domain_type = DTEvent;
-                               oldval = Some (Ffloat oldval); newval = Some (Ffloat newval) })
+                               oldval = Some (event_value_to_field_value oldval); newval = Some (event_value_to_field_value newval) })
              in
              (* Combine both fields if they exist *)
              (match time_field, value_field with
@@ -1679,11 +1704,11 @@ let create_automation_item
               | Some tf, None -> Some tf
               | None, Some vf -> Some vf
               | Some (Field tf), Some (Field vf) -> Some (Field { name = prefix; change = Modified; domain_type = DTEvent;
-                                                                  oldval = Some (Fstring (Printf.sprintf "Time: %.2f->%.2f Value: %.2f->%.2f"
+                                                                  oldval = Some (Fstring (Printf.sprintf "Time: %.2f->%.2f Value: %s->%s"
                                                                                             (match tf.oldval with Some (Ffloat f) -> f | _ -> 0.)
                                                                                             (match tf.newval with Some (Ffloat f) -> f | _ -> 0.)
-                                                                                            (match vf.oldval with Some (Ffloat f) -> f | _ -> 0.)
-                                                                                            (match vf.newval with Some (Ffloat f) -> f | _ -> 0.)));
+                                                                                            (match vf.oldval with Some (Ffloat f) -> Printf.sprintf "%.2f" f | Some (Fint i) -> string_of_int i | _ -> "?")
+                                                                                            (match vf.newval with Some (Ffloat f) -> Printf.sprintf "%.2f" f | Some (Fint i) -> string_of_int i | _ -> "?")));
                                                                   newval = None })
               | Some _, Some _ -> None (* Should not happen *)
              )

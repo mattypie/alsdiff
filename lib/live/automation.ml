@@ -1,13 +1,18 @@
 open Alsdiff_base
 open Alsdiff_base.Diff
 
-(* TODO: support IntEvent, EnumEvent *)
+
+type event_value =
+  | FloatEvent of float
+  | IntEvent of int
+  | EnumEvent of int
+[@@deriving eq]
 
 module EnvelopeEvent = struct
   type t = {
     id : int;
     time : float;
-    value : float;
+    value : event_value;
   } [@@deriving eq]
 
   (* EnvelopeEvent is a structured type containing primitive fields.
@@ -15,11 +20,16 @@ module EnvelopeEvent = struct
      removed, or modified as a unit within the events list. *)
 
   let create (xml : Xml.t) : t =
-    {
-      id = Xml.get_int_attr "Id" xml;
-      time = Xml.get_float_attr "Time" xml;
-      value = Xml.get_float_attr "Value" xml;
-    }
+    let tag_name = Xml.get_name xml in
+    let id = Xml.get_int_attr "Id" xml in
+    let time = Xml.get_float_attr "Time" xml in
+    let value = match tag_name with
+      | "FloatEvent" -> FloatEvent (Xml.get_float_attr "Value" xml)
+      | "IntEvent" -> IntEvent (Xml.get_int_attr "Value" xml)
+      | "EnumEvent" -> EnumEvent (Xml.get_int_attr "Value" xml)
+      | _ -> raise (Xml.Xml_error (xml, "Unknown event type: " ^ tag_name))
+    in
+    { id; time; value }
 
   let has_same_id a b = a.id = b.id
 
@@ -28,7 +38,7 @@ module EnvelopeEvent = struct
   module Patch = struct
     type t = {
       time : float atomic_update;
-      value : float atomic_update;
+      value : event_value atomic_update;
     }
 
     let is_empty p =
@@ -43,7 +53,11 @@ module EnvelopeEvent = struct
       let { time = old_time; value = old_value; _ } = old_event in
       let { time = new_time; value = new_value; _ } = new_event in
       let time_change = diff_atomic_value (module Float) old_time new_time in
-      let value_change = diff_atomic_value (module Float) old_value new_value in
+      let module EventValueEq = struct
+        type t = event_value
+        let equal = (=)
+      end in
+      let value_change = diff_atomic_value (module EventValueEq) old_value new_value in
       { time = time_change; value = value_change }
 end
 
@@ -61,9 +75,9 @@ let create (xml : Alsdiff_base.Xml.t) : t =
   let id = Xml.get_int_attr "Id" xml in
   let target = Upath.get_int_attr "/EnvelopeTarget/PointeeId" "Value" xml in
   let events =
-    xml
-    |> Upath.find_all "/Automation/Events/FloatEvent"
+    xml |> Upath.find_all "/Automation/Events/'(Float|Int|Enum)Event'"
     |> List.map (fun (_, event) -> EnvelopeEvent.create event)
+    |> List.sort (fun a b -> Float.compare a.EnvelopeEvent.time b.EnvelopeEvent.time)
   in
   { id; target; events }
 
