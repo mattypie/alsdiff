@@ -9,5 +9,5 @@
   "homepage": "https://github.com/krfantasy/alsdiff",
   "repository": "https://github.com/krfantasy/alsdiff",
   "license": "MIT",
-  "keywords": ["xml", "extraction", "ableton", "als", "python"]
+  "keywords": ["xml", "extraction", "ableton live", "als", "python"]
 }

@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Project-specific tools for Ableton Live Set development and diffing",
-    "version": "1.4.0"
+    "version": "1.5.0"
   },
   "plugins": [
     {
@@ -18,18 +18,18 @@
       },
       "source": "./plugins/xml-element-extractor",
       "category": "utilities",
-      "tags": ["xml", "ableton", "extraction", "python"]
+      "tags": ["xml", "ableton live", "extraction", "python"]
     },
     {
       "name": "ableton-test-generator",
-      "description": "Generate test cases for Ableton Live Set devices and components",
-      "version": "1.0.0",
+      "description": "Generate Ableton Live project files (.als) for testing using Ableton MCP tools",
+      "version": "2.0.0",
       "author": {
         "name": "Jay Xu"
       },
       "source": "./plugins/ableton-test-generator",
-      "category": "development",
-      "tags": ["ableton", "test", "generation", "xml", "ocaml"]
+      "category": "utilities",
+      "tags": ["ableton live", "test", "generation", "mcp", "als"]
     },
     {
       "name": "security-data-leak-scanner",
@@ -41,17 +41,6 @@
       "source": "./plugins/security-data-leak-scanner",
       "category": "security",
       "tags": ["security", "privacy", "data-leak", "scanning"]
-    },
-    {
-      "name": "zen-code-reviewer",
-      "description": "Comprehensive code review agent with thorough analysis and quality assurance",
-      "version": "1.0.0",
-      "author": {
-        "name": "Jay Xu"
-      },
-      "source": "./plugins/zen-code-reviewer",
-      "category": "development",
-      "tags": ["code-review", "quality", "analysis", "best-practices"]
     },
     {
       "name": "ocaml-lsp",
@@ -84,7 +73,7 @@
       },
       "source": "./plugins/ableton-save",
       "category": "utilities",
-      "tags": ["ableton", "live", "save", "applescript", "automation", "macos"]
+      "tags": ["ableton live", "save", "applescript", "automation", "macos"]
     },
     {
       "name": "architect-analyst",

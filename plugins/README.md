@@ -11,22 +11,16 @@ This directory contains custom Claude Code plugins for the ALSDiff project, prov
 - **Skill**: `xml-element-extractor`
 
 ### 🧪 ableton-test-generator
-- **Purpose**: Generate test cases for Ableton Live Set devices and components
-- **Category**: Development
-- **Use Case**: Creating OCaml tests from real XML data
-- **Agent**: `ableton-test-generator`
+- **Purpose**: Generate Ableton Live project files (.als) for testing
+- **Category**: Utilities
+- **Use Case**: Creating test .als files with specific configurations via natural language
+- **Skill**: `ableton-test-generator`
 
 ### 🔒 security-data-leak-scanner
 - **Purpose**: Scan codebases for potential personal data leaks
 - **Category**: Security
 - **Use Case**: Ensuring no sensitive data is committed to repository
 - **Agent**: `security-data-leak-scanner`
-
-### 🔍 zen-code-reviewer
-- **Purpose**: Comprehensive code review with quality assurance
-- **Category**: Development
-- **Use Case**: Thorough analysis of code changes and improvements
-- **Agent**: `zen-code-reviewer`
 
 ### 🔧 ocaml-lsp
 - **Purpose**: LSP integration for OCaml via ocamllsp
@@ -71,7 +65,6 @@ If automatic installation doesn't work:
    /plugin install xml-element-extractor@alsdiff-tools
    /plugin install ableton-test-generator@alsdiff-tools
    /plugin install security-data-leak-scanner@alsdiff-tools
-   /plugin install zen-code-reviewer@alsdiff-tools
    /plugin install ocaml-lsp@alsdiff-tools
    /plugin install ocaml-code-indent@alsdiff-tools
    /plugin install ableton-save@alsdiff-tools
@@ -87,17 +80,12 @@ Extract the <MxDeviceAudioEffect Id="5"> element from t.xml to test/device.xml
 
 ### Test Generation
 ```
-Generate test cases for GroupDevice.t type using test_group_device.xml
+Create a test file with tempo 145 BPM, save to test_als/test.als
 ```
 
 ### Security Scanning
 ```
 Check if there are any personal data references in my recent changes
-```
-
-### Code Review
-```
-Review my recent changes to the device diffing module
 ```
 
 ### OCaml LSP
@@ -197,3 +185,10 @@ For issues or questions about these plugins:
   - architect-analyst plugin for deep architectural analysis and solution design
   - Multi-solution analysis with comprehensive trade-off evaluation
   - Sequential thinking and deep research capabilities
+
+- **v1.5.0**: Updated ableton-test-generator as skill plugin
+  - Converted from OCaml test generator agent to .als file generator skill
+  - Uses Ableton MCP tools to generate test project files
+  - Supports tempo, time signature, tracks, clips, devices, and automation
+  - Natural language interface for creating test .als files
+  - Removed zen-code-reviewer plugin (no longer used)

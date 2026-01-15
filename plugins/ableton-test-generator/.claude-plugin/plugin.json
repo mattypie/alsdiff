@@ -1,13 +1,11 @@
 {
   "name": "ableton-test-generator",
-  "version": "1.0.0",
-  "description": "Generate test cases for Ableton Live Set devices and components by extracting expected values from XML files",
+  "version": "2.0.0",
+  "description": "Generate Ableton Live project files (.als) for testing using Ableton MCP tools",
   "author": {
     "name": "Jay Xu",
     "email": "jay.xu.krfantasy@gmail.com"
   },
-  "homepage": "https://github.com/krfantasy/alsdiff",
-  "repository": "https://github.com/krfantasy/alsdiff",
-  "license": "MIT",
-  "keywords": ["ableton", "test", "generation", "xml", "ocaml"]
+  "license": "Apache-2.0",
+  "keywords": ["ableton live", "test", "generation", "mcp", "als"]
 }
