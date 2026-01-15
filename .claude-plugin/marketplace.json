@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Project-specific tools for Ableton Live Set development and diffing",
-    "version": "1.3.1"
+    "version": "1.4.0"
   },
   "plugins": [
     {
@@ -85,6 +85,17 @@
       "source": "./plugins/ableton-save",
       "category": "utilities",
       "tags": ["ableton", "live", "save", "applescript", "automation", "macos"]
+    },
+    {
+      "name": "architect-analyst",
+      "description": "Deep architectural analysis and solution design agent for complex problems",
+      "version": "0.1.0",
+      "author": {
+        "name": "Jay Xu"
+      },
+      "source": "./plugins/architect-analyst",
+      "category": "development",
+      "tags": ["architecture", "analysis", "design", "solution", "evaluation", "performance"]
     }
   ]
 }

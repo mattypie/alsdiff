@@ -47,6 +47,12 @@ This directory contains custom Claude Code plugins for the ALSDiff project, prov
 - **Command**: `/ableton-save:save-live-set`
 - **Requirements**: macOS, Ableton Live, Terminal Accessibility permissions
 
+### 🏗️ architect-analyst
+- **Purpose**: Deep architectural analysis and solution design
+- **Category**: Development
+- **Use Case**: Complex problems requiring evaluation of multiple approaches
+- **Agent**: `architect-analyst`
+
 ## Installation
 
 These plugins are automatically installed when team members trust the ALSDiff repository folder in Claude Code.
@@ -69,6 +75,7 @@ If automatic installation doesn't work:
    /plugin install ocaml-lsp@alsdiff-tools
    /plugin install ocaml-code-indent@alsdiff-tools
    /plugin install ableton-save@alsdiff-tools
+   /plugin install architect-analyst@alsdiff-tools
    ```
 
 ## Usage Examples
@@ -112,6 +119,16 @@ Save the ableton project to ~/Music/Ableton/Projects/song.als
 /ableton-save:save-live-set ../backups/test.als
 ```
 The ableton-save plugin automates saving Ableton Live projects using AppleScript on macOS.
+
+### Architect Analyst
+```
+I need to redesign the output API to support both text and JSON rendering. What's the best approach?
+
+This module is getting large. Should I split it into smaller modules or use a different architectural pattern?
+
+The data processing is slow on large projects. How can I optimize this?
+```
+The architect-analyst agent provides deep architectural analysis by evaluating multiple solution approaches, analyzing trade-offs, and providing well-researched recommendations.
 
 ## Configuration
 
@@ -175,3 +192,8 @@ For issues or questions about these plugins:
 - **v1.3.1**: Enhanced ableton-save plugin
   - Returns full path of saved .als file after Save As dialog closes
   - Correctly handles Ableton's automatic "Project" folder creation
+
+- **v1.4.0**: Added architectural analysis
+  - architect-analyst plugin for deep architectural analysis and solution design
+  - Multi-solution analysis with comprehensive trade-off evaluation
+  - Sequential thinking and deep research capabilities

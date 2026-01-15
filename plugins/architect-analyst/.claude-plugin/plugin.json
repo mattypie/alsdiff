@@ -1,0 +1,13 @@
+{
+  "name": "architect-analyst",
+  "version": "0.1.0",
+  "description": "Deep architectural analysis and solution design agent for complex problems",
+  "author": {
+    "name": "Jay Xu",
+    "email": "jay.xu.krfantasy@gmail.com"
+  },
+  "homepage": "https://github.com/krfantasy/alsdiff",
+  "repository": "https://github.com/krfantasy/alsdiff",
+  "license": "MIT",
+  "keywords": ["architecture", "analysis", "design", "solution", "evaluation", "performance"]
+}
