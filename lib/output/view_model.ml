@@ -386,6 +386,22 @@ let structured_update_to_field_views
     patch |> build_fields |> List.filter_map Fun.id
 
 
+(* ==================== Helper Functions for Field Descriptors ==================== *)
+
+(** Helper functions for creating field descriptors with common wrappers *)
+let int_field_desc name ~of_parent_value ~of_parent_patch =
+  FieldDesc { name; of_parent_value; of_parent_patch; wrapper = int_value }
+
+let float_field_desc name ~of_parent_value ~of_parent_patch =
+  FieldDesc { name; of_parent_value; of_parent_patch; wrapper = float_value }
+
+let string_field_desc name ~of_parent_value ~of_parent_patch =
+  FieldDesc { name; of_parent_value; of_parent_patch; wrapper = string_value }
+
+let bool_field_desc name ~of_parent_value ~of_parent_patch =
+  FieldDesc { name; of_parent_value; of_parent_patch; wrapper = bool_value }
+
+
 (* ==================== Unified Field Spec System ==================== *)
 
 (** A unified field specification that can generate field views for both
@@ -594,10 +610,8 @@ let create_midi_clip_item
       ~name:"Loop"
       ~of_value:(fun (clip : Clip.MidiClip.t) -> clip.loop)
       ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.loop)
-      ~build_value_children:(fun ct nested ->
-          create_loop_fields ct nested )
-      ~build_patch_children:(fun np ->
-          create_loop_patch_fields np )
+      ~build_value_children:create_loop_fields
+      ~build_patch_children:create_loop_patch_fields
       ~domain_type:DTLoop
   in
 
@@ -606,10 +620,8 @@ let create_midi_clip_item
       ~name:"TimeSignature"
       ~of_value:(fun (clip : Clip.MidiClip.t) -> clip.signature)
       ~of_patch:(fun (patch : Clip.MidiClip.Patch.t) -> patch.signature)
-      ~build_value_children:(fun ct nested ->
-          create_signature_fields ct nested )
-      ~build_patch_children:(fun np ->
-          create_signature_patch_fields np )
+      ~build_value_children:create_signature_fields
+      ~build_patch_children:create_signature_patch_fields
       ~domain_type:DTSignature
   in
 
@@ -707,10 +719,8 @@ let create_audio_clip_item
       ~name:"Loop"
       ~of_value:(fun (clip : Clip.AudioClip.t) -> clip.loop)
       ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.loop)
-      ~build_value_children:(fun ct nested ->
-          create_loop_fields ct nested )
-      ~build_patch_children:(fun np ->
-          create_loop_patch_fields np )
+      ~build_value_children:create_loop_fields
+      ~build_patch_children:create_loop_patch_fields
       ~domain_type:DTLoop
   in
 
@@ -719,10 +729,8 @@ let create_audio_clip_item
       ~name:"TimeSignature"
       ~of_value:(fun (clip : Clip.AudioClip.t) -> clip.signature)
       ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.signature)
-      ~build_value_children:(fun ct nested ->
-          create_signature_fields ct nested )
-      ~build_patch_children:(fun np ->
-          create_signature_patch_fields np )
+      ~build_value_children:create_signature_fields
+      ~build_patch_children:create_signature_patch_fields
       ~domain_type:DTSignature
   in
 
@@ -731,10 +739,8 @@ let create_audio_clip_item
       ~name:"SampleRef"
       ~of_value:(fun (clip : Clip.AudioClip.t) -> clip.sample_ref)
       ~of_patch:(fun (patch : Clip.AudioClip.Patch.t) -> patch.sample_ref)
-      ~build_value_children:(fun ct nested ->
-          create_sample_ref_fields ct nested )
-      ~build_patch_children:(fun np ->
-          create_sample_ref_patch_fields np )
+      ~build_value_children:create_sample_ref_fields
+      ~build_patch_children:create_sample_ref_patch_fields
       ~domain_type:DTSampleRef
   in
 
@@ -1090,10 +1096,8 @@ let create_preset_section_config
           ~name:"Preset"
           ~of_value
           ~of_patch
-          ~build_value_children:(fun ct nested ->
-              create_preset_ref_fields ct nested )
-          ~build_patch_children:(fun np ->
-              create_preset_ref_patch_fields np )
+          ~build_value_children:create_preset_ref_fields
+          ~build_patch_children:create_preset_ref_patch_fields
           ~domain_type
         |> Option.map (fun i -> Item i)
       );
@@ -2159,14 +2163,12 @@ let create_midi_track_item
       ~domain_type:DTClip
   in
 
-  let mixer_config : (_, _) device_section_config = create_track_mixer_config
+  let mixer_config = create_track_mixer_config
       ~name:"Mixer"
       ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.mixer)
       ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.mixer)
-      ~build_value_children:(fun ct mix ->
-          build_mixer_value_fields ct mix )
-      ~build_patch_children:(fun mix_patch ->
-          build_mixer_patch_fields mix_patch )
+      ~build_value_children:build_mixer_value_fields
+      ~build_patch_children:build_mixer_patch_fields
       ~domain_type:DTMixer
   in
 
@@ -2190,10 +2192,8 @@ let create_midi_track_item
       ~name:"Routings"
       ~of_value:(fun (t : Track.MidiTrack.t) -> t.Track.MidiTrack.routings)
       ~of_patch:(fun (p : Track.MidiTrack.Patch.t) -> p.routings)
-      ~build_value_children:(fun ct routes ->
-          create_routing_set_fields ct routes )
-      ~build_patch_children:(fun routes_patch ->
-          create_routing_set_patch_fields routes_patch )
+      ~build_value_children:create_routing_set_fields
+      ~build_patch_children:create_routing_set_patch_fields
       ~domain_type:DTRouting
   in
 
@@ -2233,8 +2233,8 @@ let create_audio_like_track_item
       ~name:"Mixer"
       ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.mixer)
       ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.mixer)
-      ~build_value_children:(fun ct mix -> build_mixer_value_fields ct mix)
-      ~build_patch_children:(fun mix_patch -> build_mixer_patch_fields mix_patch)
+      ~build_value_children:build_mixer_value_fields
+      ~build_patch_children:build_mixer_patch_fields
       ~domain_type:DTMixer
   in
 
@@ -2258,8 +2258,8 @@ let create_audio_like_track_item
       ~name:"Routings"
       ~of_value:(fun (t : Track.AudioTrack.t) -> t.Track.AudioTrack.routings)
       ~of_patch:(fun (p : Track.AudioTrack.Patch.t) -> p.routings)
-      ~build_value_children:(fun ct routes -> create_routing_set_fields ct routes)
-      ~build_patch_children:(fun routes_patch -> create_routing_set_patch_fields routes_patch)
+      ~build_value_children:create_routing_set_fields
+      ~build_patch_children:create_routing_set_patch_fields
       ~domain_type:DTRouting
   in
 
@@ -2310,14 +2310,12 @@ let create_main_track_item
 
   (* NO clips collection for MainTrack *)
 
-  let mixer_config : (_, _) device_section_config = create_track_mixer_config
+  let mixer_config = create_track_mixer_config
       ~name:"Main Mixer"
       ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.mixer)
       ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.mixer)
-      ~build_value_children:(fun ct mix ->
-          build_main_mixer_value_fields ct mix )
-      ~build_patch_children:(fun mix_patch ->
-          build_main_mixer_patch_fields mix_patch )
+      ~build_value_children:build_main_mixer_value_fields
+      ~build_patch_children:build_main_mixer_patch_fields
       ~domain_type:DTMixer
   in
 
@@ -2341,10 +2339,8 @@ let create_main_track_item
       ~name:"Routings"
       ~of_value:(fun (t : Track.MainTrack.t) -> t.Track.MainTrack.routings)
       ~of_patch:(fun (p : Track.MainTrack.Patch.t) -> p.routings)
-      ~build_value_children:(fun ct routes ->
-          create_routing_set_fields ct routes )
-      ~build_patch_children:(fun routes_patch ->
-          create_routing_set_patch_fields routes_patch )
+      ~build_value_children:create_routing_set_fields
+      ~build_patch_children:create_routing_set_patch_fields
       ~domain_type:DTRouting
   in
 
@@ -2481,10 +2477,8 @@ let create_liveset_item
       ~name:"Version"
       ~of_value:(fun (ls : Liveset.t) -> ls.version)
       ~of_patch:(fun (p : Liveset.Patch.t) -> p.version)
-      ~build_value_children:(fun ct ver ->
-          create_version_fields ct ver )
-      ~build_patch_children:(fun ver_patch ->
-          create_version_patch_fields ver_patch )
+      ~build_value_children:create_version_fields
+      ~build_patch_children:create_version_patch_fields
       ~domain_type:DTVersion
   in
 
