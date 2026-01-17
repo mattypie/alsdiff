@@ -441,15 +441,10 @@ let composer = {
     (* Hide other domain types *)
     (DTLocator, uniform_override DLNone);
     (DTParam, uniform_override DLNone);
-    (DTNote, uniform_override DLNone);  (* Will be shown as part of clips *)
-    (DTEvent, uniform_override DLNone);  (* Will be shown as part of clips *)
     (DTSend, uniform_override DLNone);
     (DTPreset, uniform_override DLNone);
     (DTMacro, uniform_override DLNone);
     (DTSnapshot, uniform_override DLNone);
-    (DTLoop, uniform_override DLNone);     (* Will be shown as part of clips *)
-    (DTSignature, uniform_override DLNone); (* Will be shown as part of clips *)
-    (DTSampleRef, uniform_override DLNone); (* Will be shown as part of clips *)
     (DTVersion, uniform_override DLNone);
     (DTOther, uniform_override DLNone);
 
@@ -579,10 +574,10 @@ let detail_config_schema_to_string () : string =
 (** Write JSON schema to a file *)
 let write_schema_to_file (path : string) : unit =
   let schema = detail_config_schema_to_string () in
-  let oc = open_out path in
-  output_string oc schema;
-  output_string oc "\n";
-  close_out oc
+  Out_channel.with_open_text path (fun oc ->
+    output_string oc schema;
+    output_string oc "\n"
+  )
 
 (* ==================== JSON Schema Validation ==================== *)
 

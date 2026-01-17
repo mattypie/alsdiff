@@ -1897,12 +1897,38 @@ let create_mixer_item
 
 (** MainMixer section specs - defines the structure of a MainMixer item *)
 let main_mixer_section_specs : (Track.MainMixer.t, Track.MainMixer.Patch.t) section_spec list = [
-  (* Base mixer is handled specially - we extract volume from it *)
-  Spec.child ~name:"Base Mixer"
+  Spec.child ~name:"Volume"
     ~of_value:(fun (mm : Track.MainMixer.t) -> mm.base.Track.Mixer.volume)
     ~of_patch:(fun (p : Track.MainMixer.Patch.t) ->
         match p.base with
         | `Modified mp -> mp.Track.Mixer.Patch.volume
+        | `Unchanged -> `Unchanged)
+    ~build_value_children:create_generic_param_fields
+    ~build_patch_children:create_generic_param_patch_fields
+    ~domain_type:DTMixer;
+  Spec.child ~name:"Pan"
+    ~of_value:(fun (mm : Track.MainMixer.t) -> mm.base.Track.Mixer.pan)
+    ~of_patch:(fun (p : Track.MainMixer.Patch.t) ->
+        match p.base with
+        | `Modified mp -> mp.Track.Mixer.Patch.pan
+        | `Unchanged -> `Unchanged)
+    ~build_value_children:create_generic_param_fields
+    ~build_patch_children:create_generic_param_patch_fields
+    ~domain_type:DTMixer;
+  Spec.child ~name:"Mute"
+    ~of_value:(fun (mm : Track.MainMixer.t) -> mm.base.Track.Mixer.mute)
+    ~of_patch:(fun (p : Track.MainMixer.Patch.t) ->
+        match p.base with
+        | `Modified mp -> mp.Track.Mixer.Patch.mute
+        | `Unchanged -> `Unchanged)
+    ~build_value_children:create_generic_param_fields
+    ~build_patch_children:create_generic_param_patch_fields
+    ~domain_type:DTMixer;
+  Spec.child ~name:"Solo"
+    ~of_value:(fun (mm : Track.MainMixer.t) -> mm.base.Track.Mixer.solo)
+    ~of_patch:(fun (p : Track.MainMixer.Patch.t) ->
+        match p.base with
+        | `Modified mp -> mp.Track.Mixer.Patch.solo
         | `Unchanged -> `Unchanged)
     ~build_value_children:create_generic_param_fields
     ~build_patch_children:create_generic_param_patch_fields
