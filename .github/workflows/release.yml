@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os_name: ubuntu
+            arch: x86_64
+          - os: macos-latest
+            os_name: macos
+            arch: arm64
+          - os: macos-15-intel
+            os_name: macos
+            arch: x86_64
+          - os: windows-latest
+            os_name: windows
+            arch: x86_64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-test
+
+      - name: Build
+        run: opam exec -- dune build
+
+      - name: Run tests
+        run: opam exec -- dune runtest
+
+  build-and-release:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os_name: ubuntu
+            arch: x86_64
+          - os: macos-latest
+            os_name: macos
+            arch: arm64
+          - os: macos-15-intel
+            os_name: macos
+            arch: x86_64
+          - os: windows-latest
+            os_name: windows
+            arch: x86_64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Validate version format
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format: $VERSION"
+            exit 1
+          fi
+
+      - name: Extract version
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5
+
+      - name: Install dependencies
+        run: opam install . --deps-only
+
+      - name: Build
+        run: opam exec -- dune build
+
+      - name: Install
+        run: opam exec -- dune install --prefix _build/install
+
+      - name: Create zip (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          cd _build/install/bin
+          zip ../../../alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip alsdiff
+
+      - name: Create zip (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cd _build/install/bin
+          7z a ../../../alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip alsdiff.exe
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
