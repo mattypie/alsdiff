@@ -85,7 +85,7 @@ let sub_path ?(drop_begin = 0) ?(drop_end = 0) (path : string) : string =
     - "Param" -> "Param"
     - "" -> ""
 *)
-(* FIXME: This function was keep because all XML files like
+(* NOTE: This function was keep because all XML files like
    tests/compressor.xml that made for unit testing each individual module.
    In a full .als XML file, extract parameter name from a path doesn't need such complex logic.
    But in the other hand, unit testing against a full .als XML file is *SLOW*.
@@ -484,10 +484,6 @@ module PatchRef = struct
   end
 
   let diff (old_patch : t) (new_patch : t) : Patch.t =
-    (* FIXME: temporary suppress for debugging *)
-    (* if old_patch.id <> new_patch.id then *)
-    (*   failwith "cannot diff two PatchRefs with different Ids" *)
-    (* else *)
     let relative_path_change = diff_atomic_value (module String) old_patch.relative_path new_patch.relative_path in
     let path_change = diff_atomic_value (module String) old_patch.path new_patch.path in
     let pack_name_change = diff_atomic_value (module String) old_patch.pack_name new_patch.pack_name in
@@ -529,8 +525,8 @@ module PluginParam = struct
       | "PluginBoolParameter" ->
         Bool (Upath.get_bool_attr "/Manual" "Value" val_xml)
       | "PluginEnumParameter" ->
-        (* failwith "PluginEnumParameter parsing not yet implemented - needs further analysis of Ableton Live XML format" *)
-        Float (Upath.get_float_attr "/Manual" "Value" val_xml)  (* FIXME: Temporary fallback *)
+        (* raise (Not_implemented "PluginEnumParameter parsing is not yet implemented. If you encounter this error, please consider sharing your .als file to help improve support for this feature.") *)
+        Int (Upath.get_int_attr "/Manual" "Value" val_xml)
       | _ -> raise (Xml.Xml_error (xml, "Invalid parameter type " ^ param_type))
     in
     let base = Upath.find "/ParameterValue" xml |> snd |> GenericParam.create ~parse_value in
