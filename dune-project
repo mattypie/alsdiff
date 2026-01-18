@@ -20,7 +20,7 @@
  (synopsis "Git helper for Ableton Live Set(.als)")
  (description "Git helper for Ableton Live Set(.als)")
  (depends
-   (ocaml (>= 5.0.0))
+   (ocaml (>= 5.3.0))
     re
     camlzip
     xmlm

@@ -2,8 +2,8 @@
  (name alsdiff_output)
  (public_name alsdiff.output)
  (modules
-   output
    view_model
+   config
    text_renderer)
  (libraries
    alsdiff_base
