@@ -3,12 +3,7 @@ open Alsdiff_base.Xml
 open Alsdiff_live.Track
 open Alsdiff_live
 
-let test_audio_track_xml_path =
-  (* Try different paths to work with both dune exec and dune runtest *)
-  if Sys.file_exists "test/audio_track.xml" then
-    "test/audio_track.xml"
-  else
-    "audio_track.xml"
+let test_audio_track_xml_path = Utils.resolve_test_data_path "audio_track.xml"
 
 let test_audio_track_basic_properties () =
   (* Load audio track XML file *)

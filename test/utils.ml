@@ -20,3 +20,21 @@ let rec xml_equal_ignore_parent x y =
 let pp_xml fmt xml = Fmt.string fmt (xml_to_string xml)
 
 let xml_testable = Alcotest.testable pp_xml xml_equal_ignore_parent
+
+(** Resolve test data file paths that work with both dune runtest and dune exec.
+
+    When running [dune runtest], the working directory is the project root.
+    When running [dune exec test/test_xxx.exe], the working directory is also the project root.
+    However, files declared in (deps ...) are copied to _build/default/test/.
+
+    This function detects the correct path by checking if files exist in the expected locations.
+*)
+let resolve_test_data_path filename =
+  (* Try test/ prefix first (for dune runtest from project root) *)
+  if Sys.file_exists ("test/" ^ filename) then
+    "test/" ^ filename
+    (* Try direct filename (for when working directory is test/) *)
+  else if Sys.file_exists filename then
+    filename
+  else
+    failwith (Printf.sprintf "Cannot find test data file: %s" filename)

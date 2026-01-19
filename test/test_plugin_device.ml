@@ -6,11 +6,7 @@ module PluginParam = Device.PluginParam
 module PluginDesc = Device.PluginDesc
 
 (* Helper function to get the plugin device XML path *)
-let test_plugin_device_xml_path =
-  if Sys.file_exists "test/plugin_device.xml" then
-    "test/plugin_device.xml"
-  else
-    "plugin_device.xml"
+let test_plugin_device_xml_path = Utils.resolve_test_data_path "plugin_device.xml"
 
 (* ==================== PluginDevice Creation Tests ==================== *)
 

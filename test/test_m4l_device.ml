@@ -1,12 +1,7 @@
 open Alsdiff_base.Xml
 open Alsdiff_live
 
-let test_m4l_device_xml_path =
-  (* Try different paths to work with both dune exec and dune runtest *)
-  if Sys.file_exists "test/m4l_device.xml" then
-    "test/m4l_device.xml"
-  else
-    "m4l_device.xml"
+let test_m4l_device_xml_path = Utils.resolve_test_data_path "m4l_device.xml"
 
 let test_create_m4l_device () =
   (* Load the M4L device XML file *)

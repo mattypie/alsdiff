@@ -1,14 +1,7 @@
 open Alsdiff_base.Xml
 open Alsdiff_live
 
-let test_liveset_xml_path =
-  (* Try different paths to work with both dune exec and dune runtest *)
-  if Sys.file_exists "test/t4.xml" then
-    "test/t4.xml"
-  else if Sys.file_exists "t4.xml" then
-    "t4.xml"
-  else
-    failwith "Cannot find t4.xml test file"
+let test_liveset_xml_path = Utils.resolve_test_data_path "t4.xml"
 
 let test_liveset_create () =
   (* Read and parse the XML file *)

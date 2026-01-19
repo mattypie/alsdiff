@@ -3,24 +3,9 @@ open Alsdiff_base.Xml
 open Alsdiff_live
 
 (* Helper functions for different device XML paths *)
-let test_compressor_device_xml_path =
-  (* Try different paths to work with both dune exec and dune runtest *)
-  if Sys.file_exists "test/compressor_device.xml" then
-    "test/compressor_device.xml"
-  else
-    "compressor_device.xml"
-
-let test_eq8_device_xml_path =
-  if Sys.file_exists "test/eq8_device.xml" then
-    "test/eq8_device.xml"
-  else
-    "eq8_device.xml"
-
-let test_wavetable_device_xml_path =
-  if Sys.file_exists "test/wavetable_device.xml" then
-    "test/wavetable_device.xml"
-  else
-    "wavetable_device.xml"
+let test_compressor_device_xml_path = Utils.resolve_test_data_path "compressor_device.xml"
+let test_eq8_device_xml_path = Utils.resolve_test_data_path "eq8_device.xml"
+let test_wavetable_device_xml_path = Utils.resolve_test_data_path "wavetable_device.xml"
 
 (* Generic parameter extraction function *)
 let extract_parameter_xml device_path parameter_name =

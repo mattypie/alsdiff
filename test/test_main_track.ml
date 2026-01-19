@@ -3,12 +3,7 @@ open Alsdiff_base.Xml
 open Alsdiff_live.Track
 open Alsdiff_live
 
-let test_main_track_xml_path =
-  (* Try different paths to work with both dune exec and dune runtest *)
-  if Sys.file_exists "test/main_track.xml" then
-    "test/main_track.xml"
-  else
-    "main_track.xml"
+let test_main_track_xml_path = Utils.resolve_test_data_path "main_track.xml"
 
 let test_main_track_basic_properties () =
   (* Load main track XML file *)

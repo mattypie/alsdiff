@@ -1,5 +1,5 @@
 open Alsdiff_base.Xml
-open Test_utils.Utils
+open Utils
 
 let test_read_string () =
   let xml_str = "<root><a id=\"1\"><b>hello</b><c val=\"test\"/></a></root>" in

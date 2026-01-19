@@ -1,11 +1,6 @@
 open Alsdiff_base
 
-let test_regex_match_xml_path =
-  (* Try different paths to work with both dune exec and dune runtest *)
-  if Sys.file_exists "test/regex_match.xml" then
-    "test/regex_match.xml"
-  else
-    "regex_match.xml"
+let test_regex_match_xml_path = Utils.resolve_test_data_path "regex_match.xml"
 
 let test_load_regex_match_xml () =
   (* Load the regex test XML file *)

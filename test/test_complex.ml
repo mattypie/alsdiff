@@ -1,6 +1,6 @@
 open Alsdiff_base.Xml
 open Alsdiff_base.Upath
-open Test_utils.Utils
+open Utils
 
 let complex_xml =
   Element {

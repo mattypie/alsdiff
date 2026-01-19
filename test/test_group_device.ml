@@ -1,12 +1,7 @@
 open Alsdiff_base.Xml
 open Alsdiff_live
 
-let test_group_device_xml_path =
-  (* Try different paths to work with both dune exec and dune runtest *)
-  if Sys.file_exists "test/group_device.xml" then
-    "test/group_device.xml"
-  else
-    "group_device.xml"
+let test_group_device_xml_path = Utils.resolve_test_data_path "group_device.xml"
 
 let test_group_device_macros_from_xml () =
   (* Load the group device XML file *)
