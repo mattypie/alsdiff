@@ -254,7 +254,7 @@ let cmd =
     `P "Configuration search order (when --config not specified):";
     `P "1. --preset PRESET (if specified)";
     `P "2. .alsdiff.json in git repository root";
-    `P "3. .alsdiff.json in $HOME";
+    `P "3. .alsdiff.json in user's home directory (~)";
     `P "4. quiet preset (default)";
     `S Manpage.s_options;
     `P "$(b,--config FILE) loads configuration from JSON file. Takes precedence over auto-discovery. The --preset option is ignored when --config is specified. Individual CLI options override values from config file.";

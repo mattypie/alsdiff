@@ -558,9 +558,9 @@ let id_hash = function
 let create (xml : Xml.t) : t =
   match xml with
   | Xml.Element { name = "MidiTrack"; _ } -> Midi (MidiTrack.create xml)
-  | Xml.Element { name = "AudioTrack"; _ }
-  | Xml.Element { name = "GroupTrack"; _ }
-  | Xml.Element { name = "ReturnTrack"; _ } -> Audio (AudioTrack.create xml)
+  | Xml.Element { name = "AudioTrack"; _ } -> Audio (AudioTrack.create xml)
+  | Xml.Element { name = "GroupTrack"; _ } -> Group (AudioTrack.create xml)
+  | Xml.Element { name = "ReturnTrack"; _ } -> Return (AudioTrack.create xml)
   | Xml.Element { name = "MainTrack"; _ } -> Main (MainTrack.create xml)
   | _ ->
     let name = match xml with

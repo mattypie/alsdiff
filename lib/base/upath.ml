@@ -244,9 +244,6 @@ let match_component tree = function
   | ParentNode -> true   (* Parent node matching is handled in search logic *)
 
 
-let path_to_string path =
-  List.fold_right (fun x acc -> "/" ^ x ^ acc) path ""
-
 let parse_path path =
   match Parser.parse_path path with
   | Ok p -> p

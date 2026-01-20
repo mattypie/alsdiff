@@ -266,7 +266,7 @@ let create (xml : Xml.t) (file_path : string) : t =
       { Version.major; minor; revision }
     with Not_found ->
       (* Handle edge case where version info might be structured differently *)
-      { Version.major = ""; minor = ""; revision = "" }
+      { Version.major = "Unknown"; minor = "Unknown"; revision = "Unknown" }
   in
 
   (* 3. Extract creator information *)
@@ -317,7 +317,7 @@ let create (xml : Xml.t) (file_path : string) : t =
             Some (Locator.create locator_xml file_path)
           | _ -> None
         )
-    with Not_found -> []
+    with Upath.Path_not_found (_, _) -> []
   in
 
   (* 8. Create initial liveset record *)
