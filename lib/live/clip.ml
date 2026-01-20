@@ -221,6 +221,7 @@ module MidiClip = struct
       (* Use diff_list for notes - cleaner and more consistent *)
       let notes_change =
         diff_list_id (module MidiNote) old_notes new_notes
+        |> filter_changes (module MidiNote.Patch)
       in
       let loop_change = diff_complex_value (module Loop) old_loop new_loop in
 

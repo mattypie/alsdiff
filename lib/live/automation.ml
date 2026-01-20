@@ -104,6 +104,7 @@ let diff (old_envelope : t) (new_envelope : t) : Patch.t =
     let event_changes =
       (diff_list_id (module EnvelopeEvent) old_envelope.events new_envelope.events
        : (EnvelopeEvent.t, EnvelopeEvent.Patch.t) structured_change list)
+      |> filter_changes (module EnvelopeEvent.Patch)
     in
 
     { id = new_envelope.id; target = new_envelope.target; events = event_changes }

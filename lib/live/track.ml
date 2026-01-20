@@ -223,7 +223,9 @@ module Mixer = struct
     let mute_change = diff_complex_value_id (module GenericParam) old_mixer.mute new_mixer.mute in
     let solo_change = diff_complex_value_id (module GenericParam) old_mixer.solo new_mixer.solo in
 
-    let send_changes = diff_list_id (module Send) old_mixer.sends new_mixer.sends
+    let send_changes =
+      diff_list_id (module Send) old_mixer.sends new_mixer.sends
+      |> filter_changes (module Send.Patch)
     in
     { volume = volume_change;
       pan = pan_change;
@@ -296,12 +298,15 @@ module MidiTrack = struct
       let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.MidiClip) old_track.clips new_track.clips
+        |> filter_changes (module Clip.MidiClip.Patch)
       in
       let automations_changes =
         diff_list_id (module Automation) old_track.automations new_track.automations
+        |> filter_changes (module Automation.Patch)
       in
       let devices_changes =
         diff_list_id (module Device) old_track.devices new_track.devices
+        |> filter_changes (module Device.Patch)
       in
       let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
@@ -379,12 +384,15 @@ module AudioTrack = struct
       let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
         diff_list_id (module Clip.AudioClip) old_track.clips new_track.clips
+        |> filter_changes (module Clip.AudioClip.Patch)
       in
       let automations_changes =
         diff_list_id (module Automation) old_track.automations new_track.automations
+        |> filter_changes (module Automation.Patch)
       in
       let devices_changes =
         diff_list_id (module Device) old_track.devices new_track.devices
+        |> filter_changes (module Device.Patch)
       in
       let mixer_change = diff_complex_value (module Mixer) old_track.mixer new_track.mixer in
       let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in
@@ -506,9 +514,11 @@ module MainTrack = struct
     let name_change = diff_atomic_value (module String) old_track.name new_track.name in
     let automations_changes =
       diff_list_id (module Automation) old_track.automations new_track.automations
+      |> filter_changes (module Automation.Patch)
     in
     let devices_changes =
       diff_list_id (module Device) old_track.devices new_track.devices
+      |> filter_changes (module Device.Patch)
     in
     let mixer_change = diff_complex_value (module MainMixer) old_track.mixer new_track.mixer in
     let routings_change = diff_complex_value_id (module RoutingSet) old_track.routings new_track.routings in

@@ -367,12 +367,15 @@ let diff (old_liveset : t) (new_liveset : t) : Patch.t =
   let creator_change = diff_atomic_value (module String) old_liveset.creator new_liveset.creator in
   let tracks_changes =
     diff_list_id (module Track) old_liveset.tracks new_liveset.tracks
+    |> filter_changes (module Track.Patch)
   in
   let returns_changes =
     diff_list_id (module Track) old_liveset.returns new_liveset.returns
+    |> filter_changes (module Track.Patch)
   in
   let locators_changes =
     diff_list_id (module Locator) old_liveset.locators new_liveset.locators
+    |> filter_changes (module Locator.Patch)
   in
 
   {

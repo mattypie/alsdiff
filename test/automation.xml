@@ -10,7 +10,7 @@
           <FloatEvent Id="123" Time="-63072000" Value="0.1412537396"/>
           <FloatEvent Id="188" Time="0" Value="0.1412537396"/>
           <FloatEvent Id="189" Time="8" Value="0.3548133373"/>
-          <FloatEvent Id="190" Time="52" Value="0.3548133373"/>
+          <FloatEvent Id="190" Time="67" Value="0.3548133373"/>
           <FloatEvent Id="196" Time="132" Value="0.3548133373"/>
           <FloatEvent Id="197" Time="136" Value="0.2238721102"/>
         </Events>

@@ -1173,6 +1173,7 @@ let rec regular_device_diff (old_device : regular_device) (new_device : regular_
     let preset_change = diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset in
     let params_changes =
       diff_list_id (module DeviceParam) old_device.params new_device.params
+      |> filter_changes (module DeviceParam.Patch)
     in
     {
       id = new_device.id;
@@ -1199,6 +1200,7 @@ and plugin_device_diff (old_device : plugin_device) (new_device : plugin_device)
 
     let params_change =
       diff_list_id (module PluginParam) old_device.params new_device.params
+      |> filter_changes (module PluginParam.Patch)
     in
 
     let preset_change =
@@ -1231,6 +1233,7 @@ and max4live_device_diff (old_device : max4live_device) (new_device : max4live_d
     in
     let params_change =
       diff_list_id (module Max4LiveParam) old_device.params new_device.params
+      |> filter_changes (module Max4LiveParam.Patch)
     in
     let preset_change =
       diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset
@@ -1284,7 +1287,10 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
         | Max4Live mo, Max4Live mn -> Max4LivePatch (max4live_device_diff mo mn)
         | _ -> failwith "cannot diff devices of different types"
     end in
-    let devices_changes = diff_list_id (module DeviceId) old_branch.devices new_branch.devices in
+    let devices_changes =
+      diff_list_id (module DeviceId) old_branch.devices new_branch.devices
+      |> filter_changes (module DeviceId.Patch)
+    in
     let mixer_change = diff_complex_value_id (module MixerDevice) old_branch.mixer new_branch.mixer in
     {
       id = id_change;
@@ -1312,12 +1318,15 @@ and group_device_diff (old_group : group_device) (new_group : group_device) =
         let diff = branch_diff
       end in
       diff_list_id (module BranchId) old_group.branches new_group.branches
+      |> filter_changes (module BranchId.Patch)
     in
     let macros_changes =
       diff_list_id (module Macro) old_group.macros new_group.macros
+      |> filter_changes (module Macro.Patch)
     in
     let snapshots_changes =
       diff_list_id (module Snapshot) old_group.snapshots new_group.snapshots
+      |> filter_changes (module Snapshot.Patch)
     in
     {
       id = new_group.id;

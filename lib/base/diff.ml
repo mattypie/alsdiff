@@ -474,3 +474,18 @@ let diff_list_merged (type a p k)
     (old_list : a list) (new_list : a list) : (a, p, k) change list =
   diff_list (module EQ) old_list new_list
   |> merge_adjacent_changes ~diff:EQ.diff
+
+
+(** Filter out Unchanged entries from a change list.
+
+    This removes `Unchanged` entries as well as `Modified` entries where
+    the patch is empty (no actual changes).
+
+    @param P A PATCH module for the patch type
+    @param changes The change list to filter
+    @return Change list with Unchanged entries removed
+*)
+let filter_changes (type a p)
+    (module P : PATCH with type t = p)
+    (changes : (a, p) structured_change list) : (a, p) structured_change list =
+  List.filter (fun c -> not (is_unchanged_change (module P) c)) changes
