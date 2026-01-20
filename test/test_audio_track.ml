@@ -88,11 +88,11 @@ let test_audio_track_mixer () =
   (* Basic mixer property checks against actual XML values *)
   let volume = match audio_track.mixer.volume.value with
     | Float f -> f
-    | _ -> 0.0
+    | _ -> Alcotest.fail "volume should be Float"
   in
   let pan = match audio_track.mixer.pan.value with
     | Float f -> f
-    | _ -> 0.0
+    | _ -> Alcotest.fail "pan should be Float"
   in
   Alcotest.(check (float 0.001)) "volume value" 0.6309573054 volume;
   Alcotest.(check (float 0.001)) "pan value" 0.0 pan;
@@ -102,7 +102,7 @@ let test_audio_track_mixer () =
     let first_send = List.hd audio_track.mixer.sends in
     let amount = match first_send.amount.Device.GenericParam.value with
       | Device.Float f -> f
-      | _ -> 0.0
+      | _ -> Alcotest.fail "send amount should be Float"
     in
     Alcotest.(check (float 0.001)) "first send amount" 0.0003162277571 amount
   )

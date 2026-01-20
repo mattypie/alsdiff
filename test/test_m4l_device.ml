@@ -89,9 +89,13 @@ let test_m4l_device_param_creation () =
   let enum_params = Alsdiff_base.Upath.find_all "**/MxDEnumParameter" xml in
   let param_xmls = float_params @ int_params @ bool_params @ enum_params in
   let first_param_xml = match param_xmls with
-    | [(_, xml_elem)] -> xml_elem
+    | (_, xml_elem) :: _ -> xml_elem
     | [] -> failwith "No M4L parameter elements found"
-    | (_, xml_elem) :: _ -> xml_elem in
+  in
+
+  (* Extract expected values from XML before creating parameter *)
+  let expected_id = get_int_attr "Id" first_param_xml in
+  let expected_name = Alsdiff_base.Upath.get_attr "/Name" "Value" first_param_xml in
 
   (* Create a parameter from the XML *)
   let open Device.Max4LiveParam in
@@ -105,9 +109,9 @@ let test_m4l_device_param_creation () =
    | Device.Enum (_, _) -> () (* Could be any enum *)
   );
 
-  (* Verify basic structure *)
-  Alcotest.(check bool) "parameter id > 0" true (param.id > 0);
-  Alcotest.(check bool) "parameter name not empty" true (String.length param.base.Device.GenericParam.name > 0)
+  (* Verify parameter id matches the XML source exactly *)
+  Alcotest.(check int) "parameter id matches XML" expected_id param.id;
+  Alcotest.(check string) "parameter name matches XML" expected_name param.base.Device.GenericParam.name
 
 let test_m4l_device_boolean_parameter () =
   (* Test finding enum parameters which should have boolean-like behavior *)

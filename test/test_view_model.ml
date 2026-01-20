@@ -177,7 +177,7 @@ let test_create_note_item_added () =
 
   let item = create_note_item change in
 
-  check bool "Name contains 'Note'" true (String.length item.name > 0);
+  check bool "Name starts with 'Note'" true (String.sub item.name 0 4 = "Note");
   check bool "Item is Added" true (item.change = Added);
   check bool "Has children" true (List.length item.children > 0);
 

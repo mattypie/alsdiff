@@ -22,10 +22,10 @@ let test_group_device_macros_from_xml () =
 
   (* Check that we have some macros with expected names *)
   let macro_names = List.map (fun m -> m.Device.Macro.base.Device.GenericParam.name) macros in
-  (* Just check that we have some macros and they're not empty *)
-  Alcotest.(check int) "non-empty macro names count"
-    (List.length (List.filter (fun n -> n <> "") macro_names))
-    (List.length macro_names);
+  (* Verify specific expected macro names exist (using XML tag names) *)
+  Alcotest.(check bool) "MacroControls.0 exists" true (List.mem "MacroControls.0" macro_names);
+  Alcotest.(check bool) "MacroControls.7 exists" true (List.mem "MacroControls.7" macro_names);
+  Alcotest.(check bool) "MacroControls.15 exists" true (List.mem "MacroControls.15" macro_names);
 
   (* Check first macro details *)
   let macro0 = List.nth macros 0 in

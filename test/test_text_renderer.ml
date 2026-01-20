@@ -108,8 +108,8 @@ let test_collection_limit () =
   let output = Buffer.contents buffer in
   (* Should only show 10 items, which is less than the 100 original items *)
   let lines = String.split_on_char '\n' output |> List.filter (fun s -> String.trim s <> "") in
-  (* 10 items * 2 lines per item (element + field) + 1 line for collection header = 21 lines max *)
-  Alcotest.(check bool) "collection limited" true (List.length lines < 100)
+  (* 1 collection header + 10 items × 2 lines each (item + field) = 21 lines *)
+  Alcotest.(check int) "collection line count" 21 (List.length lines)
 
 (* New test: DLNone level hides items *)
 let test_none_level () =
@@ -219,7 +219,7 @@ let test_validation () =
   Alcotest.(check int) "validation warnings" 1 (List.length warnings);
   (* Check that the warning contains "no effect" *)
   let warning = List.hd warnings in
-  Alcotest.(check bool) "warning message" true (String.length warning > 10)  (* Just check it's not empty *)
+  Alcotest.(check bool) "warning contains 'no effect'" true (Re.execp (Re.compile (Re.str "no effect")) warning)
 
 (* 11f. Test edge cases *)
 let test_edge_cases () =

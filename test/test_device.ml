@@ -273,8 +273,8 @@ let test_device_param_with_onoff_macro_mapping () =
   ()
 
 
-let test_device_param_with_invalid_controller_map_mode () =
-  (* Create a parameter XML structure with ControllerMapMode != "0" *)
+let test_device_param_no_macro_when_is_note_false () =
+  (* Create a parameter XML structure with IsNote=false and ControllerMapMode=1 *)
   let param_xml = Element {
       name = "NonMacroParam";
       attrs = [("Id", "103")];
@@ -310,7 +310,7 @@ let test_device_param_with_invalid_controller_map_mode () =
             };
             Element {
               name = "ControllerMapMode";
-              attrs = [("Value", "1")]; (* Not 0, so no macro mapping *)
+              attrs = [("Value", "1")]; (* IsNote is false, so no macro mapping regardless of ControllerMapMode *)
               childs = [];
             };
           ];
@@ -398,6 +398,6 @@ let () =
     "macro_mapping", [
       Alcotest.test_case "parameter with continuous macro mapping" `Quick test_device_param_with_continuous_macro_mapping;
       Alcotest.test_case "parameter with On/Off macro mapping" `Quick test_device_param_with_onoff_macro_mapping;
-      Alcotest.test_case "parameter with invalid controller map mode" `Quick test_device_param_with_invalid_controller_map_mode;
+      Alcotest.test_case "parameter no macro when IsNote is false" `Quick test_device_param_no_macro_when_is_note_false;
     ];
   ]

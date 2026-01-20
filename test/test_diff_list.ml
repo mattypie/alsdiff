@@ -235,15 +235,32 @@ let test_diff_list_merged () =
   check (list int_change_testable) "no changes"
     [`Unchanged; `Unchanged; `Unchanged] result3;
 
-  (* Test case 4: All replaced [1;2] -> [3;4] *)
-  let result4 = diff_list_merged (module IntDiffEq) [1; 2] [3; 4] in
-  (* Myers produces: Removed 1, Removed 2, Added 3, Added 4 *)
-  (* After merge: Modified(1,3), Modified(2,4) - but order depends on Myers output *)
-  (* Actually Myers might produce: Removed 1, Added 3, Removed 2, Added 4 or similar *)
-  (* Let's just verify the length is reasonable *)
-  let ops = List.length result4 in
-  check bool "all replaced - reasonable ops" (ops <= 4) true;
+  (* Test case 4: All replaced [1;2] -> [3;4]
 
+     Note: We use semantic correctness checks rather than exact structural assertions
+     because the Myers diff algorithm can produce multiple equally-valid minimal edit
+     scripts for the same input. The linear-space variant (used by Git) may produce
+     different orderings than the quadratic-space version depending on implementation
+     details like diagonal iteration order. Both are correct as long as:
+     - All old values appear in Removed or Modified operations
+     - All new values appear in Added or Modified operations
+     - The total edit distance is minimal
+
+     See: https://blog.jcoglan.com/2017/03/22/myers-diff-in-linear-space-theory/ *)
+  let result4 = diff_list_merged (module IntDiffEq) [1; 2] [3; 4] in
+
+  (* Verify semantic correctness: all old and new values are accounted for *)
+  let old_values = result4 |> List.filter_map (function
+      | `Removed v | `Modified {oldval=v; _} -> Some v
+      | _ -> None) in
+  let new_values = result4 |> List.filter_map (function
+      | `Added v | `Modified {newval=v; _} -> Some v
+      | _ -> None) in
+
+  (* All old values [1;2] should be present *)
+  check (list int) "all replaced - all old values present" [1; 2] old_values;
+  (* All new values [3;4] should be present *)
+  check (list int) "all replaced - all new values present" [3; 4] new_values;
   ()
 
 

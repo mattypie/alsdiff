@@ -80,7 +80,7 @@
 (test
  (name test_real_devices)
  (modules test_real_devices utils)
- (libraries alsdiff_base alsdiff_live alcotest str)
+ (libraries alsdiff_base alsdiff_live alcotest)
  (deps compressor_device.xml eq8_device.xml wavetable_device.xml))
 
 (test

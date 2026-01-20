@@ -342,13 +342,13 @@ let test_eq8_preset_reference_details () =
 
   (* Verify relative path contains EQ Eight *)
   let relative_path = preset.relative_path in
-  let eq8_regexp = Str.regexp_string "EQ Eight" in
-  let contains_eq8 = try ignore (Str.search_forward eq8_regexp relative_path 0); true with Not_found -> false in
+  let eq8_re = Re.Pcre.regexp "EQ Eight" in
+  let contains_eq8 = Re.execp eq8_re relative_path in
   Alcotest.(check bool) "eq8 relative path contains EQ Eight" true contains_eq8;
 
   (* Verify path contains EQ Eight *)
   let path = preset.path in
-  let path_contains_eq8 = try ignore (Str.search_forward eq8_regexp path 0); true with Not_found -> false in
+  let path_contains_eq8 = Re.execp eq8_re path in
   Alcotest.(check bool) "eq8 path contains EQ Eight" true path_contains_eq8
 
 (* ==================== Wavetable Device Tests ==================== *)

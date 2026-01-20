@@ -21,11 +21,7 @@ let test_diff_logic () =
   (* 2. Compute the diff between the old and new states. *)
   let patch = MidiClip.diff old_clip new_clip in
 
-  (* 3. Assert that we have a patch (there should be changes). *)
-  (* MidiClip.diff returns a Patch.t directly, not an option *)
-  check bool "patch exists" true true;
-
-  (* 4. Check specific changes based on what we expect to be different *)
+  (* 3. Check specific changes based on what we expect to be different *)
   (* Check name change *)
   (match patch.name with
    | `Modified m ->

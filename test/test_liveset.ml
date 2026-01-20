@@ -20,23 +20,17 @@ let test_liveset_create () =
 let test_liveset_version_extraction () =
   let xml = read_file test_liveset_xml_path in
   let liveset = Liveset.create xml test_liveset_xml_path in
-
   (* Test version structure extraction *)
   let version = liveset.version in
   (* We expect some version info to be extracted from real Ableton files *)
-  Alcotest.(check string) "major version field" version.major version.major;
-  Alcotest.(check string) "minor version field" version.minor version.minor
+  Alcotest.(check string) "major version field" "5" version.major;
+  Alcotest.(check string) "minor version field" "12.0_12203" version.minor
 
 let test_liveset_creator_extraction () =
   let xml = read_file test_liveset_xml_path in
   let liveset = Liveset.create xml test_liveset_xml_path in
-
   (* Test creator extraction - should get "Ableton Live X.Y.Z" or "Unknown" *)
-  Alcotest.(check string) "creator field" liveset.creator liveset.creator;
-
-  (* Verify creator is not empty string if the XML has Creator attribute *)
-  if liveset.creator <> "Unknown" then
-    Alcotest.(check string) "creator not empty when specified" liveset.creator liveset.creator
+  Alcotest.(check string) "creator field" "Ableton Live 12.2.7" liveset.creator
 
 let test_liveset_track_parsing () =
   let xml = read_file test_liveset_xml_path in
@@ -65,6 +59,7 @@ let test_liveset_track_parsing () =
   let total_tracks = List.length liveset.tracks in
   Alcotest.(check int) "total track count matches sum"
     total_tracks (midi_track_count + audio_track_count + group_track_count)
+
 
 let test_liveset_pointees_table () =
   let xml = read_file test_liveset_xml_path in
