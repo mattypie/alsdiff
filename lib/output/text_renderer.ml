@@ -12,15 +12,15 @@ let pp_field_value fmt = function
 (* Field view rendering *)
 let pp_field cfg fmt (field : field) =
   (* Always render if called - filtering happens at parent level *)
-  Fmt.pf fmt "@[<h>  %a %s: " (pp_change_type cfg) field.change field.name;
+  Fmt.pf fmt "  %a %s: " (pp_change_type cfg) field.change field.name;
   match field.oldval, field.newval with
   | Some old_v, Some new_v ->
-    Fmt.pf fmt "%a -> %a@]" pp_field_value old_v pp_field_value new_v
+    Fmt.pf fmt "%a -> %a" pp_field_value old_v pp_field_value new_v
   | Some old_v, None ->
-    Fmt.pf fmt "%a@]" pp_field_value old_v
+    Fmt.pf fmt "%a" pp_field_value old_v
   | None, Some new_v ->
-    Fmt.pf fmt "%a@]" pp_field_value new_v
-  | None, None -> Fmt.pf fmt "@]"
+    Fmt.pf fmt "%a" pp_field_value new_v
+  | None, None -> ()
 
 (* Element view rendering *)
 let rec pp_item cfg fmt (elem : item) =
@@ -28,38 +28,38 @@ let rec pp_item cfg fmt (elem : item) =
   if not (should_render_level level) then ()
   else
     (* Summary mode: name + change symbol *)
-  if level = Summary then
-    render_summary_breakdown cfg fmt (count_fields_breakdown elem) elem.name elem.change
-    (* Compact mode: name + change symbol *)
-  else if level = Compact then
-    Fmt.pf fmt "@[%a %s" (pp_change_type cfg) elem.change elem.name
-    (* Full mode: name + symbol + fields *)
-  else
-    Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
-  if should_show_fields cfg elem then (
-    Fmt.cut fmt ();
-    (* Render Field children *)
-    let fields = List.filter_map (fun (v : view) ->
-        match v with
-        | Field f -> Some f
-        | _ -> None
-      ) elem.children in
-    Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt fields;
-    (* Render Item and Collection children *)
-    let nested = List.filter (fun (v : view) ->
-        match v with
-        | Item _ | Collection _ -> true
-        | _ -> false
-      ) elem.children in
-    List.iter (fun v ->
-        Fmt.cut fmt ();
-        match v with
-        | Item e -> pp_item cfg fmt e
-        | Collection c -> pp_collection cfg fmt c
-        | _ -> ()
-      ) nested
-  );
-  Fmt.pf fmt "@]"
+    if level = Summary then
+      render_summary_breakdown cfg fmt (count_fields_breakdown elem) elem.name elem.change
+      (* Compact mode: name + change symbol *)
+    else if level = Compact then
+      Fmt.pf fmt "@[%a %s" (pp_change_type cfg) elem.change elem.name
+      (* Full mode: name + symbol + fields *)
+    else
+      Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
+    if should_show_fields cfg elem then (
+      Fmt.cut fmt ();
+      (* Render Field children *)
+      let fields = List.filter_map (fun (v : view) ->
+          match v with
+          | Field f -> Some f
+          | _ -> None
+        ) elem.children in
+      Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt fields;
+      (* Render Item and Collection children *)
+      let nested = List.filter (fun (v : view) ->
+          match v with
+          | Item _ | Collection _ -> true
+          | _ -> false
+        ) elem.children in
+      List.iter (fun v ->
+          Fmt.cut fmt ();
+          match v with
+          | Item e -> pp_item cfg fmt e
+          | Collection c -> pp_collection cfg fmt c
+          | _ -> ()
+        ) nested
+    );
+    if level <> Summary then Fmt.pf fmt "@]"
 
 (* Collection view rendering *)
 and pp_collection cfg fmt (col : collection) =
@@ -117,7 +117,7 @@ let rec pp_section cfg fmt (section : item) =
         if section.domain_type <> DTLiveset then (
           render_summary_breakdown cfg fmt (count_sub_views_breakdown cfg section) section.name section.change
         ) else (
-          Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) section.change section.name
+          Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
         )
       else
         Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name
