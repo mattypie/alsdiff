@@ -250,12 +250,16 @@ let test_diff_list_merged () =
   let result4 = diff_list_merged (module IntDiffEq) [1; 2] [3; 4] in
 
   (* Verify semantic correctness: all old and new values are accounted for *)
-  let old_values = result4 |> List.filter_map (function
+  let old_values = result4
+    |> List.filter_map (function
       | `Removed v | `Modified {oldval=v; _} -> Some v
-      | _ -> None) in
-  let new_values = result4 |> List.filter_map (function
+      | _ -> None)
+    |> List.sort Int.compare in
+  let new_values = result4
+    |> List.filter_map (function
       | `Added v | `Modified {newval=v; _} -> Some v
-      | _ -> None) in
+      | _ -> None)
+    |> List.sort Int.compare in
 
   (* All old values [1;2] should be present *)
   check (list int) "all replaced - all old values present" [1; 2] old_values;

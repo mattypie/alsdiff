@@ -177,7 +177,7 @@ let test_create_note_item_added () =
 
   let item = create_note_item change in
 
-  check bool "Name starts with 'Note'" true (String.sub item.name 0 4 = "Note");
+  check bool "Name starts with 'Note'" true (String.starts_with ~prefix:"Note" item.name);
   check bool "Item is Added" true (item.change = Added);
   check bool "Has children" true (List.length item.children > 0);
 
@@ -241,7 +241,7 @@ let test_create_midi_clip_item () =
   let item = create_midi_clip_item change in
 
   (* Verify - item name contains MidiClip *)
-  check bool "Item name contains MidiClip" true (String.sub item.name 0 8 = "MidiClip");
+  check bool "Item name contains MidiClip" true (String.starts_with ~prefix:"MidiClip" item.name);
 
   (* Check Name field *)
   let name_view = get_field (find_view_by_name "Name" item.children) in
@@ -312,7 +312,7 @@ let test_create_audio_clip_item_added () =
   let change = `Added clip in
   let item = create_audio_clip_item change in
 
-  check bool "Item name contains AudioClip" true (String.sub item.name 0 9 = "AudioClip");
+  check bool "Item name contains AudioClip" true (String.starts_with ~prefix:"AudioClip" item.name);
   check bool "Item is Added" true (item.change = Added);
 
   (* Check Name field *)
