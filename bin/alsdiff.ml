@@ -34,7 +34,7 @@ type config = {
   file1: string option;
   file2: string option;
   config_file: string option;
-  preset: [ `Compact | `Composer | `Full | `Mixing | `Quiet | `Verbose ] option;
+  preset: [ `Compact | `Composer | `Full | `Inline | `Mixing | `Quiet | `Verbose ] option;
   prefix_added: string option;
   prefix_removed: string option;
   prefix_modified: string option;
@@ -124,6 +124,7 @@ let diff_cmd ~config ~domain_mgr =
           | `Compact -> Text_renderer.compact
           | `Composer -> Text_renderer.composer
           | `Full -> Text_renderer.full
+          | `Inline -> Text_renderer.inline
           | `Mixing -> Text_renderer.mixing
           | `Quiet -> Text_renderer.quiet
           | `Verbose -> Text_renderer.verbose
@@ -176,8 +177,8 @@ let config_file =
   Arg.(value & opt (some string) None & info ["config"] ~docv:"CONFIG.json" ~doc)
 
 let preset =
-  let doc = "Output detail preset. Ignored when --config is specified. $(b,compact)=show names+symbols only, $(b,full)=show all details, $(b,mixing)=optimized for stem track mixing workflows, $(b,composer)=MIDI composition and sample processing only, $(b,quiet)=minimal output, $(b,verbose)=show everything including unchanged" in
-  Arg.(value & opt (some (enum ["compact", `Compact; "composer", `Composer; "full", `Full; "mixing", `Mixing; "quiet", `Quiet; "verbose", `Verbose])) None & info ["preset"] ~docv:"PRESET" ~doc)
+  let doc = "Output detail preset. Ignored when --config is specified. $(b,compact)=show structure only, $(b,full)=show all details (multiline), $(b,inline)=show all details (single line), $(b,mixing)=optimized for stem track mixing, $(b,composer)=MIDI composition only, $(b,quiet)=minimal output, $(b,verbose)=show everything including unchanged" in
+  Arg.(value & opt (some (enum ["compact", `Compact; "composer", `Composer; "full", `Full; "inline", `Inline; "mixing", `Mixing; "quiet", `Quiet; "verbose", `Verbose])) None & info ["preset"] ~docv:"PRESET" ~doc)
 
 let prefix_added =
   let doc = "Prefix for added items (default from preset: '+')" in

@@ -283,6 +283,119 @@ let test_rendering_with_nested_overrides () =
   (* Removed shouldn't show the preset field *)
   Alcotest.(check bool) "removed no preset" false (String.contains removed_output 'P')
 
+(* ==================== Inline Level Tests ==================== *)
+
+(* Test basic inline rendering with multiple fields *)
+let test_inline () =
+  let view =
+    Item {
+      name = "MidiClip";
+      change = Modified;
+      domain_type = DTOther;
+      children = [
+        Field { name = "Name"; change = Modified; domain_type = DTOther;
+                oldval = Some (Fstring "Old"); newval = Some (Fstring "New") };
+        Field { name = "Start"; change = Modified; domain_type = DTOther;
+                oldval = Some (Ffloat 0.0); newval = Some (Ffloat 1.0) };
+      ]
+    }
+  in
+  let cfg = { full with added = Inline; removed = Inline; modified = Inline } in
+  let buffer = Buffer.create 1024 in
+  let ppf = Format.formatter_of_buffer buffer in
+  Fmt.set_style_renderer ppf `None;
+  pp cfg ppf view;
+  Format.pp_print_flush ppf ();
+  let output = Buffer.contents buffer in
+  Alcotest.(check string) "inline output"
+    "* MidiClip [Name: Old -> New, Start: 0.00 -> 1.00]"
+    (String.trim output)
+
+(* Test inline with no fields - should not show brackets *)
+let test_inline_no_fields () =
+  let view =
+    Item {
+      name = "EmptyItem";
+      change = Added;
+      domain_type = DTOther;
+      children = []
+    }
+  in
+  let cfg = { full with added = Inline } in
+  let buffer = Buffer.create 1024 in
+  let ppf = Format.formatter_of_buffer buffer in
+  Fmt.set_style_renderer ppf `None;
+  pp cfg ppf view;
+  Format.pp_print_flush ppf ();
+  let output = Buffer.contents buffer in
+  Alcotest.(check string) "inline no brackets" "+ EmptyItem" (String.trim output)
+
+(* Test inline with nested items - fields inline, nested on new lines *)
+let test_inline_with_nested () =
+  let view =
+    Item {
+      name = "Clip";
+      change = Modified;
+      domain_type = DTOther;
+      children = [
+        Field { name = "Name"; change = Modified; domain_type = DTOther;
+                oldval = Some (Fstring "A"); newval = Some (Fstring "B") };
+        Item { name = "Loop"; change = Modified; domain_type = DTOther; children = [] };
+      ]
+    }
+  in
+  let cfg = { full with added = Inline; modified = Inline } in
+  let buffer = Buffer.create 1024 in
+  let ppf = Format.formatter_of_buffer buffer in
+  Fmt.set_style_renderer ppf `None;
+  pp cfg ppf view;
+  Format.pp_print_flush ppf ();
+  let output = Buffer.contents buffer in
+  (* Should have fields inline and nested item on new line *)
+  let expected = "* Clip [Name: A -> B]\n* Loop" in
+  Alcotest.(check string) "inline with nested" expected (String.trim output)
+
+(* Test inline level resolution with type overrides *)
+let test_inline_level_resolution () =
+  let cfg = {
+    compact with
+    type_overrides = [
+      (DTNote, uniform_override Inline);
+    ];
+  } in
+  Alcotest.(check bool) "note uses inline" true (get_effective_detail cfg Added DTNote = Inline);
+  Alcotest.(check bool) "note removed uses inline" true (get_effective_detail cfg Removed DTNote = Inline);
+  (* DTClip not in overrides, falls back to base added=Summary *)
+  Alcotest.(check bool) "clip uses summary" true (get_effective_detail cfg Added DTClip = Summary)
+
+(* Test inline in collection - collection shows elements, each element inline *)
+let test_inline_collection () =
+  let view =
+    Collection {
+      name = "Notes";
+      change = Modified;
+      domain_type = DTNote;
+      items = [
+        Item { name = "Note C4"; change = Added; domain_type = DTNote;
+               children = [Field { name = "Velocity"; change = Added; domain_type = DTNote;
+                                   oldval = None; newval = Some (Fint 100) }] };
+        Item { name = "Note E4"; change = Added; domain_type = DTNote;
+               children = [Field { name = "Velocity"; change = Added; domain_type = DTNote;
+                                   oldval = None; newval = Some (Fint 80) }] };
+      ]
+    }
+  in
+  let cfg = { full with added = Inline; modified = Inline } in
+  let buffer = Buffer.create 1024 in
+  let ppf = Format.formatter_of_buffer buffer in
+  Fmt.set_style_renderer ppf `None;
+  pp cfg ppf view;
+  Format.pp_print_flush ppf ();
+  let output = Buffer.contents buffer in
+  (* Collection header, then each element inline *)
+  let expected = "* Notes\n  + Note C4 [Velocity: 100]\n  + Note E4 [Velocity: 80]" in
+  Alcotest.(check string) "inline collection" expected (String.trim output)
+
 let tests = [
   "compact", `Quick, test_compact;
   "full", `Quick, test_full;
@@ -297,6 +410,11 @@ let tests = [
   "validation", `Quick, test_validation;
   "edge cases", `Quick, test_edge_cases;
   "rendering with nested overrides", `Quick, test_rendering_with_nested_overrides;
+  "inline", `Quick, test_inline;
+  "inline no fields", `Quick, test_inline_no_fields;
+  "inline with nested", `Quick, test_inline_with_nested;
+  "inline level resolution", `Quick, test_inline_level_resolution;
+  "inline collection", `Quick, test_inline_collection;
 ]
 
 let () =

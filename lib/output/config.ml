@@ -2,10 +2,11 @@ open View_model
 
 (** How much detail to show for a particular diff item. *)
 type detail_level =
-  | DLNone     (** Completely hide the item - not rendered at all *)
+  | DLNone   (** Completely hide the item - not rendered at all *)
   | Summary  (** Show name + change symbol + count of changed items (no field details) *)
   | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
-  | Full     (** Show name + change symbol + all fields/sub-views *)
+  | Inline   (** Show name + change symbol + all fields inline on single line *)
+  | Full     (** Show name + change symbol + all fields/sub-views (multiline) *)
 [@@deriving yojson { strict = false }, jsonschema]
 
 (** Breakdown of changes by type for Summary mode *)
@@ -125,12 +126,12 @@ let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
 let should_render_level (level : detail_level) : bool =
   match level with
   | DLNone -> false
-  | Summary | Compact | Full -> true
+  | Summary | Compact | Inline | Full -> true
 
 (* Helper to check if we should show fields for an element *)
 let should_show_fields (cfg : detail_config) (elem : item) : bool =
   let level = get_effective_detail cfg elem.change elem.domain_type in
-  level = Full && elem.children <> []
+  (level = Full || level = Inline) && elem.children <> []
 
 (* Helper to check if an item is element-like (all children are Field views) *)
 let is_element_like_item (elem : item) : bool =
@@ -321,6 +322,22 @@ let full = {
   unchanged = DLNone;
   type_overrides = [];
   max_collection_items = None;  (* This is still option None, not detail_level None *)
+  show_unchanged_fields = false;
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "=";
+  note_name_style = Sharp;
+}
+
+(* Inline: show all fields on single line with item name *)
+let inline = {
+  added = Inline;
+  removed = Inline;
+  modified = Inline;
+  unchanged = DLNone;
+  type_overrides = [];
+  max_collection_items = Some 50;
   show_unchanged_fields = false;
   prefix_added = "+";
   prefix_removed = "-";
