@@ -35,13 +35,14 @@ type config = {
   file2: string option;
   config_file: string option;
   preset: [ `Compact | `Composer | `Full | `Inline | `Mixing | `Quiet | `Verbose ] option;
+  dump_preset: [ `Compact | `Composer | `Full | `Inline | `Mixing | `Quiet | `Verbose ] option;
   prefix_added: string option;
   prefix_removed: string option;
   prefix_modified: string option;
   prefix_unchanged: string option;
   note_name_style: note_display_style option;
   max_collection_items: int option;
-  dump_schema: string;
+  dump_schema: bool;
   validate_config: string option;
 }
 
@@ -180,6 +181,10 @@ let preset =
   let doc = "Output detail preset. Ignored when --config is specified. $(b,compact)=show structure only, $(b,full)=show all details (multiline), $(b,inline)=show all details (single line), $(b,mixing)=optimized for stem track mixing, $(b,composer)=MIDI composition only, $(b,quiet)=minimal output, $(b,verbose)=show everything including unchanged" in
   Arg.(value & opt (some (enum ["compact", `Compact; "composer", `Composer; "full", `Full; "inline", `Inline; "mixing", `Mixing; "quiet", `Quiet; "verbose", `Verbose])) None & info ["preset"] ~docv:"PRESET" ~doc)
 
+let dump_preset =
+  let doc = "Dump preset configuration as JSON to stdout and exit. Same format as --config file." in
+  Arg.(value & opt (some (enum ["compact", `Compact; "composer", `Composer; "full", `Full; "inline", `Inline; "mixing", `Mixing; "quiet", `Quiet; "verbose", `Verbose])) None & info ["dump-preset"] ~docv:"PRESET" ~doc)
+
 let prefix_added =
   let doc = "Prefix for added items (default from preset: '+')" in
   Arg.(value & opt (some string) None & info ["prefix-added"] ~docv:"PREFIX" ~doc)
@@ -205,8 +210,8 @@ let max_collection_items =
   Arg.(value & opt (some int) None & info ["max-collection-items"] ~docv:"N" ~doc)
 
 let dump_schema =
-  let doc = "Dump JSON schema for configuration to stdout (or to FILE if specified) and exit. Does not require FILE1.als or FILE2.als." in
-  Arg.(value & opt ~vopt:"-" string "" & info ["dump-schema"] ~docv:"FILE" ~doc)
+  let doc = "Dump JSON schema for configuration to stdout and exit. Does not require FILE1.als or FILE2.als." in
+  Arg.(value & flag & info ["dump-schema"] ~doc)
 
 let validate_config =
   let doc = "Validate a configuration file against the JSON schema and exit. Reports validation errors without running diff." in
@@ -248,10 +253,12 @@ let cmd =
     `Pre "$(cmd) v1.als v2.als";
     `P "Dump configuration JSON schema to stdout:";
     `Pre "$(cmd) --dump-schema";
-    `P "Dump configuration JSON schema to file:";
-    `Pre "$(cmd) --dump-schema config-schema.json";
     `P "Validate a configuration file:";
     `Pre "$(cmd) --validate-config myconfig.json";
+    `P "Dump preset configuration as JSON to stdout:";
+    `Pre "$(cmd) --dump-preset full";
+    `P "Dump preset configuration to file:";
+    `Pre "$(cmd) --dump-preset compact > mypreset.json";
     `P "Configuration search order (when --config not specified):";
     `P "1. --preset PRESET (if specified)";
     `P "2. .alsdiff.json in git repository root";
@@ -266,7 +273,8 @@ let cmd =
     `P "$(b,--prefix-unchanged PREFIX) overrides prefix for unchanged items from config file.";
     `P "$(b,--note-name-style STYLE) overrides note name style from config file.";
     `P "$(b,--max-collection-items N) overrides max collection items from config file.";
-    `P "$(b,--dump-schema [FILE]) dumps JSON schema for configuration to stdout or FILE and exits.";
+    `P "$(b,--dump-preset PRESET) dumps preset configuration as JSON to stdout and exits. Same format as --config file. Available presets: $(b,compact), $(b,composer), $(b,full), $(b,inline), $(b,mixing), $(b,quiet), $(b,verbose).";
+    `P "$(b,--dump-schema) dumps JSON schema for configuration to stdout and exits.";
     `P "$(b,--validate-config FILE) validates a configuration file against the JSON schema and exits. Useful for checking config files before use.";
     `S Manpage.s_bugs;
     `P "Report bugs at https://github.com/krfantasy/alsdiff/issues";
@@ -274,8 +282,8 @@ let cmd =
   Cmd.make (Cmd.info "alsdiff" ~version:(match version () with
       | None -> "dev"
       | Some v -> Version.to_string v) ~doc ~man) @@
-  let+ file1 and+ file2 and+ config_file and+ preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items and+ dump_schema and+ validate_config in
-  let cfg = { file1; file2; config_file; preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items; dump_schema; validate_config } in
+  let+ file1 and+ file2 and+ config_file and+ preset and+ dump_preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items and+ dump_schema and+ validate_config in
+  let cfg = { file1; file2; config_file; preset; dump_preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items; dump_schema; validate_config } in
   config_ref := Some cfg;
   ()
 
@@ -286,42 +294,52 @@ let main () =
     match !config_ref with
     | None -> 0
     | Some cfg ->
-      (* Handle --validate-config first *)
-      (match cfg.validate_config with
-       | Some config_path ->
-         (match Text_renderer.validate_config_file config_path with
-          | Ok () ->
-            Fmt.pr "Configuration file %s is valid@." config_path;
-            0
-          | Error msg ->
-            Fmt.epr "%s@." msg;
-            1)
+      (* Handle --dump-preset first *)
+      (match cfg.dump_preset with
+       | Some preset ->
+         let preset_config = match preset with
+           | `Compact -> Text_renderer.compact
+           | `Composer -> Text_renderer.composer
+           | `Full -> Text_renderer.full
+           | `Inline -> Text_renderer.inline
+           | `Mixing -> Text_renderer.mixing
+           | `Quiet -> Text_renderer.quiet
+           | `Verbose -> Text_renderer.verbose
+         in
+         let json = Text_renderer.detail_config_to_yojson preset_config in
+         print_endline (Yojson.Safe.pretty_to_string json);
+         0
        | None ->
-         (* Handle --dump-schema *)
-         if cfg.dump_schema <> "" then begin
-           (* Dump to file or stdout *)
-           if cfg.dump_schema = "-" then begin
-             print_endline (Text_renderer.detail_config_schema_to_string ());
-             0
-           end else begin
-             Text_renderer.write_schema_to_file cfg.dump_schema;
-             Fmt.pr "Schema written to %s@." cfg.dump_schema;
-             0
-           end
-         end else begin
-           (* Normal diff operation - requires both files *)
-           match cfg.file1, cfg.file2 with
-           | Some _, Some _ ->
-             Eio_main.run @@ fun env ->
-             let domain_mgr = Eio.Stdenv.domain_mgr env in
-             diff_cmd ~config:cfg ~domain_mgr;
-             0
-           | _ ->
-             Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
-             Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
-             Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
-             1
-         end)
+         (* Handle --validate-config *)
+         (match cfg.validate_config with
+          | Some config_path ->
+            (match Text_renderer.validate_config_file config_path with
+             | Ok () ->
+               Fmt.pr "Configuration file %s is valid@." config_path;
+               0
+             | Error msg ->
+               Fmt.epr "%s@." msg;
+               1)
+          | None ->
+            (* Handle --dump-schema *)
+            if cfg.dump_schema then begin
+              print_endline (Text_renderer.detail_config_schema_to_string ());
+              0
+            end else begin
+              (* Normal diff operation - requires both files *)
+              match cfg.file1, cfg.file2 with
+              | Some _, Some _ ->
+                Eio_main.run @@ fun env ->
+                let domain_mgr = Eio.Stdenv.domain_mgr env in
+                diff_cmd ~config:cfg ~domain_mgr;
+                0
+              | _ ->
+                Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
+                Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
+                Fmt.epr "Use --dump-preset PRESET to dump a preset configuration as JSON.@.";
+                Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
+                1
+            end))
   else
     exit exit_code
 
