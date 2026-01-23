@@ -48,7 +48,7 @@ type config = {
 let load_config_from_json file_path =
   try
     let json_value = Yojson.Safe.from_file file_path in
-    match Text_renderer.detail_config_of_yojson json_value with
+    match Text_renderer.detail_config_of_yojson_with_default json_value with
     | Ok cfg -> cfg
     | Error msg -> failwith ("Failed to parse config file: " ^ msg)
   with

@@ -351,8 +351,8 @@ let test_inline_with_nested () =
   pp cfg ppf view;
   Format.pp_print_flush ppf ();
   let output = Buffer.contents buffer in
-  (* Should have fields inline and nested item on new line *)
-  let expected = "* Clip [Name: A -> B]\n* Loop" in
+  (* Should have fields inline and nested item on new line with proper indentation *)
+  let expected = "* Clip [Name: A -> B]\n  * Loop" in
   Alcotest.(check string) "inline with nested" expected (String.trim output)
 
 (* Test inline level resolution with type overrides *)

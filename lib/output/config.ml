@@ -52,6 +52,9 @@ type detail_config = {
 
   (* Note name display style for MIDI notes *)
   note_name_style : note_display_style;
+
+  (* Indentation width for rendered output (number of spaces) *)
+  indent_width : int;
 }
 [@@deriving yojson, jsonschema]
 
@@ -312,6 +315,9 @@ let compact = {
 
   (* Use Sharp note names *)
   note_name_style = Sharp;
+
+  (* Indentation width *)
+  indent_width = 2;
 }
 
 (* Legacy Full equivalent: show all details *)
@@ -328,6 +334,7 @@ let full = {
   prefix_modified = "*";
   prefix_unchanged = "=";
   note_name_style = Sharp;
+  indent_width = 2;
 }
 
 (* Inline: show all fields on single line with item name *)
@@ -344,6 +351,7 @@ let inline = {
   prefix_modified = "*";
   prefix_unchanged = "=";
   note_name_style = Sharp;
+  indent_width = 2;
 }
 
 (* Quiet mode: minimal output *)
@@ -360,6 +368,7 @@ let quiet = {
   prefix_modified = "*";
   prefix_unchanged = "=";
   note_name_style = Sharp;
+  indent_width = 2;
 }
 
 (* Verbose mode: show everything including unchanged *)
@@ -376,6 +385,7 @@ let verbose = {
   prefix_modified = "*";
   prefix_unchanged = "=";
   note_name_style = Sharp;
+  indent_width = 2;
 }
 
 (* Mixing preset: optimized for stem track mixing workflows *)
@@ -430,6 +440,9 @@ let mixing = {
 
   (* Sharp note names for consistency *)
   note_name_style = Sharp;
+
+  (* Indentation width *)
+  indent_width = 2;
 }
 
 (* Composer preset: focused on MIDI composition and sample processing *)
@@ -483,6 +496,9 @@ let composer = {
 
   (* Sharp note names for MIDI work *)
   note_name_style = Sharp;
+
+  (* Indentation width *)
+  indent_width = 2;
 }
 
 (* Helper to create a config with custom prefixes *)
@@ -543,13 +559,21 @@ let domain_type_to_string (dt : domain_type) : string =
 (* Validate config - check for suspicious patterns *)
 (* Returns list of warning messages *)
 let validate_config (cfg : detail_config) : string list =
-  cfg.type_overrides
-  |> List.filter_map (fun ((dt : domain_type), (ov : per_change_override)) ->
-      if ov.added = None && ov.removed = None && ov.modified = None && ov.unchanged = None then
-        Some (Printf.sprintf "Type override for %s has all None values (no effect)"
-                (domain_type_to_string dt))
-      else
-        None)
+  let override_warnings = cfg.type_overrides
+    |> List.filter_map (fun ((dt : domain_type), (ov : per_change_override)) ->
+        if ov.added = None && ov.removed = None && ov.modified = None && ov.unchanged = None then
+          Some (Printf.sprintf "Type override for %s has all None values (no effect)"
+                  (domain_type_to_string dt))
+        else
+          None) in
+  let indent_warnings =
+    if cfg.indent_width < 0 then
+      [Printf.sprintf "indent_width must be >= 0, got %d" cfg.indent_width]
+    else if cfg.indent_width > 8 then
+      [Printf.sprintf "indent_width must be <= 8, got %d" cfg.indent_width]
+    else []
+  in
+  override_warnings @ indent_warnings
 
 (* Change type formatting with customizable symbols *)
 let pp_change_type cfg fmt = function
@@ -592,9 +616,9 @@ let detail_config_schema_to_string () : string =
 let write_schema_to_file (path : string) : unit =
   let schema = detail_config_schema_to_string () in
   Out_channel.with_open_text path (fun oc ->
-    output_string oc schema;
-    output_string oc "\n"
-  )
+      output_string oc schema;
+      output_string oc "\n"
+    )
 
 (* ==================== JSON Schema Validation ==================== *)
 
@@ -695,3 +719,33 @@ let load_and_validate_config (file_path : string) : (detail_config, string) resu
     Error (Printf.sprintf "JSON error in %s: %s" file_path msg)
   | Sys_error msg ->
     Error (Printf.sprintf "File error: %s" msg)
+
+(** Helper function for backward compatibility with configs that don't have indent_width *)
+let detail_config_of_yojson_with_default json =
+  (* Try normal parsing first *)
+  match detail_config_of_yojson json with
+  | Ok cfg -> Ok cfg
+  | Error _ -> (
+      (* If that fails, check if it's a config with only indent_width and merge with preset *)
+      let json_basic = Yojson.Safe.to_basic json in
+      match json_basic with
+      | `Assoc fields ->
+        (* Check if this is a config with only indent_width field *)
+        if List.length fields = 1 && List.mem_assoc "indent_width" fields then begin
+          (* Get the indent_width value and merge with full preset *)
+          match List.assoc "indent_width" fields with
+          | `Int indent ->
+            (* Create a config from full preset with custom indent_width *)
+            Ok { full with indent_width = indent }
+          | _ -> Error "indent_width must be an integer"
+        end else if not (List.mem_assoc "indent_width" fields) then
+          (* Add default indent_width and retry *)
+          let json_with_default = `Assoc (("indent_width", `Int 2) :: fields) in
+          (* Convert back to Safe via string *)
+          let json_str = Yojson.Basic.pretty_to_string json_with_default in
+          let json_safe = Yojson.Safe.from_string json_str in
+          detail_config_of_yojson json_safe
+        else
+          Error "Failed to parse detail_config"
+      | _ -> Error "Failed to parse detail_config"
+    )

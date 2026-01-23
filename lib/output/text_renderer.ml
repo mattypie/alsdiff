@@ -12,7 +12,8 @@ let pp_field_value fmt = function
 (* Field view rendering *)
 let pp_field cfg fmt (field : field) =
   (* Always render if called - filtering happens at parent level *)
-  Fmt.pf fmt "  %a %s: " (pp_change_type cfg) field.change field.name;
+  let field_indent = String.make cfg.indent_width ' ' in
+  Fmt.pf fmt "%s%a %s: " field_indent (pp_change_type cfg) field.change field.name;
   match field.oldval, field.newval with
   | Some old_v, Some new_v ->
     Fmt.pf fmt "%a -> %a" pp_field_value old_v pp_field_value new_v
@@ -52,50 +53,52 @@ let rec pp_item cfg fmt (elem : item) =
     let nested = List.filter (fun (v : view) ->
         match v with Item _ | Collection _ -> true | _ -> false
       ) elem.children in
-    Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
-    (* Only show brackets if there are fields *)
-    if fields <> [] then begin
-      Fmt.pf fmt " [";
-      Fmt.list ~sep:(Fmt.any ", ") (pp_field_inline cfg) fmt fields;
-      Fmt.pf fmt "]"
-    end;
-    (* Render nested items on new lines *)
-    List.iter (fun v ->
-        Fmt.cut fmt ();
-        match v with
-        | Item e -> pp_item cfg fmt e
-        | Collection c -> pp_collection cfg fmt c
-        | _ -> ()
-      ) nested;
-    Fmt.pf fmt "@]"
+    Fmt.(vbox ~indent:0 (fun fmt () ->
+        pf fmt "%a %s" (pp_change_type cfg) elem.change elem.name;
+        (* Only show brackets if there are fields *)
+        if fields <> [] then begin
+          pf fmt " [";
+          list ~sep:(any ", ") (pp_field_inline cfg) fmt fields;
+          pf fmt "]"
+        end;
+        (* Render nested items on new lines *)
+        List.iter (fun v ->
+            pf fmt "@\n";
+            match v with
+            | Item e -> pp_item cfg fmt e
+            | Collection c -> pp_collection cfg fmt c
+            | _ -> ()
+          ) nested
+      )) fmt ()
   end
   else begin
     (* Full mode: name + symbol + fields (multiline) *)
-    Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) elem.change elem.name;
-    if should_show_fields cfg elem then (
-      Fmt.cut fmt ();
-      (* Render Field children *)
-      let fields = List.filter_map (fun (v : view) ->
-          match v with
-          | Field f -> Some f
-          | _ -> None
-        ) elem.children in
-      Fmt.list ~sep:Fmt.cut (pp_field cfg) fmt fields;
-      (* Render Item and Collection children *)
-      let nested = List.filter (fun (v : view) ->
-          match v with
-          | Item _ | Collection _ -> true
-          | _ -> false
-        ) elem.children in
-      List.iter (fun v ->
-          Fmt.cut fmt ();
-          match v with
-          | Item e -> pp_item cfg fmt e
-          | Collection c -> pp_collection cfg fmt c
-          | _ -> ()
-        ) nested
-    );
-    Fmt.pf fmt "@]"
+    Fmt.(vbox ~indent:0 (fun fmt () ->
+        pf fmt "%a %s" (pp_change_type cfg) elem.change elem.name;
+        if should_show_fields cfg elem then (
+          pf fmt "@\n";
+          (* Render Field children *)
+          let fields = List.filter_map (fun (v : view) ->
+              match v with
+              | Field f -> Some f
+              | _ -> None
+            ) elem.children in
+          list ~sep:(fun fmt () -> pf fmt "@\n") (pp_field cfg) fmt fields;
+          (* Render Item and Collection children *)
+          let nested = List.filter (fun (v : view) ->
+              match v with
+              | Item _ | Collection _ -> true
+              | _ -> false
+            ) elem.children in
+          List.iter (fun v ->
+              pf fmt "@\n";
+              match v with
+              | Item e -> pp_item cfg fmt e
+              | Collection c -> pp_collection cfg fmt c
+              | _ -> ()
+            ) nested
+        )
+      )) fmt ()
   end
 
 (* Collection view rendering *)
@@ -113,12 +116,13 @@ and pp_collection cfg fmt (col : collection) =
       Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
     else begin
       (* Inline and Full: show collection name, elements on new lines *)
-      Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) col.change col.name;
-      List.iter (fun e ->
-          Fmt.pf fmt "@\n";
-          pp_item cfg fmt e
-        ) elements;
-      Fmt.pf fmt "@]"
+      Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
+          pf fmt "%a %s" (pp_change_type cfg) col.change col.name;
+          List.iter (fun e ->
+              pf fmt "@\n";
+              pp_item cfg fmt e
+            ) elements
+        )) fmt ()
     end
 
 (* Section view rendering *)
@@ -153,50 +157,53 @@ let rec pp_section cfg fmt (section : item) =
       if section.domain_type <> DTLiveset then
         render_summary_breakdown cfg fmt (count_sub_views_breakdown cfg section) section.name section.change
       else begin
-        Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name;
-        List.iter (fun view ->
-            Fmt.pf fmt "@\n";
-            pp_view cfg fmt view
-          ) sub_views;
-        Fmt.pf fmt "@]"
+        Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
+            pf fmt "%a %s" (pp_change_type cfg) section.change section.name;
+            List.iter (fun view ->
+                pf fmt "@\n";
+                pp_view cfg fmt view
+              ) sub_views
+          )) fmt ()
       end
     end
     else if level = Inline then begin
       (* Inline mode: fields inline with header, nested items on new lines *)
       let fields = List.filter_map (fun v -> match v with Field f -> Some f | _ -> None) sub_views in
       let nested = List.filter (fun v -> match v with Item _ | Collection _ -> true | _ -> false) sub_views in
-      Fmt.pf fmt "@[<v>%a %s" (pp_change_type cfg) section.change section.name;
-      (* Only show brackets if there are fields *)
-      if fields <> [] then begin
-        Fmt.pf fmt " [";
-        Fmt.list ~sep:(Fmt.any ", ") (pp_field_inline cfg) fmt fields;
-        Fmt.pf fmt "]"
-      end;
-      (* Render nested items on new lines *)
-      List.iter (fun view ->
-          Fmt.pf fmt "@\n";
-          pp_view cfg fmt view
-        ) nested;
-      Fmt.pf fmt "@]"
+      Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
+          pf fmt "%a %s" (pp_change_type cfg) section.change section.name;
+          (* Only show brackets if there are fields *)
+          if fields <> [] then begin
+            pf fmt " [";
+            list ~sep:(any ", ") (pp_field_inline cfg) fmt fields;
+            pf fmt "]"
+          end;
+          (* Render nested items on new lines *)
+          List.iter (fun view ->
+              pf fmt "@\n";
+              pp_view cfg fmt view
+            ) nested
+        )) fmt ()
     end
     else begin
       (* Compact and Full modes *)
-      Fmt.pf fmt "@[<v 2>%a %s" (pp_change_type cfg) section.change section.name;
-      let views_to_render = match level with
-        | Compact ->
-          (* Compact mode: only show Item and Collection subviews, no Fields *)
-          List.filter (fun v ->
-              match v with
-              | Item _ | Collection _ -> true
-              | Field _ -> false
-            ) sub_views
-        | Full | Summary | Inline | DLNone -> sub_views
-      in
-      List.iter (fun view ->
-          Fmt.pf fmt "@\n";
-          pp_view cfg fmt view
-        ) views_to_render;
-      Fmt.pf fmt "@]"
+      Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
+          pf fmt "%a %s" (pp_change_type cfg) section.change section.name;
+          let views_to_render = match level with
+            | Compact ->
+              (* Compact mode: only show Item and Collection subviews, no Fields *)
+              List.filter (fun v ->
+                  match v with
+                  | Item _ | Collection _ -> true
+                  | Field _ -> false
+                ) sub_views
+            | Full | Summary | Inline | DLNone -> sub_views
+          in
+          List.iter (fun view ->
+              pf fmt "@\n";
+              pp_view cfg fmt view
+            ) views_to_render
+        )) fmt ()
     end
 
 (* Main view rendering function *)
