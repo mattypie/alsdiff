@@ -85,7 +85,7 @@ let test_midi_track_devices_order () =
     ) midi_track.devices in
   let expected_device_names = [
     "InstrumentGroupDevice";
-    "MxDeviceAudioEffect"
+    "Envelope Follower"
   ] in
 
   let actual_display_names = List.map (fun device ->

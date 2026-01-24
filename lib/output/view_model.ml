@@ -1834,7 +1834,6 @@ let create_device_item
   let field_descs = [] (* Empty - identity shown in name instead *)
   in
 
-
   (* Format device name with identity inline: "device_name (#id): display_name" *)
   let device_name = match c with
     | `Added d ->

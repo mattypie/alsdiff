@@ -18,7 +18,7 @@ let test_create_m4l_device () =
 
   (* Verify the device properties *)
   Alcotest.(check int) "device id" 0 m4l_device.id;
-  Alcotest.(check string) "device name" "MxDeviceInstrument" m4l_device.device_name;
+  Alcotest.(check string) "device name" "Cellular Degradation" m4l_device.device_name;
   Alcotest.(check string) "display name" "Dark Forces" m4l_device.display_name;
   Alcotest.(check int) "pointee id" 84269 m4l_device.pointee;
 

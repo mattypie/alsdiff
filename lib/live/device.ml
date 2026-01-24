@@ -1403,7 +1403,6 @@ module PluginDevice = struct
   let create (xml : Xml.t) : t =
     (* Get device ID *)
     let id = Xml.get_int_attr "Id" xml in
-    let device_name = Xml.get_name xml in
 
     let preset = Upath.find_opt "/LastPresetRef/Value/*" xml
       |> Option.map snd
@@ -1414,9 +1413,12 @@ module PluginDevice = struct
     let pointee = Upath.get_int_attr "/Pointee" "Id" xml in
     let enabled = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
 
-    (* Find the PluginDesc element *)
+    (* Find the PluginDesc element - must be before device_name *)
     let plugin_desc_xml = Upath.find "/PluginDesc" xml |> snd in
     let desc = PluginDesc.create plugin_desc_xml in
+
+    (* Use actual plugin name from desc instead of XML element name *)
+    let device_name = desc.name in
 
     (* Extract all plugin parameters *)
     let params =
@@ -1547,7 +1549,6 @@ module Max4LiveDevice = struct
   let create (xml : Xml.t) : t =
     (* Get device ID *)
     let id = Xml.get_int_attr "Id" xml in
-    let device_name = Xml.get_name xml in
 
     let preset = Upath.find_opt "/LastPresetRef/Value/*" xml
       |> Option.map snd
@@ -1558,8 +1559,11 @@ module Max4LiveDevice = struct
     let pointee = Upath.get_int_attr "/Pointee" "Id" xml in
     let enabled = Upath.find "/On" xml |> DeviceParam.create_from_upath_find in
 
-    (* Parse PatchSlot/MxPatchRef for patch_ref *)
+    (* Parse PatchSlot/MxPatchRef for patch_ref - must be before device_name *)
     let patch_ref = Upath.find "/PatchSlot/Value/MxPatchRef" xml |> snd |> PatchRef.create in
+
+    (* Use patch name instead of XML element name *)
+    let device_name = patch_ref.PatchRef.name in
 
     (* Extract all M4L parameters *)
     let float_params = Alsdiff_base.Upath.find_all "**/MxDFloatParameter" xml in
