@@ -2,7 +2,7 @@ open View_model
 
 (** How much detail to show for a particular diff item. *)
 type detail_level =
-  | DLNone   (** Completely hide the item - not rendered at all *)
+  | Ignore   (** Completely hide the item - not rendered at all *)
   | Summary  (** Show name + change symbol + count of changed items (no field details) *)
   | Compact  (** Show name + change symbol, but no field details (same as Summary for elements/collections) *)
   | Inline   (** Show name + change symbol + all fields inline on single line *)
@@ -128,7 +128,7 @@ let get_detail_level (cfg : detail_config) (ct : change_type) : detail_level =
 (* Helper to check if we should render based on detail level *)
 let should_render_level (level : detail_level) : bool =
   match level with
-  | DLNone -> false
+  | Ignore -> false
   | Summary | Compact | Inline | Full -> true
 
 (* Helper to check if we should show fields for an element *)
@@ -284,7 +284,7 @@ let compact = {
   added = Summary;
   removed = Summary;
   modified = Summary;
-  unchanged = DLNone;
+  unchanged = Ignore;
 
   (* Key: show first-level structure for important types *)
   type_overrides = [
@@ -325,7 +325,7 @@ let full = {
   added = Full;
   removed = Full;
   modified = Full;
-  unchanged = DLNone;
+  unchanged = Ignore;
   type_overrides = [];
   max_collection_items = None;  (* This is still option None, not detail_level None *)
   show_unchanged_fields = false;
@@ -342,7 +342,7 @@ let inline = {
   added = Inline;
   removed = Inline;
   modified = Inline;
-  unchanged = DLNone;
+  unchanged = Ignore;
   type_overrides = [];
   max_collection_items = Some 50;
   show_unchanged_fields = false;
@@ -359,7 +359,7 @@ let quiet = {
   added = Summary;
   removed = Summary;
   modified = Summary;           (* Compact *)
-  unchanged = DLNone;
+  unchanged = Ignore;
   type_overrides = [(DTLiveset, uniform_override Compact)];  (* Show LiveSet sub-views, but children stay in Summary *)
   max_collection_items = Some 10;
   show_unchanged_fields = false;
@@ -394,7 +394,7 @@ let mixing = {
   added = Summary;
   removed = Summary;
   modified = Summary;
-  unchanged = DLNone;
+  unchanged = Ignore;
 
   (* Type-specific overrides for mixing workflow *)
   type_overrides = [
@@ -452,7 +452,7 @@ let composer = {
   added = Summary;
   removed = Summary;
   modified = Summary;
-  unchanged = DLNone;
+  unchanged = Ignore;
 
   (* Type-specific overrides - show ONLY clips *)
   type_overrides = [
@@ -463,20 +463,20 @@ let composer = {
     (DTTrack, uniform_override Compact);
 
     (* Hide all mixing/engineering sections *)
-    (DTMixer, uniform_override DLNone);
-    (DTDevice, uniform_override DLNone);
-    (DTAutomation, uniform_override DLNone);
-    (DTRouting, uniform_override DLNone);
+    (DTMixer, uniform_override Ignore);
+    (DTDevice, uniform_override Ignore);
+    (DTAutomation, uniform_override Ignore);
+    (DTRouting, uniform_override Ignore);
 
     (* Hide other domain types *)
-    (DTLocator, uniform_override DLNone);
-    (DTParam, uniform_override DLNone);
-    (DTSend, uniform_override DLNone);
-    (DTPreset, uniform_override DLNone);
-    (DTMacro, uniform_override DLNone);
-    (DTSnapshot, uniform_override DLNone);
-    (DTVersion, uniform_override DLNone);
-    (DTOther, uniform_override DLNone);
+    (DTLocator, uniform_override Ignore);
+    (DTParam, uniform_override Ignore);
+    (DTSend, uniform_override Ignore);
+    (DTPreset, uniform_override Ignore);
+    (DTMacro, uniform_override Ignore);
+    (DTSnapshot, uniform_override Ignore);
+    (DTVersion, uniform_override Ignore);
+    (DTOther, uniform_override Ignore);
 
     (* Liveset: show minimal structure *)
     (DTLiveset, uniform_override Compact);

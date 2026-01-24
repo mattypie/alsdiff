@@ -3,7 +3,7 @@ open Alsdiff_output.View_model
 
 let test_detail_level_roundtrip () =
   (* Test that detail_level serializes and deserializes correctly *)
-  let levels = [DLNone; Summary; Compact; Full] in
+  let levels = [Ignore; Summary; Compact; Full] in
   List.iteri (fun i level ->
       let json = detail_level_to_yojson level in
       match detail_level_of_yojson json with
@@ -32,7 +32,7 @@ let test_per_change_override_roundtrip () =
     added = Some Full;
     removed = Some Summary;
     modified = Some Compact;
-    unchanged = Some DLNone;
+    unchanged = Some Ignore;
   } in
   let json = per_change_override_to_yojson override in
   match per_change_override_of_yojson json with
@@ -76,7 +76,7 @@ let test_detail_config_with_overrides () =
           added = Some Full;
           removed = Some Summary;
           modified = Some Compact;
-          unchanged = Some DLNone;
+          unchanged = Some Ignore;
         });
     ];
     max_collection_items = Some 100;
@@ -185,7 +185,7 @@ let test_validate_invalid_type () =
       ("added", `String "Full");  (* Wrong - should be ["Full"] *)
       ("removed", `List [`String "Full"]);
       ("modified", `List [`String "Full"]);
-      ("unchanged", `List [`String "DLNone"]);
+      ("unchanged", `List [`String "Ignore"]);
       ("type_overrides", `List []);
       ("show_unchanged_fields", `Bool false);
       ("prefix_added", `String "+");
@@ -204,7 +204,7 @@ let test_validate_missing_required () =
       (* Missing "added" field *)
       ("removed", `List [`String "Full"]);
       ("modified", `List [`String "Full"]);
-      ("unchanged", `List [`String "DLNone"]);
+      ("unchanged", `List [`String "Ignore"]);
       ("type_overrides", `List []);
       ("show_unchanged_fields", `Bool false);
       ("prefix_added", `String "+");

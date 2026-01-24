@@ -170,7 +170,7 @@ Config auto-discovery order:
 4. `.alsdiff.json` in `$HOME`
 5. `quiet` preset (default)
 
-Detail levels: `DLNone`, `Summary`, `Compact`, `Full`
+Detail levels: `Ignore`, `Summary`, `Compact`, `Inline`, `Full`
 Presets: `compact`, `full`, `midi_friendly`, `quiet`, `verbose`
 
 ## Do / Don't

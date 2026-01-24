@@ -197,7 +197,7 @@ let rec pp_section cfg fmt (section : item) =
                   | Item _ | Collection _ -> true
                   | Field _ -> false
                 ) sub_views
-            | Full | Summary | Inline | DLNone -> sub_views
+            | Full | Summary | Inline | Ignore -> sub_views
           in
           List.iter (fun view ->
               pf fmt "@\n";
@@ -227,6 +227,6 @@ let render_to_string cfg view =
 
 (* ==================== Backward Compatibility Re-exports ==================== *)
 (* Include all Config types and functions for backward compatibility.
-   This ensures that code referencing Text_renderer.DLNone, Text_renderer.detail_config_of_yojson,
+   This ensures that code referencing Text_renderer.Ignore, Text_renderer.detail_config_of_yojson,
    etc. continues to work. *)
 include Config
