@@ -93,7 +93,7 @@ let test_removed_summary () =
   (* Summary mode shows name with change symbol *)
   Alcotest.(check string) "removed summary" "- MidiClip (1 Removed)" (String.trim output)
 
-(* New test: Collection item limiting *)
+(* New test: Collection item limiting with truncation message *)
 let test_collection_limit () =
   let items = List.init 100 (fun i ->
       Item { name = "Note"; change = Added; domain_type = DTOther; children = [Field { name = "Pitch"; change = Added; domain_type = DTOther; oldval = None; newval = Some (Fint i) }] }
@@ -106,10 +106,15 @@ let test_collection_limit () =
   pp cfg ppf view;
   Format.pp_print_flush ppf ();
   let output = Buffer.contents buffer in
-  (* Should only show 10 items, which is less than the 100 original items *)
+  (* Should only show 10 items + truncation message *)
   let lines = String.split_on_char '\n' output |> List.filter (fun s -> String.trim s <> "") in
-  (* 1 collection header + 10 items × 2 lines each (item + field) = 21 lines *)
-  Alcotest.(check int) "collection line count" 21 (List.length lines)
+  (* 1 collection header + 10 items × 2 lines each (item + field) + 1 truncation line = 22 lines *)
+  Alcotest.(check int) "collection line count" 22 (List.length lines);
+  (* Verify truncation message appears *)
+  Alcotest.(check bool) "contains truncation message"
+    true (Re.execp (Re.compile (Re.str "... and 90 more")) output);
+  Alcotest.(check bool) "contains breakdown"
+    true (Re.execp (Re.compile (Re.str "(90 Added)")) output)
 
 (* New test: Ignore level hides items *)
 let test_none_level () =
@@ -396,12 +401,56 @@ let test_inline_collection () =
   let expected = "* Notes\n  + Note C4 [Velocity: 100]\n  + Note E4 [Velocity: 80]" in
   Alcotest.(check string) "inline collection" expected (String.trim output)
 
+(* Test collection limit with mixed change types *)
+let test_collection_limit_mixed_changes () =
+  let items =
+    List.init 30 (fun _ ->
+        Item { name = "Note"; change = Added; domain_type = DTOther; children = [] })
+    @ List.init 20 (fun _ ->
+        Item { name = "Note"; change = Removed; domain_type = DTOther; children = [] })
+  in
+  let view = Collection { name = "Notes"; change = Modified; domain_type = DTOther; items } in
+  let cfg = { full with max_collection_items = Some 5 } in
+  let buffer = Buffer.create 1024 in
+  let ppf = Format.formatter_of_buffer buffer in
+  Fmt.set_style_renderer ppf `None;
+  pp cfg ppf view;
+  Format.pp_print_flush ppf ();
+  let output = Buffer.contents buffer in
+  (* Should show breakdown of truncated items *)
+  (* First 5 are Added, remaining 25 Added + 20 Removed = 45 truncated *)
+  Alcotest.(check bool) "contains truncation count"
+    true (Re.execp (Re.compile (Re.str "... and 45 more")) output);
+  Alcotest.(check bool) "contains added count"
+    true (Re.execp (Re.compile (Re.str "25 Added")) output);
+  Alcotest.(check bool) "contains removed count"
+    true (Re.execp (Re.compile (Re.str "20 Removed")) output)
+
+(* Test collection with no truncation (at or below limit) *)
+let test_collection_no_truncation () =
+  let items = List.init 5 (fun _ ->
+      Item { name = "Note"; change = Added; domain_type = DTOther; children = [] }
+    ) in
+  let view = Collection { name = "Notes"; change = Added; domain_type = DTOther; items } in
+  let cfg = { full with max_collection_items = Some 10 } in
+  let buffer = Buffer.create 1024 in
+  let ppf = Format.formatter_of_buffer buffer in
+  Fmt.set_style_renderer ppf `None;
+  pp cfg ppf view;
+  Format.pp_print_flush ppf ();
+  let output = Buffer.contents buffer in
+  (* Should NOT contain truncation message *)
+  Alcotest.(check bool) "no truncation message"
+    false (Re.execp (Re.compile (Re.str "... and")) output)
+
 let tests = [
   "compact", `Quick, test_compact;
   "full", `Quick, test_full;
   "collection", `Quick, test_collection;
   "removed summary", `Quick, test_removed_summary;
   "collection limit", `Quick, test_collection_limit;
+  "collection limit mixed changes", `Quick, test_collection_limit_mixed_changes;
+  "collection no truncation", `Quick, test_collection_no_truncation;
   "none level", `Quick, test_none_level;
   "nested type overrides", `Quick, test_nested_type_overrides;
   "override with none", `Quick, test_override_with_none;

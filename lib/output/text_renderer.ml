@@ -12,8 +12,7 @@ let pp_field_value fmt = function
 (* Field view rendering *)
 let pp_field cfg fmt (field : field) =
   (* Always render if called - filtering happens at parent level *)
-  let field_indent = String.make cfg.indent_width ' ' in
-  Fmt.pf fmt "%s%a %s: " field_indent (pp_change_type cfg) field.change field.name;
+  Fmt.pf fmt "%a %s: " (pp_change_type cfg) field.change field.name;
   match field.oldval, field.newval with
   | Some old_v, Some new_v ->
     Fmt.pf fmt "%a -> %a" pp_field_value old_v pp_field_value new_v
@@ -35,6 +34,15 @@ let pp_field_inline _cfg fmt (field : field) =
     Fmt.pf fmt "%a" pp_field_value new_v
   | None, None -> ()
 
+(* Format truncation message: "... and N more (breakdown)" *)
+let pp_truncation_info _cfg fmt (info : truncation_info) =
+  let truncated_count = info.total - info.displayed in
+  let breakdown_str = format_breakdown info.truncated_breakdown in
+  if breakdown_str = "" then
+    Fmt.pf fmt "... and %d more" truncated_count
+  else
+    Fmt.pf fmt "... and %d more %s" truncated_count breakdown_str
+
 (* Element view rendering *)
 let rec pp_item cfg fmt (elem : item) =
   let level = get_effective_detail cfg elem.change elem.domain_type in
@@ -53,7 +61,7 @@ let rec pp_item cfg fmt (elem : item) =
     let nested = List.filter (fun (v : view) ->
         match v with Item _ | Collection _ -> true | _ -> false
       ) elem.children in
-    Fmt.(vbox ~indent:0 (fun fmt () ->
+    Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
         pf fmt "%a %s" (pp_change_type cfg) elem.change elem.name;
         (* Only show brackets if there are fields *)
         if fields <> [] then begin
@@ -73,7 +81,7 @@ let rec pp_item cfg fmt (elem : item) =
   end
   else begin
     (* Full mode: name + symbol + fields (multiline) *)
-    Fmt.(vbox ~indent:0 (fun fmt () ->
+    Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
         pf fmt "%a %s" (pp_change_type cfg) elem.change elem.name;
         if should_show_fields cfg elem then (
           pf fmt "@\n";
@@ -106,7 +114,7 @@ and pp_collection cfg fmt (col : collection) =
   let level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then ()
   else
-    let elements = filter_collection_elements cfg col in
+    let elements, truncation = filter_collection_elements_with_info cfg col in
     if elements = [] then ()
     else if level = Summary then
       (* Summary mode: name + change symbol + counts *)
@@ -120,13 +128,17 @@ and pp_collection cfg fmt (col : collection) =
           pf fmt "%a %s" (pp_change_type cfg) col.change col.name;
           List.iter (fun e ->
               pf fmt "@\n";
-              pp_item cfg fmt e
-            ) elements
+              pp_view cfg fmt (Item e)
+            ) elements;
+          (* Show truncation message if items were hidden *)
+          match truncation with
+          | Some info -> pf fmt "@\n%a" (pp_truncation_info cfg) info
+          | None -> ()
         )) fmt ()
     end
 
 (* Section view rendering *)
-let rec pp_section cfg fmt (section : item) =
+and pp_section cfg fmt (section : item) =
   let level = get_effective_detail cfg section.change section.domain_type in
   if not (should_render_level level) then ()
   else

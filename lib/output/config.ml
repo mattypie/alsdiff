@@ -146,13 +146,20 @@ let is_element_like_item (elem : item) : bool =
       | Collection _ -> false
     ) elem.children
 
-(* Helper to filter and limit collection elements *)
-let filter_collection_elements
+(* Truncation info for collections when max_collection_items is applied *)
+type truncation_info = {
+  total: int;
+  displayed: int;
+  truncated_breakdown: change_breakdown;  (* breakdown of hidden items only *)
+}
+
+(* Helper to filter and limit collection elements, returning truncation info *)
+let filter_collection_elements_with_info
     (cfg : detail_config)
     (col : collection)
-  : item list =
+  : item list * truncation_info option =
   let level : detail_level = get_effective_detail cfg col.change col.domain_type in
-  if not (should_render_level level) then []
+  if not (should_render_level level) then ([], None)
   else
     let filtered : item list =
       List.filter_map (fun (v : view) ->
@@ -163,9 +170,30 @@ let filter_collection_elements
           | _ -> None
         ) col.items
     in
+    let total = List.length filtered in
     match cfg.max_collection_items with
-    | None -> filtered
-    | Some n -> List.take n filtered
+    | None -> (filtered, None)
+    | Some n when total <= n -> (filtered, None)
+    | Some n ->
+      let displayed = List.take n filtered in
+      let truncated = List.drop n filtered in
+      let truncated_breakdown =
+        List.fold_left (fun (acc : change_breakdown) (e : item) ->
+            match e.change with
+            | Added -> { acc with added = acc.added + 1 }
+            | Removed -> { acc with removed = acc.removed + 1 }
+            | Modified -> { acc with modified = acc.modified + 1 }
+            | Unchanged -> acc
+          ) { added = 0; removed = 0; modified = 0 } truncated
+      in
+      (displayed, Some { total; displayed = n; truncated_breakdown })
+
+(* Helper to filter and limit collection elements (backward compatible) *)
+let filter_collection_elements
+    (cfg : detail_config)
+    (col : collection)
+  : item list =
+  fst (filter_collection_elements_with_info cfg col)
 
 (* Count changed fields in an element *)
 let count_changed_fields (elem : item) : int =
@@ -344,7 +372,7 @@ let inline = {
   modified = Inline;
   unchanged = Ignore;
   type_overrides = [];
-  max_collection_items = Some 50;
+  max_collection_items = Some 10;
   show_unchanged_fields = false;
   prefix_added = "+";
   prefix_removed = "-";
