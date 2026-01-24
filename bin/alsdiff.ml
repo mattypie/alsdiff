@@ -306,7 +306,7 @@ let main () =
            | `Quiet -> Text_renderer.quiet
            | `Verbose -> Text_renderer.verbose
          in
-         let json = Text_renderer.detail_config_to_yojson preset_config in
+         let json = Text_renderer.detail_config_to_yojson_with_schema preset_config in
          print_endline (Yojson.Safe.pretty_to_string json);
          0
        | None ->

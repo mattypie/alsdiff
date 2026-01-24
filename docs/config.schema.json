@@ -1,0 +1,884 @@
+{
+  "$id": "https://raw.githubusercontent.com/krfantasy/alsdiff/master/docs/config.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "alsdiff configuration schema",
+  "description": "Configuration schema for alsdiff output rendering",
+  "$defs": {
+    "domain_type": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTLiveset" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTTrack" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTDevice" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTClip" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTAutomation" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTMixer" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTRouting" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTLocator" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTParam" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTNote" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTEvent" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTSend" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTPreset" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTMacro" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTSnapshot" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTLoop" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTSignature" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTSampleRef" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTVersion" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "DTOther" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
+    "detail_level": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Ignore" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Summary" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Compact" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Inline" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Full" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
+    "per_change_override": {
+      "type": "object",
+      "properties": {
+        "unchanged": {
+          "anyOf": [
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Ignore" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Summary" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Compact" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Inline" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Full" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            }
+          ]
+        },
+        "modified": {
+          "anyOf": [
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Ignore" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Summary" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Compact" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Inline" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Full" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            }
+          ]
+        },
+        "removed": {
+          "anyOf": [
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Ignore" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Summary" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Compact" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Inline" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Full" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            }
+          ]
+        },
+        "added": {
+          "anyOf": [
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Ignore" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Summary" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Compact" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Inline" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            },
+            {
+              "type": "array",
+              "prefixItems": [ { "const": "Full" } ],
+              "unevaluatedItems": false,
+              "minItems": 1,
+              "maxItems": 1
+            }
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "note_display_style": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Sharp" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Flat" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema URI pointing to the schema for this config file."
+    },
+    "indent_width": { "type": "integer" },
+    "note_name_style": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Sharp" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Flat" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
+    "prefix_unchanged": { "type": "string" },
+    "prefix_modified": { "type": "string" },
+    "prefix_removed": { "type": "string" },
+    "prefix_added": { "type": "string" },
+    "show_unchanged_fields": { "type": "boolean" },
+    "max_collection_items": { "type": "integer" },
+    "type_overrides": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "anyOf": [
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTLiveset" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTTrack" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTDevice" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTClip" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTAutomation" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTMixer" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTRouting" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTLocator" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTParam" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTNote" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTEvent" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTSend" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTPreset" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTMacro" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTSnapshot" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTLoop" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTSignature" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTSampleRef" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTVersion" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              },
+              {
+                "type": "array",
+                "prefixItems": [ { "const": "DTOther" } ],
+                "unevaluatedItems": false,
+                "minItems": 1,
+                "maxItems": 1
+              }
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "unchanged": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Ignore" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Summary" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Compact" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Inline" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Full" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  }
+                ]
+              },
+              "modified": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Ignore" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Summary" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Compact" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Inline" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Full" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  }
+                ]
+              },
+              "removed": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Ignore" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Summary" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Compact" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Inline" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Full" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  }
+                ]
+              },
+              "added": {
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Ignore" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Summary" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Compact" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Inline" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  },
+                  {
+                    "type": "array",
+                    "prefixItems": [ { "const": "Full" } ],
+                    "unevaluatedItems": false,
+                    "minItems": 1,
+                    "maxItems": 1
+                  }
+                ]
+              }
+            },
+            "required": [],
+            "additionalProperties": false
+          }
+        ],
+        "unevaluatedItems": false,
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "unchanged": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Ignore" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Summary" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Compact" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Inline" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Full" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
+    "modified": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Ignore" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Summary" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Compact" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Inline" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Full" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
+    "removed": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Ignore" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Summary" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Compact" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Inline" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Full" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
+    "added": {
+      "anyOf": [
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Ignore" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Summary" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Compact" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Inline" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [ { "const": "Full" } ],
+          "unevaluatedItems": false,
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    }
+  },
+  "required": [
+    "indent_width", "note_name_style", "prefix_unchanged", "prefix_modified",
+    "prefix_removed", "prefix_added", "show_unchanged_fields",
+    "type_overrides", "unchanged", "modified", "removed", "added"
+  ],
+  "additionalProperties": false
+}

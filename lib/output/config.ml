@@ -625,16 +625,36 @@ let render_summary_breakdown cfg fmt breakdown name_symbol change_type =
     Uses $defs for domain_type, detail_level, per_change_override,
     and note_display_style for better readability *)
 let detail_config_json_schema () : Yojson.Basic.t =
-  Ppx_deriving_jsonschema_runtime.json_schema
-    ~title:"ALSDiff Configuration Schema"
-    ~description:"Configuration schema for alsdiff output rendering"
-    ~definitions:[
-      ("domain_type", View_model.domain_type_jsonschema);
-      ("detail_level", detail_level_jsonschema);
-      ("per_change_override", per_change_override_jsonschema);
-      ("note_display_style", View_model.note_display_style_jsonschema);
-    ]
-    detail_config_jsonschema
+  let base_schema = Ppx_deriving_jsonschema_runtime.json_schema
+      ~title:"alsdiff configuration schema"
+      ~description:"Configuration schema for alsdiff output rendering"
+      ~definitions:[
+        ("domain_type", View_model.domain_type_jsonschema);
+        ("detail_level", detail_level_jsonschema);
+        ("per_change_override", per_change_override_jsonschema);
+        ("note_display_style", View_model.note_display_style_jsonschema);
+      ]
+      detail_config_jsonschema
+  in
+  (* Add $id to schema root and $schema property for config files *)
+  let schema_uri = "https://raw.githubusercontent.com/krfantasy/alsdiff/master/docs/config.schema.json" in
+  match base_schema with
+  | `Assoc fields ->
+    let fields_with_id = ("$id", `String schema_uri) :: fields in
+    (match List.assoc_opt "properties" fields_with_id with
+     | Some (`Assoc props) ->
+       (* Add $schema as an optional property for config files *)
+       let with_schema_prop = ("$schema", `Assoc [
+           ("type", `String "string");
+           ("description", `String "JSON Schema URI pointing to the schema for this config file.");
+         ]) :: props in
+       let updated_fields = List.map (fun (k, v) ->
+           if k = "properties" then ("properties", `Assoc with_schema_prop)
+           else (k, v)
+         ) fields_with_id in
+       `Assoc updated_fields
+     | _ -> `Assoc fields_with_id)
+  | _ -> base_schema
 
 (** Generate JSON schema as a formatted string *)
 let detail_config_schema_to_string () : string =
@@ -777,3 +797,21 @@ let detail_config_of_yojson_with_default json =
           Error "Failed to parse detail_config"
       | _ -> Error "Failed to parse detail_config"
     )
+
+(* ==================== JSON Export with Schema Metadata ==================== *)
+
+(** Convert detail_config to Yojson with $schema field.
+    This is the preferred function for exporting config JSON. *)
+let detail_config_to_yojson_with_schema (cfg : detail_config) : Yojson.Safe.t =
+  let base_json = detail_config_to_yojson cfg in
+  match base_json with
+  | `Assoc fields ->
+    let schema_uri = "https://raw.githubusercontent.com/krfantasy/alsdiff/master/docs/config.schema.json" in
+    let with_schema = ("$schema", `String schema_uri) :: fields in
+    `Assoc with_schema
+  | _ -> base_json
+
+(** Convert detail_config to JSON string with $schema and version fields. *)
+let detail_config_to_string_with_schema (cfg : detail_config) : string =
+  detail_config_to_yojson_with_schema cfg
+  |> Yojson.Safe.pretty_to_string
