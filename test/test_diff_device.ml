@@ -65,10 +65,9 @@ let test_regular_device_diff () =
 let test_plugin_device_diff () =
   (* Mock Plugin Device *)
   (* Test that plugin device diffing works correctly *)
-  let make_plugin_param id name index value =
+  let make_plugin_param id name _index value =
     {
       PluginParam.id = id;
-      index = index;
       base = {
         GenericParam.name = name;
         value = value;

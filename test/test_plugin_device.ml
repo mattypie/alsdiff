@@ -35,7 +35,7 @@ let test_create_plugin_device_from_xml () =
    | _ -> Alcotest.fail "Expected Vst3 plugin type");
 
   (* Verify parameter count *)
-  Alcotest.(check int) "plugin parameter count" 24 (List.length plugin_device.params)
+  Alcotest.(check int) "plugin parameter count" 128 (List.length plugin_device.params)
 
 let test_plugin_desc_creation () =
   (* Test PluginDesc creation specifically *)
@@ -61,7 +61,6 @@ let test_plugin_parameter_float_creation () =
   (* Verify parameter properties *)
   Alcotest.(check int) "float param id" 0 param.PluginParam.id;
   Alcotest.(check string) "float param name" "GAIN: Input L (Locked)" param.base.Device.GenericParam.name;
-  Alcotest.(check int) "float param index" 0 param.PluginParam.index;
 
   (* Verify parameter value *)
   (match param.base.Device.GenericParam.value with
@@ -79,9 +78,8 @@ let test_plugin_parameter_with_automation () =
   let param = List.nth plugin_device.params 10 in
 
   (* Verify parameter properties *)
-  Alcotest.(check int) "param id" 11 param.PluginParam.id;
+  Alcotest.(check int) "param id" 10 param.PluginParam.id;
   Alcotest.(check string) "param name" "IMG: Stereo/Main Band 1 Width Percent" param.base.Device.GenericParam.name;
-  Alcotest.(check int) "param index" 10 param.PluginParam.index;
 
   (* Verify parameter value *)
   (match param.base.Device.GenericParam.value with
@@ -98,7 +96,7 @@ let test_plugin_parameter_validation () =
   let plugin_device = PluginDevice.create device_xml in
 
   (* Verify parameter count *)
-  Alcotest.(check int) "plugin parameter count" 24 (List.length plugin_device.params);
+  Alcotest.(check int) "plugin parameter count" 128 (List.length plugin_device.params);
 
   (* Extract all parameter IDs *)
   let param_ids = List.map (fun p -> p.PluginParam.id) plugin_device.params in

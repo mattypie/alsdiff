@@ -127,6 +127,7 @@ end
 
 (* ================== Mixer module ================== *)
 module GenericParam = Device.GenericParam
+module NameIdGenericParam = Device.NameIdGenericParam
 
 module Send = struct
   type t = {
@@ -218,10 +219,10 @@ module Mixer = struct
   end
 
   let diff (old_mixer : t) (new_mixer : t) : Patch.t =
-    let volume_change = diff_complex_value_id (module GenericParam) old_mixer.volume new_mixer.volume in
-    let pan_change = diff_complex_value_id (module GenericParam) old_mixer.pan new_mixer.pan in
-    let mute_change = diff_complex_value_id (module GenericParam) old_mixer.mute new_mixer.mute in
-    let solo_change = diff_complex_value_id (module GenericParam) old_mixer.solo new_mixer.solo in
+    let volume_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.volume new_mixer.volume in
+    let pan_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.pan new_mixer.pan in
+    let mute_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.mute new_mixer.mute in
+    let solo_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.solo new_mixer.solo in
 
     let send_changes =
       diff_list_id (module Send) old_mixer.sends new_mixer.sends
@@ -449,10 +450,10 @@ module MainMixer = struct
 
   let diff (old_mixer : t) (new_mixer : t) : Patch.t =
     let base_change = diff_complex_value (module Mixer) old_mixer.base new_mixer.base in
-    let tempo_change = diff_complex_value_id (module GenericParam) old_mixer.tempo new_mixer.tempo in
-    let time_signature_change = diff_complex_value_id (module GenericParam) old_mixer.time_signature new_mixer.time_signature in
-    let crossfade_change = diff_complex_value_id (module GenericParam) old_mixer.crossfade new_mixer.crossfade in
-    let global_groove_change = diff_complex_value_id (module GenericParam) old_mixer.global_groove new_mixer.global_groove in
+    let tempo_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.tempo new_mixer.tempo in
+    let time_signature_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.time_signature new_mixer.time_signature in
+    let crossfade_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.crossfade new_mixer.crossfade in
+    let global_groove_change = diff_complex_value_id (module NameIdGenericParam) old_mixer.global_groove new_mixer.global_groove in
     {
       Patch.base = base_change;
       tempo = tempo_change;

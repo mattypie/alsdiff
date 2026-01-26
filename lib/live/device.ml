@@ -47,6 +47,7 @@ let sub_path ?(drop_begin = 0) ?(drop_end = 0) (path : string) : string =
   let keep_start = drop_begin in
   let keep_end = length - drop_end in
 
+  (* TODO: eliminate by using the same function from List module *)
   (* Extract the sub-list using standard List functions *)
   let rec drop_first n lst =
     if n <= 0 then lst
@@ -221,27 +222,21 @@ module GenericParam = struct
   let create_bool_manual xml =
     create xml ~parse_value:(fun x -> Bool (Upath.get_bool_attr "/Manual" "Value" x))
 
-
-  let has_same_id a b = a.name = b.name
-  let id_hash a = Hashtbl.hash a
-
   module Patch = struct
     type t = {
-      name : string atomic_update;
+      name : string;
       value : param_value atomic_update;
       automation : int atomic_update;
       modulation : int atomic_update;
     }
 
     let is_empty p =
-      is_unchanged_atomic_update p.name &&
       is_unchanged_atomic_update p.value &&
       is_unchanged_atomic_update p.automation &&
       is_unchanged_atomic_update p.modulation
   end
 
   let diff (old_param : t) (new_param : t) : Patch.t =
-    let name_change = diff_atomic_value (module String) old_param.name new_param.name in
     let automation_change = diff_atomic_value (module Int) old_param.automation new_param.automation in
     let modulation_change = diff_atomic_value (module Int) old_param.modulation new_param.modulation in
     let module ParamValueEq = struct
@@ -250,11 +245,19 @@ module GenericParam = struct
     end in
     let value_change = diff_atomic_value (module ParamValueEq) old_param.value new_param.value in
     {
-      name = name_change;
+      name = new_param.name;
       value = value_change;
       automation = automation_change;
       modulation = modulation_change;
     }
+end
+
+
+module NameIdGenericParam = struct
+  include GenericParam
+
+  let has_same_id a b = a.name = b.name
+  let id_hash t = Hashtbl.hash t.name
 end
 
 
@@ -263,8 +266,8 @@ module DeviceParam = struct
     base : GenericParam.t;
   } [@@deriving eq]
 
-  let has_same_id a b = GenericParam.has_same_id a.base b.base
-  let id_hash t = GenericParam.id_hash t.base
+  let has_same_id a b = a.base.name = b.base.name
+  let id_hash t = Hashtbl.hash t.base.name
 
   (** [create path xml] creates a device parameter from a Device XML element.
       It raises [Failure "Invalid XML element for creating DeviceParam"] if the XML
@@ -301,7 +304,7 @@ module DeviceParam = struct
   end
 
   let diff old_param new_param =
-    let base_change = Diff.diff_complex_value_id (module GenericParam)
+    let base_change = Diff.diff_complex_value_id (module NameIdGenericParam)
         old_param.base new_param.base in
     { Patch.base = base_change }
 end
@@ -506,17 +509,15 @@ end
 (* ================== Plugin related modules ================== *)
 module PluginParam = struct
   type t = {
-    id : int;                   (* ParameterId *)
-    index : int;                (* VisualIndex *)
+    id : int;
     base : GenericParam.t;
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
-    let id = Upath.get_int_attr "/ParameterId" "Value" xml in
-    let index = Upath.get_int_attr "/VisualIndex" "Value" xml in
+    let id = Xml.get_int_attr "Id" xml in
 
     let param_type = Xml.get_name xml in
-    let parse_value = fun val_xml ->
+    let parse_value val_xml =
       match param_type with
       | "PluginFloatParameter" ->
         Float (Upath.get_float_attr "/Manual" "Value" val_xml)
@@ -532,30 +533,36 @@ module PluginParam = struct
     let base = Upath.find "/ParameterValue" xml |> snd |> GenericParam.create ~parse_value in
     let name = Upath.get_attr "/ParameterName" "Value" xml in
     let name_updated_base = { base with name } in
-    { id; index; base = name_updated_base; }
+    { id; base = name_updated_base; }
 
   module Patch = struct
     type t = {
-      index : int atomic_update;
+      id : int;
       base : GenericParam.Patch.t structured_update;
     }
 
-    let is_empty p =
-      is_unchanged_atomic_update p.index &&
-      is_unchanged_update (module GenericParam.Patch) p.base
+    let is_empty p = is_unchanged_update (module GenericParam.Patch) p.base
   end
 
+  (* NOTE: From my observation, ParameterId seems always equal to -1, which is useless for an identifier.
+     We use the Id attribute as the identifier for PluginParam since it's unique and stable *)
   let has_same_id a b = a.id = b.id
 
   let id_hash t = Hashtbl.hash t.id
 
   let diff (old_param : t) (new_param : t) : Patch.t =
-    if old_param.id <> new_param.id then
-      failwith "cannot diff two PluginParams with different Ids"
+    if not (has_same_id old_param new_param) then
+      failwith "cannot diff two PluginParams with different identifiers"
     else
-      let index_change = diff_atomic_value (module Int) old_param.index new_param.index in
-      let base_change = diff_complex_value_id (module GenericParam) old_param.base new_param.base in
-      { index = index_change; base = base_change; }
+      let module PluginSpecializedGenericParam = struct
+        include GenericParam
+
+        let has_same_id _ _ = true
+        let id_hash _ = 0
+      end in
+
+      let base_change = diff_complex_value_id (module PluginSpecializedGenericParam) old_param.base new_param.base in
+      { id = new_param.id; base = base_change }
 end
 
 
@@ -1425,11 +1432,6 @@ module PluginDevice = struct
       Upath.find_all "/ParameterList/*" xml
       |> List.map snd
       |> List.map PluginParam.create
-
-      (* ParameterId=-1 is possibly an invisible/hidden parameter that we shouldn't
-         care. Its doesn't even have a ParameterName and an valid VisualIndex *)
-      |> List.filter (fun x -> x.PluginParam.id <> -1)
-
     in
 
     { id; device_name; display_name; pointee; enabled; desc; params; preset }

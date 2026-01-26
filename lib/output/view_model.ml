@@ -658,7 +658,7 @@ let make_generic_param_field_descs
           of_parent_value = (fun x -> (get_base x).name);
           of_parent_patch = (fun p ->
               match get_base_patch p with
-              | `Modified gpp -> gpp.GP.Patch.name
+              | `Modified _gpp -> `Unchanged  (* name is now just string, not tracking changes *)
               | `Unchanged -> `Unchanged);
           wrapper = string_value;
         }]
@@ -697,19 +697,24 @@ let make_generic_param_field_descs
 (** [get_param_name_from_change] extracts the parameter name from a structured change
     for types that wrap GenericParam.
     @param get_base extracts the GenericParam from the parent value type
+    @param get_base_patch extracts the GenericParam.Patch from the patch type
     @param default_name the fallback name when the specific name cannot be extracted
     @param c the structured change
 *)
 let get_param_name_from_change
     (type t patch)
     ~(get_base : t -> Device.GenericParam.t)
+    ~(get_base_patch : patch -> Device.GenericParam.Patch.t structured_update)
     ~(default_name : string)
     (c : (t, patch) structured_change)
   : string =
   match c with
   | `Added v -> (get_base v).Device.GenericParam.name
   | `Removed v -> (get_base v).Device.GenericParam.name
-  | `Modified _ -> default_name
+  | `Modified p ->
+    (match get_base_patch p with
+     | `Modified gp_patch -> gp_patch.Device.GenericParam.Patch.name
+     | `Unchanged -> default_name)
   | `Unchanged -> default_name
 
 
@@ -722,7 +727,7 @@ let create_device_param_item
   let field_descs = make_generic_param_field_descs
       ~get_base ~get_base_patch ~include_name:true
   in
-  let param_name = get_param_name_from_change ~get_base ~default_name:"Parameter" c in
+  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"Parameter" c in
   ViewBuilder.build_item_from_fields c ~name:param_name ~domain_type:DTParam ~field_descs
 
 
@@ -769,18 +774,11 @@ let create_plugin_param_item
   : item =
   let get_base (x : Device.PluginParam.t) = x.base in
   let get_base_patch (p : Device.PluginParam.Patch.t) = p.base in
-  (* Index field is specific to PluginParam *)
-  let index_field = FieldDesc {
-      name = "Index";
-      of_parent_value = (fun (x : Device.PluginParam.t) -> x.index);
-      of_parent_patch = (fun (p : Device.PluginParam.Patch.t) -> p.index);
-      wrapper = int_value;
-    } in
   let base_field_descs = make_generic_param_field_descs
       ~get_base ~get_base_patch ~include_name:true
   in
-  let field_descs = index_field :: base_field_descs in
-  let param_name = get_param_name_from_change ~get_base ~default_name:"PluginParam" c in
+  let field_descs = base_field_descs in
+  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"PluginParam" c in
   ViewBuilder.build_item_from_fields c ~name:param_name ~domain_type:DTParam ~field_descs
 
 
@@ -801,7 +799,7 @@ let create_m4l_param_item
       ~get_base ~get_base_patch ~include_name:true
   in
   let field_descs = index_field :: base_field_descs in
-  let param_name = get_param_name_from_change ~get_base ~default_name:"M4LParam" c in
+  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"M4LParam" c in
   ViewBuilder.build_item_from_fields c ~name:param_name ~domain_type:DTParam ~field_descs
 
 
@@ -844,22 +842,36 @@ let create_snapshot_item
 (* ==================== Device View Template Infrastructure ==================== *)
 
 (** [build_device_section_name] generates the section name for a device.
-    Format: "DeviceType: name" when available, just "DeviceType" otherwise.
+    Format: "device_name (#id): display_name" for detailed device identification.
 *)
 let build_device_section_name
     (type device patch)
     ~(device_type_name : string)
     ~(get_device_name : device -> string)
+    ~(get_device_id : device -> int)
+    ~(get_display_name : device -> string)
+    ~(get_id_from_patch : patch -> int)
+    ~(get_name_from_patch : patch -> string)
     ~(get_display_name_patch : patch -> string atomic_update)
     (c : (device, patch) structured_change)
   : string =
+  let get_display_name_from_patch patch =
+    match get_display_name_patch patch with
+    | `Modified { newval; _ } -> newval
+    | `Unchanged -> ""
+  in
   match c with
-  | `Added d -> device_type_name ^ ": " ^ get_device_name d
-  | `Removed d -> device_type_name ^ ": " ^ get_device_name d
+  | `Added d ->
+    Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d)
+      (get_display_name d)
+  | `Removed d ->
+    Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d)
+      (get_display_name d)
   | `Modified patch ->
-    (match get_display_name_patch patch with
-     | `Modified { newval; _ } -> device_type_name ^ ": " ^ newval
-     | `Unchanged -> device_type_name)
+    let display = get_display_name_from_patch patch in
+    let display_name = if display = "" then get_name_from_patch patch else display in
+    Printf.sprintf "%s (#%d): %s" (get_name_from_patch patch) (get_id_from_patch patch)
+      display_name
   | `Unchanged -> device_type_name
 
 
@@ -1235,7 +1247,10 @@ let build_device_view
     (type device patch)
     ~(device_type_name : string)
     ~(get_device_name : device -> string)
+    ~(get_device_id : device -> int)
     ~(get_display_name : device -> string)
+    ~(get_id_from_patch : patch -> int)
+    ~(get_name_from_patch : patch -> string)
     ~(get_display_name_patch : patch -> string atomic_update)
     ~(preset_config : (device, patch) device_section_config option)
     ~(custom_sections : (device, patch) device_section_config list)
@@ -1245,9 +1260,14 @@ let build_device_view
   let change_type = ViewBuilder.change_type_of c in
 
   (* Build section name *)
-  let section_name = build_device_section_name
+  let section_name =
+    build_device_section_name
       ~device_type_name
       ~get_device_name
+      ~get_device_id
+      ~get_display_name
+      ~get_id_from_patch
+      ~get_name_from_patch
       ~get_display_name_patch
       c
   in
@@ -1296,7 +1316,10 @@ let create_regular_device_item
   build_device_view
     ~device_type_name:"RegularDevice"
     ~get_device_name:(fun (d : Device.RegularDevice.t) -> d.device_name)
+    ~get_device_id:(fun (d : Device.RegularDevice.t) -> d.id)
     ~get_display_name:(fun (d : Device.RegularDevice.t) -> d.display_name)
+    ~get_id_from_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.id)
+    ~get_name_from_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.device_name)
     ~get_display_name_patch:(fun (p : Device.RegularDevice.Patch.t) -> p.display_name)
     ~preset_config:None
     ~custom_sections:[params_config]
@@ -1354,7 +1377,10 @@ let create_plugin_device_item
   build_device_view
     ~device_type_name:"PluginDevice"
     ~get_device_name:(fun (d : Device.PluginDevice.t) -> d.device_name)
+    ~get_device_id:(fun (d : Device.PluginDevice.t) -> d.id)
     ~get_display_name:(fun (d : Device.PluginDevice.t) -> d.display_name)
+    ~get_id_from_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.id)
+    ~get_name_from_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.device_name)
     ~get_display_name_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.display_name)
     ~preset_config:(Some (create_preset_section_config
                             ~of_value:(fun (d : Device.PluginDevice.t) -> d.preset)
@@ -1437,7 +1463,10 @@ let create_max4live_device_item
   build_device_view
     ~device_type_name:"Max4LiveDevice"
     ~get_device_name:(fun (d : Device.Max4LiveDevice.t) -> d.device_name)
+    ~get_device_id:(fun (d : Device.Max4LiveDevice.t) -> d.id)
     ~get_display_name:(fun (d : Device.Max4LiveDevice.t) -> d.display_name)
+    ~get_id_from_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.id)
+    ~get_name_from_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.device_name)
     ~get_display_name_patch:(fun (p : Device.Max4LiveDevice.Patch.t) -> p.display_name)
     ~preset_config:(Some (create_preset_section_config
                             ~of_value:(fun (d : Device.Max4LiveDevice.t) -> d.preset)
@@ -1472,7 +1501,10 @@ let create_group_device_item
   build_device_view
     ~device_type_name:"GroupDevice"
     ~get_device_name:(fun (d : Device.GroupDevice.t) -> d.device_name)
+    ~get_device_id:(fun (d : Device.GroupDevice.t) -> d.id)
     ~get_display_name:(fun (d : Device.GroupDevice.t) -> d.display_name)
+    ~get_id_from_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.id)
+    ~get_name_from_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.device_name)
     ~get_display_name_patch:(fun (p : Device.GroupDevice.Patch.t) -> p.display_name)
     ~preset_config:(Some (create_preset_section_config
                             ~of_value:(fun (d : Device.GroupDevice.t) -> d.preset)
@@ -1780,74 +1812,23 @@ let create_automation_item
 let create_device_item
     (c : (Device.t, Device.Patch.t) structured_change)
   : item =
-  let get_device_id = function
-    | Device.Regular d -> d.id
-    | Device.Plugin d -> d.id
-    | Device.Max4Live d -> d.id
-    | Device.Group d -> d.id
-  in
-  let get_device_name = function
-    | Device.Regular d -> d.device_name
-    | Device.Plugin d -> d.device_name
-    | Device.Max4Live d -> d.device_name
-    | Device.Group d -> d.device_name
-  in
-  let get_display_name = function
-    | Device.Regular d -> d.display_name
-    | Device.Plugin d -> d.display_name
-    | Device.Max4Live d -> d.display_name
-    | Device.Group d -> d.display_name
-  in
-  (* Extract identity from patches *)
-  let get_id_from_patch = function
-    | Device.Patch.RegularPatch p -> p.id
-    | Device.Patch.PluginPatch p -> p.id
-    | Device.Patch.Max4LivePatch p -> p.id
-    | Device.Patch.GroupPatch p -> p.id
-  in
-  let get_name_from_patch = function
-    | Device.Patch.RegularPatch p -> p.device_name
-    | Device.Patch.PluginPatch p -> p.device_name
-    | Device.Patch.Max4LivePatch p -> p.device_name
-    | Device.Patch.GroupPatch p -> p.device_name
-  in
-  let get_display_name_from_patch = function
-    | Device.Patch.RegularPatch p ->
-      (match p.display_name with
-       | `Modified { newval; _ } -> newval
-       | `Unchanged -> "")
-    | Device.Patch.PluginPatch p ->
-      (match p.display_name with
-       | `Modified { newval; _ } -> newval
-       | `Unchanged -> "")
-    | Device.Patch.Max4LivePatch p ->
-      (match p.display_name with
-       | `Modified { newval; _ } -> newval
-       | `Unchanged -> "")
-    | Device.Patch.GroupPatch p ->
-      (match p.display_name with
-       | `Modified { newval; _ } -> newval
-       | `Unchanged -> "")
-  in
-
-  (* Field descriptors exclude identity fields (no Id, Name) *)
-  let field_descs = [] (* Empty - identity shown in name instead *)
-  in
-
-  (* Format device name with identity inline: "device_name (#id): display_name" *)
-  let device_name = match c with
-    | `Added d ->
-      Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d) (get_display_name d)
-    | `Removed d ->
-      Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d) (get_display_name d)
-    | `Modified patch ->
-      let display = get_display_name_from_patch patch in
-      let display_name = if display = "" then get_name_from_patch patch else display in
-      Printf.sprintf "%s (#%d): %s" (get_name_from_patch patch) (get_id_from_patch patch) display_name
-    | `Unchanged -> "Device"
-  in
-
-  ViewBuilder.build_item_from_fields c ~name:device_name ~field_descs ~domain_type:DTDevice
+  (* Dispatch to the specific device type function based on the device variant *)
+  match c with
+  | `Added (Device.Regular d) -> create_regular_device_item (`Added d)
+  | `Removed (Device.Regular d) -> create_regular_device_item (`Removed d)
+  | `Modified (Device.Patch.RegularPatch p) -> create_regular_device_item (`Modified p)
+  | `Added (Device.Plugin d) -> create_plugin_device_item (`Added d)
+  | `Removed (Device.Plugin d) -> create_plugin_device_item (`Removed d)
+  | `Modified (Device.Patch.PluginPatch p) -> create_plugin_device_item (`Modified p)
+  | `Added (Device.Max4Live d) -> create_max4live_device_item (`Added d)
+  | `Removed (Device.Max4Live d) -> create_max4live_device_item (`Removed d)
+  | `Modified (Device.Patch.Max4LivePatch p) -> create_max4live_device_item (`Modified p)
+  | `Added (Device.Group d) -> create_group_device_item (`Added d)
+  | `Removed (Device.Group d) -> create_group_device_item (`Removed d)
+  | `Modified (Device.Patch.GroupPatch p) -> create_group_device_item (`Modified p)
+  | `Unchanged ->
+    (* For unchanged devices, create a simple placeholder *)
+    { name = "Device"; change = Unchanged; domain_type = DTDevice; children = [] }
 
 
 (* ==================== Track Component Section Views ==================== *)

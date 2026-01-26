@@ -282,8 +282,7 @@ end
 module AudioClip = struct
   (* TODO:
      1. support warp related settings
-     2. fades support
-  *)
+     2. fades support *)
   type t = {
     id : int;
     name : string;
