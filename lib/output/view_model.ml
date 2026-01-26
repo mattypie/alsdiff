@@ -187,7 +187,12 @@ module ViewBuilder = struct
       ~(field_descs : ('a, 'p) field_descriptor list)
     : item =
     let change_type = change_type_of c in
-    let children = field_descs |> List.map (fun fd -> Field (build_field c fd ~domain_type)) in
+    let children =
+      field_descs |> List.map (fun fd -> Field (build_field c fd ~domain_type))
+      |> List.filter (function
+          | Field f -> f.change <> Unchanged
+          | _ -> true)
+    in
     { name; change = change_type; domain_type; children }
 
 
@@ -1327,6 +1332,71 @@ let create_regular_device_item
     c
 
 
+(** Helper functions for PluginDesc field views *)
+let create_plugin_desc_fields
+    (change_type : change_type)
+    (desc : Device.PluginDesc.t)
+  : view list =
+  [
+    Field {
+      name = "Name";
+      change = change_type;
+      domain_type = DTDevice;
+      oldval = if change_type = Removed || change_type = Unchanged then Some (Fstring desc.name) else None;
+      newval = if change_type = Added || change_type = Unchanged then Some (Fstring desc.name) else None;
+    };
+    Field {
+      name = "UID";
+      change = change_type;
+      domain_type = DTDevice;
+      oldval = if change_type = Removed || change_type = Unchanged then Some (Fstring desc.uid) else None;
+      newval = if change_type = Added || change_type = Unchanged then Some (Fstring desc.uid) else None;
+    };
+    Field {
+      name = "Type";
+      change = change_type;
+      domain_type = DTDevice;
+      oldval = if change_type = Removed || change_type = Unchanged then Some (Fstring (Device.PluginDesc.plugin_type_to_string desc.plugin_type)) else None;
+      newval = if change_type = Added || change_type = Unchanged then Some (Fstring (Device.PluginDesc.plugin_type_to_string desc.plugin_type)) else None;
+    };
+    Field {
+      name = "Processor State";
+      change = change_type;
+      domain_type = DTDevice;
+      oldval = if change_type = Removed || change_type = Unchanged then Some (Fstring "<state>") else None;
+      newval = if change_type = Added || change_type = Unchanged then Some (Fstring "<state>") else None;
+    };
+  ]
+
+let create_plugin_desc_patch_fields (patch : Device.PluginDesc.Patch.t) : view list =
+  let name_field = atomic_update_to_field_view
+      ~name:"Name"
+      ~wrapper:string_value
+      ~domain_type:DTDevice
+      patch.name
+  in
+  let uid_field = atomic_update_to_field_view
+      ~name:"UID"
+      ~wrapper:string_value
+      ~domain_type:DTDevice
+      patch.uid
+  in
+  let plugin_type_field = atomic_update_to_field_view
+      ~name:"Type"
+      ~wrapper:(fun pt -> Fstring (Device.PluginDesc.plugin_type_to_string pt))
+      ~domain_type:DTDevice
+      patch.plugin_type
+  in
+  let state_field = atomic_update_to_field_view
+      ~name:"Processor State"
+      ~wrapper:(fun _ -> Fstring "<state>")
+      ~domain_type:DTDevice
+      patch.state
+  in
+  List.filter_map Fun.id [name_field; uid_field; plugin_type_field; state_field]
+  |> List.map (fun f -> Field f)
+
+
 (** [create_plugin_device_item] creates a [item] from a PluginDevice structured change (new type system). *)
 let create_plugin_device_item
     (c : (Device.PluginDevice.t, Device.PluginDevice.Patch.t) structured_change)
@@ -1374,6 +1444,15 @@ let create_plugin_device_item
         | _ -> None);
   } in
 
+  let plugin_desc_config = Spec.child
+      ~name:"PluginDesc"
+      ~of_value:(fun (d : Device.PluginDevice.t) -> d.desc)
+      ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.desc)
+      ~build_value_children:create_plugin_desc_fields
+      ~build_patch_children:create_plugin_desc_patch_fields
+      ~domain_type:DTDevice
+  in
+
   build_device_view
     ~device_type_name:"PluginDevice"
     ~get_device_name:(fun (d : Device.PluginDevice.t) -> d.device_name)
@@ -1386,7 +1465,7 @@ let create_plugin_device_item
                             ~of_value:(fun (d : Device.PluginDevice.t) -> d.preset)
                             ~of_patch:(fun (p : Device.PluginDevice.Patch.t) -> p.preset)
                             ~domain_type:DTPreset))
-    ~custom_sections:[enabled_config; params_config]
+    ~custom_sections:[enabled_config; params_config; plugin_desc_config]
     ~domain_type:DTDevice
     c
 

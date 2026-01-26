@@ -88,7 +88,7 @@ let test_plugin_device_diff () =
         PluginDesc.name = "MySynth";
         uid = "vst3:mysynth";
         plugin_type = PluginDesc.Vst3;
-        state = "";
+        processor_state = "";
       };
       params = [make_plugin_param 1 "Cutoff" 1 (Float 0.5)];
       preset = None;
@@ -104,7 +104,7 @@ let test_plugin_device_diff () =
         PluginDesc.name = "MySynth";
         uid = "vst3:mysynth";
         plugin_type = PluginDesc.Vst3;
-        state = "";
+        processor_state = "";
       };
       params = [make_plugin_param 1 "Cutoff" 1 (Float 0.7)];
       preset = None;

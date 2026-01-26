@@ -16,6 +16,9 @@ let get_value = function
   | Data value -> value
   | Element _ as xml -> raise (Xml_error (xml, "Cannot get value from XML Element node"))
 
+let get_data_child = function
+  | Element {childs = [Data d]; _} -> d
+  | _ as xml -> raise (Xml_error (xml, "Cannot get the data child when it doesn't have a data child"))
 
 let get_attr name xml =
   match xml with

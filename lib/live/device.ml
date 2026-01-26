@@ -47,28 +47,10 @@ let sub_path ?(drop_begin = 0) ?(drop_end = 0) (path : string) : string =
   let keep_start = drop_begin in
   let keep_end = length - drop_end in
 
-  (* TODO: eliminate by using the same function from List module *)
-  (* Extract the sub-list using standard List functions *)
-  let rec drop_first n lst =
-    if n <= 0 then lst
-    else
-      match lst with
-      | [] -> []
-      | _ :: rest -> drop_first (n - 1) rest
-  in
-
-  let rec take_first n lst =
-    if n <= 0 then []
-    else
-      match lst with
-      | [] -> []
-      | x :: rest -> x :: take_first (n - 1) rest
-  in
-
   let sub_parts =
     non_empty_parts
-    |> drop_first keep_start
-    |> take_first (keep_end - keep_start)
+    |> List.drop keep_start
+    |> List.take (keep_end - keep_start)
   in
 
   (* Reconstruct the path *)
@@ -575,30 +557,16 @@ module PluginDesc = struct
     name : string;
     uid : string;
     plugin_type : plugin_type;
-    state : string;
+    processor_state : string;
+    (* NOTE: Since the controller state in VST3 is the state of the GUI, which has
+       nothing to do with actual audio/dsp processing, we just ignore it for god's sake *)
+    (* controller_state : string; *)
   } [@@deriving eq]
 
-  (** Trim all whitespace characters from a string *)
-  let trim_blob_str s =
-    let len = String.length s in
-    let rec trim_left i =
-      if i >= len then i
-      else
-        match s.[i] with
-        | ' ' | '\t' | '\n' | '\r' -> trim_left (i + 1)
-        | _ -> i
-    in
-    let rec trim_right i =
-      if i < 0 then -1
-      else
-        match s.[i] with
-        | ' ' | '\t' | '\n' | '\r' -> trim_right (i - 1)
-        | _ -> i
-    in
-    let left = trim_left 0 in
-    let right = trim_right (len - 1) in
-    if left > right then ""
-    else String.sub s left (right - left + 1)
+  let plugin_type_to_string = function
+    | Vst2 -> "VST2"
+    | Vst3 -> "VST3"
+    | Auv2 -> "AUv2"
 
   let parse_vst3_uid xml =
     let fields = Upath.find_all "/'Fields\\.[0-9]+$'" xml in
@@ -607,19 +575,14 @@ module PluginDesc = struct
     |> List.map (fun (_, field_xml) -> Xml.get_attr "Value" field_xml)
     |> String.concat "-"
 
+  let re_whitespaces = Re.compile (Re.Pcre.re "\\s+")
+  let reformat_blob_str s =
+    Re.replace_string ~all:true re_whitespaces ~by:"" s
+
   let parse_vst3_processor_state plugin_info_xml =
-    match Upath.find_opt "/Preset/Vst3Preset/ProcessorState" plugin_info_xml with
-    | Some (_, state_xml) ->
-      (* Get all text content and trim it *)
-      let content =
-        state_xml
-        |> Xml.get_childs
-        |> List.filter_map (function Xml.Data value -> Some value | _ -> None)
-        |> String.concat ""
-        |> trim_blob_str
-      in
-      content
-    | None -> ""
+    Upath.find_opt "/Preset/Vst3Preset/ProcessorState" plugin_info_xml
+    |> Option.map (fun x -> snd x |> Xml.get_data_child |> reformat_blob_str)
+    |> Option.value ~default:""
 
   let parse_vst3_info plugin_info_xml =
     (* Get plugin name - try different possible locations *)
@@ -636,24 +599,14 @@ module PluginDesc = struct
     let uid = Upath.find "/Uid" plugin_info_xml |> snd |> parse_vst3_uid in
 
     (* Get processor state from VST3 preset *)
-    let state = parse_vst3_processor_state plugin_info_xml in
-
-    (name, uid, state)
+    let processor_state = parse_vst3_processor_state plugin_info_xml in
+    (name, uid, processor_state)
 
   let parse_vst2_processor_state plugin_info_xml =
     (* VST2 plugins typically don't have processor state in the same way as VST3 *)
-    match Upath.find_opt "/Preset/VstPreset/State" plugin_info_xml with
-    | Some (_, state_xml) ->
-      (* Get all text content and trim it *)
-      let content =
-        state_xml
-        |> Xml.get_childs
-        |> List.filter_map (function Xml.Data value -> Some value | _ -> None)
-        |> String.concat ""
-        |> trim_blob_str
-      in
-      content
-    | None -> ""
+    Upath.find_opt "/Preset/VstPreset/State" plugin_info_xml
+    |> Option.map (fun x -> snd x |> Xml.get_data_child |> reformat_blob_str)
+    |> Option.value ~default:""
 
   let parse_vst2_info plugin_info_xml =
     (* Get plugin name - try different possible locations for VST2 *)
@@ -681,24 +634,15 @@ module PluginDesc = struct
     in
 
     (* Get processor state from VST2 preset *)
-    let state = parse_vst2_processor_state plugin_info_xml in
+    let processor_state = parse_vst2_processor_state plugin_info_xml in
 
-    (name, uid, state)
+    (name, uid, processor_state)
 
   let parse_au_processor_state plugin_info_xml =
     (* AU plugins use Buffer element for state data *)
-    match Upath.find_opt "/Preset/AuPreset/Buffer" plugin_info_xml with
-    | Some (_, buffer_xml) ->
-      (* Get all text content and trim it *)
-      let content =
-        buffer_xml
-        |> Xml.get_childs
-        |> List.filter_map (function Xml.Data value -> Some value | _ -> None)
-        |> String.concat ""
-        |> trim_blob_str
-      in
-      content
-    | None -> ""
+    Upath.find_opt "/Preset/AuPreset/Buffer" plugin_info_xml
+    |> Option.map (fun x -> snd x |> Xml.get_data_child |> reformat_blob_str)
+    |> Option.value ~default:""
 
   let parse_au_info plugin_info_xml =
     (* Get plugin name for AU plugins *)
@@ -727,9 +671,9 @@ module PluginDesc = struct
     in
 
     (* Get processor state from AU preset buffer *)
-    let state = parse_au_processor_state plugin_info_xml in
+    let processor_state = parse_au_processor_state plugin_info_xml in
 
-    (name, uid, state)
+    (name, uid, processor_state)
 
   let create (xml : Xml.t) : t =
     (* Extract plugin type based on the element name *)
@@ -743,14 +687,14 @@ module PluginDesc = struct
       | name -> raise (Xml.Xml_error (plugin_info_xml, "Unsupported plugin type: " ^ name))
     in
 
-    let (name, uid, state) =
+    let (name, uid, processor_state) =
       match plugin_type with
       | Vst3 -> parse_vst3_info plugin_info_xml
       | Vst2 -> parse_vst2_info plugin_info_xml
       | Auv2 -> parse_au_info plugin_info_xml
     in
 
-    { name; uid; plugin_type; state }
+    { name; uid; plugin_type; processor_state }
 
   module Patch = struct
     type t = {
@@ -774,8 +718,7 @@ module PluginDesc = struct
       let name_change = diff_atomic_value (module String) old_desc.name new_desc.name in
       let uid_change = diff_atomic_value (module String) old_desc.uid new_desc.uid in
       let plugin_type_change = diff_atomic_value (module PluginTypeEq) old_desc.plugin_type new_desc.plugin_type in
-      let state_change = diff_atomic_value (module String) old_desc.state new_desc.state in
-
+      let state_change = diff_atomic_value (module String) old_desc.processor_state new_desc.processor_state in
       {
         Patch.name = name_change;
         uid = uid_change;
