@@ -470,416 +470,6 @@ let build_patch_field_views
     )
 
 
-(** Loop field specifications *)
-let loop_field_specs : (Clip.Loop.t, Clip.Loop.Patch.t) unified_field_spec list = [
-  { name = "Start Time";
-    get_value = (fun l -> float_value l.start_time);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update float_value p.start_time) };
-  { name = "End Time";
-    get_value = (fun l -> float_value l.end_time);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update float_value p.end_time) };
-  { name = "On";
-    get_value = (fun l -> bool_value l.on);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update bool_value p.on) };
-]
-
-let create_loop_fields = build_value_field_views loop_field_specs ~domain_type:DTLoop
-let create_loop_patch_fields = build_patch_field_views loop_field_specs ~domain_type:DTLoop
-
-
-(** TimeSignature field specifications *)
-let signature_field_specs : (Clip.TimeSignature.t, Clip.TimeSignature.Patch.t) unified_field_spec list = [
-  { name = "Numerator";
-    get_value = (fun s -> int_value s.numer);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update int_value p.numer) };
-  { name = "Denominator";
-    get_value = (fun s -> int_value s.denom);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update int_value p.denom) };
-]
-
-let create_signature_fields = build_value_field_views signature_field_specs ~domain_type:DTSignature
-let create_signature_patch_fields = build_patch_field_views signature_field_specs ~domain_type:DTSignature
-
-(* Default note name style for MIDI notes *)
-let default_note_name_style = Sharp
-
-(** [create_note_item] builds a [item] for a single note change (new type system).
-    @param note_name_style the style to use for note names (Sharp or Flat)
-    @param c the note structured change
-*)
-let create_note_item
-    ?(note_name_style : note_display_style = default_note_name_style)
-    (c : (Clip.MidiNote.t, Clip.MidiNote.Patch.t) structured_change)
-  : item =
-  let open Clip.MidiNote in
-  let field_descs = [
-    FieldDesc {
-      name = "Time";
-      of_parent_value = (fun x -> x.time);
-      of_parent_patch = (fun x -> x.Patch.time);
-      wrapper = float_value;
-    };
-    FieldDesc {
-      name = "Duration";
-      of_parent_value = (fun x -> x.duration);
-      of_parent_patch = (fun x -> x.Patch.duration);
-      wrapper = float_value;
-    };
-    FieldDesc {
-      name = "Velocity";
-      of_parent_value = (fun x -> x.velocity);
-      of_parent_patch = (fun x -> x.Patch.velocity);
-      wrapper = float_value;
-    };
-    FieldDesc {
-      name = "Note";
-      of_parent_value = (fun x -> x.note);
-      of_parent_patch = (fun x -> x.Patch.note);
-      wrapper = int_value;
-    };
-    FieldDesc {
-      name = "Off Velocity";
-      of_parent_value = (fun x -> x.off_velocity);
-      of_parent_patch = (fun x -> x.Patch.off_velocity);
-      wrapper = float_value;
-    };
-  ]
-  in
-  let note_name = match c with
-    | `Added n ->
-      let name = get_note_name_from_int ~style:note_name_style n.note in
-      Printf.sprintf "Note %s (%d)" name n.note
-    | `Removed n ->
-      let name = get_note_name_from_int ~style:note_name_style n.note in
-      Printf.sprintf "Note %s (%d)" name n.note
-    | `Modified _ -> "Note"
-    | `Unchanged -> "Note"
-  in
-  ViewBuilder.build_item_from_fields c ~name:note_name ~domain_type:DTNote ~field_descs
-
-
-(** SampleRef field specifications *)
-let sample_ref_field_specs : (Clip.SampleRef.t, Clip.SampleRef.Patch.t) unified_field_spec list = [
-  { name = "File Path";
-    get_value = (fun sr -> string_value sr.file_path);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.file_path) };
-  { name = "CRC";
-    get_value = (fun sr -> string_value sr.crc);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.crc) };
-  { name = "Last Modified";
-    get_value = (fun sr -> string_value (format_unix_timestamp sr.last_modified_date));
-    get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> string_value (format_unix_timestamp x)) p.last_modified_date) };
-]
-
-let create_sample_ref_fields = build_value_field_views sample_ref_field_specs ~domain_type:DTSampleRef
-let create_sample_ref_patch_fields = build_patch_field_views sample_ref_field_specs ~domain_type:DTSampleRef
-
-
-(** [event_value_to_field_value] converts an Automation.event_value to a field_value *)
-let event_value_to_field_value v =
-  match v with
-  | Automation.FloatEvent f -> Ffloat f
-  | Automation.IntEvent i -> Fint i
-  | Automation.EnumEvent e -> Fint e
-
-(** [event_value_atomic_to_field_value] converts an event_value atomic_update to field_value atomic_update *)
-let event_value_atomic_to_field_value (update : Automation.event_value atomic_update) : field_value atomic_update =
-  match update with
-  | `Modified { oldval; newval } ->
-    `Modified { oldval = event_value_to_field_value oldval; newval = event_value_to_field_value newval }
-  | `Unchanged -> `Unchanged
-
-
-(** [create_events_item] builds a [item] for an envelope event change (new type system).
-    @param c the envelope event structured change
-*)
-let create_events_item
-    (c : (Automation.EnvelopeEvent.t, Automation.EnvelopeEvent.Patch.t) structured_change)
-  : item =
-  let open Automation in
-  let field_descs = [
-    FieldDesc {
-      name = "Time";
-      of_parent_value = (fun x -> x.EnvelopeEvent.time);
-      of_parent_patch = (fun x -> x.EnvelopeEvent.Patch.time);
-      wrapper = float_value;
-    };
-    FieldDesc {
-      name = "Value";
-      of_parent_value = (fun x -> event_value_to_field_value x.EnvelopeEvent.value);
-      of_parent_patch = (fun x -> event_value_atomic_to_field_value x.EnvelopeEvent.Patch.value);
-      wrapper = Fun.id;
-    }
-  ]
-  in
-  ViewBuilder.build_item_from_fields c ~name:"EnvelopeEvent" ~domain_type:DTEvent ~field_descs
-
-
-(* ================== Device View Functions ==================== *)
-
-(** [param_value_atomic_to_field_value] converts a param_value atomic_update to field_value atomic_update *)
-let param_value_atomic_to_field_value (update : Device.param_value atomic_update) : field_value atomic_update =
-  match update with
-  | `Modified { oldval; newval } ->
-    let convert = function
-      | Device.Float f -> Ffloat f
-      | Device.Int i -> Fint i
-      | Device.Bool b -> Fbool b
-      | Device.Enum (e, _) -> Fint e
-    in
-    `Modified { oldval = convert oldval; newval = convert newval }
-  | `Unchanged -> `Unchanged
-
-
-(** [param_value_to_field_value] converts a Device.param_value to a field_value *)
-let param_value_to_field_value (v : Device.param_value) : field_value =
-  match v with
-  | Float f -> Ffloat f
-  | Int i -> Fint i
-  | Bool b -> Fbool b
-  | Enum (e, _) -> Fint e
-
-
-(** [make_generic_param_field_descs] creates field descriptors for types that wrap GenericParam.
-    This function generates the standard Name, Value, Automation, and Modulation field descriptors
-    for any type that has a GenericParam as a base field.
-
-    @param get_base extracts the GenericParam from the parent value type
-    @param get_base_patch extracts the GenericParam.Patch update from the parent patch type
-    @param include_name whether to include the Name field (Macro doesn't use it)
-    @return a list of field descriptors
-*)
-let make_generic_param_field_descs
-    (type t patch)
-    ~(get_base : t -> Device.GenericParam.t)
-    ~(get_base_patch : patch -> Device.GenericParam.Patch.t structured_update)
-    ~(include_name : bool)
-  : (t, patch) field_descriptor list =
-  let module GP = Device.GenericParam in
-  let name_desc =
-    if include_name then
-      [FieldDesc {
-          name = "Name";
-          of_parent_value = (fun x -> (get_base x).name);
-          of_parent_patch = (fun p ->
-              match get_base_patch p with
-              | `Modified _gpp -> `Unchanged  (* name is now just string, not tracking changes *)
-              | `Unchanged -> `Unchanged);
-          wrapper = string_value;
-        }]
-    else []
-  in
-  let value_desc = FieldDesc {
-      name = "Value";
-      of_parent_value = (fun x -> param_value_to_field_value (get_base x).value);
-      of_parent_patch = (fun p ->
-          match get_base_patch p with
-          | `Modified gpp -> param_value_atomic_to_field_value gpp.GP.Patch.value
-          | `Unchanged -> `Unchanged);
-      wrapper = Fun.id;
-    } in
-  let automation_desc = FieldDesc {
-      name = "Automation";
-      of_parent_value = (fun x -> (get_base x).automation);
-      of_parent_patch = (fun p ->
-          match get_base_patch p with
-          | `Modified gpp -> gpp.GP.Patch.automation
-          | `Unchanged -> `Unchanged);
-      wrapper = int_value;
-    } in
-  let modulation_desc = FieldDesc {
-      name = "Modulation";
-      of_parent_value = (fun x -> (get_base x).modulation);
-      of_parent_patch = (fun p ->
-          match get_base_patch p with
-          | `Modified gpp -> gpp.GP.Patch.modulation
-          | `Unchanged -> `Unchanged);
-      wrapper = int_value;
-    } in
-  name_desc @ [value_desc; automation_desc; modulation_desc]
-
-
-(** [get_param_name_from_change] extracts the parameter name from a structured change
-    for types that wrap GenericParam.
-    @param get_base extracts the GenericParam from the parent value type
-    @param get_base_patch extracts the GenericParam.Patch from the patch type
-    @param default_name the fallback name when the specific name cannot be extracted
-    @param c the structured change
-*)
-let get_param_name_from_change
-    (type t patch)
-    ~(get_base : t -> Device.GenericParam.t)
-    ~(get_base_patch : patch -> Device.GenericParam.Patch.t structured_update)
-    ~(default_name : string)
-    (c : (t, patch) structured_change)
-  : string =
-  match c with
-  | `Added v -> (get_base v).Device.GenericParam.name
-  | `Removed v -> (get_base v).Device.GenericParam.name
-  | `Modified p ->
-    (match get_base_patch p with
-     | `Modified gp_patch -> gp_patch.Device.GenericParam.Patch.name
-     | `Unchanged -> default_name)
-  | `Unchanged -> default_name
-
-
-(** [create_device_param_item] builds a [item] for a device parameter change (new type system). *)
-let create_device_param_item
-    (c : (Device.DeviceParam.t, Device.DeviceParam.Patch.t) structured_change)
-  : item =
-  let get_base (x : Device.DeviceParam.t) = x.base in
-  let get_base_patch (p : Device.DeviceParam.Patch.t) = p.base in
-  let field_descs = make_generic_param_field_descs
-      ~get_base ~get_base_patch ~include_name:true
-  in
-  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"Parameter" c in
-  ViewBuilder.build_item_from_fields c ~name:param_name ~domain_type:DTParam ~field_descs
-
-
-(** PresetRef field specifications *)
-let preset_ref_field_specs : (Device.PresetRef.t, Device.PresetRef.Patch.t) unified_field_spec list = [
-  { name = "Name";
-    get_value = (fun pr -> string_value pr.name);
-    get_patch = (fun _ -> `Unchanged) };  (* Name doesn't change in patch *)
-  { name = "Relative Path";
-    get_value = (fun pr -> string_value pr.relative_path);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.relative_path) };
-  { name = "Pack Name";
-    get_value = (fun pr -> string_value pr.pack_name);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.pack_name) };
-]
-
-let create_preset_ref_fields = build_value_field_views preset_ref_field_specs ~domain_type:DTPreset
-let create_preset_ref_patch_fields = build_patch_field_views preset_ref_field_specs ~domain_type:DTPreset
-
-
-(** PatchRef field specifications *)
-let patch_ref_field_specs : (Device.PatchRef.t, Device.PatchRef.Patch.t) unified_field_spec list = [
-  { name = "Name";
-    get_value = (fun pr -> string_value pr.name);
-    get_patch = (fun _ -> `Unchanged) };  (* Name doesn't change in patch *)
-  { name = "Relative Path";
-    get_value = (fun pr -> string_value pr.relative_path);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.relative_path) };
-  { name = "Pack Name";
-    get_value = (fun pr -> string_value pr.pack_name);
-    get_patch = (fun p -> ViewBuilder.map_atomic_update string_value p.pack_name) };
-  { name = "Last Modified";
-    get_value = (fun _ -> Fstring "");  (* Not available in PatchRef.t *)
-    get_patch = (fun p -> ViewBuilder.map_atomic_update (fun x -> string_value (format_unix_timestamp x)) p.last_mod_date) };
-]
-
-let create_patch_ref_fields = build_value_field_views patch_ref_field_specs ~domain_type:DTPreset
-let create_patch_ref_patch_fields = build_patch_field_views patch_ref_field_specs ~domain_type:DTPreset
-
-
-(** [create_plugin_param_item] builds a [item] for a plugin parameter change (new type system). *)
-let create_plugin_param_item
-    (c : (Device.PluginParam.t, Device.PluginParam.Patch.t) structured_change)
-  : item =
-  let get_base (x : Device.PluginParam.t) = x.base in
-  let get_base_patch (p : Device.PluginParam.Patch.t) = p.base in
-  let base_field_descs = make_generic_param_field_descs
-      ~get_base ~get_base_patch ~include_name:true
-  in
-  let field_descs = base_field_descs in
-  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"PluginParam" c in
-  ViewBuilder.build_item_from_fields c ~name:param_name ~domain_type:DTParam ~field_descs
-
-
-(** [create_m4l_param_item] builds a [item] for a Max4Live parameter change (new type system). *)
-let create_m4l_param_item
-    (c : (Device.Max4LiveParam.t, Device.Max4LiveParam.Patch.t) structured_change)
-  : item =
-  let get_base (x : Device.Max4LiveParam.t) = x.base in
-  let get_base_patch (p : Device.Max4LiveParam.Patch.t) = p.base in
-  (* Index field is specific to Max4LiveParam *)
-  let index_field = FieldDesc {
-      name = "Index";
-      of_parent_value = (fun (x : Device.Max4LiveParam.t) -> x.index);
-      of_parent_patch = (fun (p : Device.Max4LiveParam.Patch.t) -> p.index);
-      wrapper = int_value;
-    } in
-  let base_field_descs = make_generic_param_field_descs
-      ~get_base ~get_base_patch ~include_name:true
-  in
-  let field_descs = index_field :: base_field_descs in
-  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"M4LParam" c in
-  ViewBuilder.build_item_from_fields c ~name:param_name ~domain_type:DTParam ~field_descs
-
-
-(** [create_macro_item] builds a [item] for a Macro change (new type system). *)
-let create_macro_item
-    (c : (Device.Macro.t, Device.Macro.Patch.t) structured_change)
-  : item =
-  let get_base (x : Device.Macro.t) = x.base in
-  let get_base_patch (p : Device.Macro.Patch.t) = p.base in
-  (* Macro doesn't display the Name field *)
-  let field_descs = make_generic_param_field_descs
-      ~get_base ~get_base_patch ~include_name:false
-  in
-  ViewBuilder.build_item_from_fields c ~name:"Macro" ~domain_type:DTMacro ~field_descs
-
-
-(** [create_snapshot_item] builds a [item] for a Snapshot change (new type system). *)
-let create_snapshot_item
-    (c : (Device.Snapshot.t, Device.Snapshot.Patch.t) structured_change)
-  : item =
-  let open Device.Snapshot in
-  let field_descs = [
-    FieldDesc {
-      name = "Name";
-      of_parent_value = (fun x -> x.name);
-      of_parent_patch = (fun x -> x.Patch.name);
-      wrapper = string_value;
-    };
-  ]
-  in
-  let snapshot_name = match c with
-    | `Added s -> s.name
-    | `Removed s -> s.name
-    | `Modified _ -> "Snapshot"
-    | `Unchanged -> "Snapshot"
-  in
-  ViewBuilder.build_item_from_fields c ~name:snapshot_name ~domain_type:DTSnapshot ~field_descs
-
-
-(* ==================== Device View Template Infrastructure ==================== *)
-
-(** [build_device_section_name] generates the section name for a device.
-    Format: "device_name (#id): display_name" for detailed device identification.
-*)
-let build_device_section_name
-    (type device patch)
-    ~(device_type_name : string)
-    ~(get_device_name : device -> string)
-    ~(get_device_id : device -> int)
-    ~(get_display_name : device -> string)
-    ~(get_id_from_patch : patch -> int)
-    ~(get_name_from_patch : patch -> string)
-    ~(get_display_name_patch : patch -> string atomic_update)
-    (c : (device, patch) structured_change)
-  : string =
-  let get_display_name_from_patch patch =
-    match get_display_name_patch patch with
-    | `Modified { newval; _ } -> newval
-    | `Unchanged -> ""
-  in
-  match c with
-  | `Added d ->
-    Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d)
-      (get_display_name d)
-  | `Removed d ->
-    Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d)
-      (get_display_name d)
-  | `Modified patch ->
-    let display = get_display_name_from_patch patch in
-    let display_name = if display = "" then get_name_from_patch patch else display in
-    Printf.sprintf "%s (#%d): %s" (get_name_from_patch patch) (get_id_from_patch patch)
-      display_name
-  | `Unchanged -> device_type_name
-
-
 (** A specification for building a child section of an Item *)
 type ('parent, 'patch) section_spec = {
   name : string;
@@ -1043,6 +633,370 @@ let build_item_from_specs_opt
   : item option =
   let item = build_item_from_specs ~name ~domain_type ~specs c in
   if item.children = [] then None else Some item
+
+
+(** Helper functions for creating field descriptors with common wrappers *)
+let make_spec
+    (wrapper : 'a -> field_value)
+    (name : string)
+    (get_v : 'v -> 'a)
+    (get_p : 'p -> 'a atomic_update)
+  : ('v, 'p) unified_field_spec =
+  {
+    name;
+    get_value = (fun v -> wrapper (get_v v));
+    get_patch = (fun p -> ViewBuilder.map_atomic_update wrapper (get_p p));
+  }
+
+(** [make_spec_const wrapper name get_v] creates a unified field spec for a value that never changes in a patch (e.g. name). *)
+let make_spec_const
+    (wrapper : 'a -> field_value)
+    (name : string)
+    (get_v : 'v -> 'a)
+  : ('v, 'p) unified_field_spec =
+  {
+    name;
+    get_value = (fun v -> wrapper (get_v v));
+    get_patch = (fun _ -> `Unchanged);
+  }
+
+let make_int n v p = make_spec int_value n v p
+let make_float n v p = make_spec float_value n v p
+let make_string n v p = make_spec string_value n v p
+let make_bool n v p = make_spec bool_value n v p
+
+let make_string_const n v = make_spec_const string_value n v
+
+
+(** Loop field specifications *)
+let loop_field_specs : (Clip.Loop.t, Clip.Loop.Patch.t) unified_field_spec list = [
+  make_float "Start Time" (fun (l : Clip.Loop.t) -> l.start_time) (fun (p : Clip.Loop.Patch.t) -> p.start_time);
+  make_float "End Time" (fun (l : Clip.Loop.t) -> l.end_time) (fun (p : Clip.Loop.Patch.t) -> p.end_time);
+  make_bool "On" (fun (l : Clip.Loop.t) -> l.on) (fun (p : Clip.Loop.Patch.t) -> p.on);
+]
+
+let create_loop_fields = build_value_field_views loop_field_specs ~domain_type:DTLoop
+let create_loop_patch_fields = build_patch_field_views loop_field_specs ~domain_type:DTLoop
+
+
+(** TimeSignature field specifications *)
+let signature_field_specs : (Clip.TimeSignature.t, Clip.TimeSignature.Patch.t) unified_field_spec list = [
+  make_int "Numerator" (fun (s : Clip.TimeSignature.t) -> s.numer) (fun (p : Clip.TimeSignature.Patch.t) -> p.numer);
+  make_int "Denominator" (fun (s : Clip.TimeSignature.t) -> s.denom) (fun (p : Clip.TimeSignature.Patch.t) -> p.denom);
+]
+
+let create_signature_fields = build_value_field_views signature_field_specs ~domain_type:DTSignature
+let create_signature_patch_fields = build_patch_field_views signature_field_specs ~domain_type:DTSignature
+
+(* Default note name style for MIDI notes *)
+let default_note_name_style = Sharp
+
+(** [create_note_item] builds a [item] for a single note change (new type system).
+    @param note_name_style the style to use for note names (Sharp or Flat)
+    @param c the note structured change
+*)
+let create_note_item
+    ?(note_name_style : note_display_style = default_note_name_style)
+    (c : (Clip.MidiNote.t, Clip.MidiNote.Patch.t) structured_change)
+  : item =
+  let open Clip.MidiNote in
+  let specs = [
+    make_float "Time" (fun (x : t) -> x.time) (fun (x : Patch.t) -> x.time);
+    make_float "Duration" (fun (x : t) -> x.duration) (fun (x : Patch.t) -> x.duration);
+    make_float "Velocity" (fun (x : t) -> x.velocity) (fun (x : Patch.t) -> x.velocity);
+    make_int "Note" (fun (x : t) -> x.note) (fun (x : Patch.t) -> x.note);
+    make_float "Off Velocity" (fun (x : t) -> x.off_velocity) (fun (x : Patch.t) -> x.off_velocity);
+  ]
+  in
+  let note_name = match c with
+    | `Added n ->
+      let name = get_note_name_from_int ~style:note_name_style n.note in
+      Printf.sprintf "Note %s (%d)" name n.note
+    | `Removed n ->
+      let name = get_note_name_from_int ~style:note_name_style n.note in
+      Printf.sprintf "Note %s (%d)" name n.note
+    | `Modified _ -> "Note"
+    | `Unchanged -> "Note"
+  in
+  let section_spec = Spec.inline_fields ~specs ~domain_type:DTNote in
+  build_item_from_specs ~name:note_name ~domain_type:DTNote ~specs:[section_spec] c
+
+
+(** SampleRef field specifications *)
+let sample_ref_field_specs : (Clip.SampleRef.t, Clip.SampleRef.Patch.t) unified_field_spec list = [
+  make_string "File Path" (fun (sr : Clip.SampleRef.t) -> sr.file_path) (fun (p : Clip.SampleRef.Patch.t) -> p.file_path);
+  make_string "CRC" (fun (sr : Clip.SampleRef.t) -> sr.crc) (fun (p : Clip.SampleRef.Patch.t) -> p.crc);
+  make_spec (fun x -> string_value (format_unix_timestamp x)) "Last Modified"
+    (fun (sr : Clip.SampleRef.t) -> sr.last_modified_date) (fun (p : Clip.SampleRef.Patch.t) -> p.last_modified_date);
+]
+
+let create_sample_ref_fields = build_value_field_views sample_ref_field_specs ~domain_type:DTSampleRef
+let create_sample_ref_patch_fields = build_patch_field_views sample_ref_field_specs ~domain_type:DTSampleRef
+
+
+(** [event_value_to_field_value] converts an Automation.event_value to a field_value *)
+let event_value_to_field_value v =
+  match v with
+  | Automation.FloatEvent f -> Ffloat f
+  | Automation.IntEvent i -> Fint i
+  | Automation.EnumEvent e -> Fint e
+
+(** [event_value_atomic_to_field_value] converts an event_value atomic_update to field_value atomic_update *)
+let event_value_atomic_to_field_value (update : Automation.event_value atomic_update) : field_value atomic_update =
+  match update with
+  | `Modified { oldval; newval } ->
+    `Modified { oldval = event_value_to_field_value oldval; newval = event_value_to_field_value newval }
+  | `Unchanged -> `Unchanged
+
+
+(** [create_events_item] builds a [item] for an envelope event change (new type system).
+    @param c the envelope event structured change
+*)
+let create_events_item
+    (c : (Automation.EnvelopeEvent.t, Automation.EnvelopeEvent.Patch.t) structured_change)
+  : item =
+  let open Automation in
+  let specs = [
+    make_float "Time" (fun (x : EnvelopeEvent.t) -> x.time) (fun (x : EnvelopeEvent.Patch.t) -> x.time);
+    make_spec event_value_to_field_value "Value"
+      (fun (x : EnvelopeEvent.t) -> x.value) (fun (x : EnvelopeEvent.Patch.t) -> x.value);
+  ]
+  in
+  let section_spec = Spec.inline_fields ~specs ~domain_type:DTEvent in
+  build_item_from_specs ~name:"EnvelopeEvent" ~domain_type:DTEvent ~specs:[section_spec] c
+
+
+(* ================== Device View Functions ==================== *)
+
+(** [param_value_atomic_to_field_value] converts a param_value atomic_update to field_value atomic_update *)
+let param_value_atomic_to_field_value (update : Device.param_value atomic_update) : field_value atomic_update =
+  match update with
+  | `Modified { oldval; newval } ->
+    let convert = function
+      | Device.Float f -> Ffloat f
+      | Device.Int i -> Fint i
+      | Device.Bool b -> Fbool b
+      | Device.Enum (e, _) -> Fint e
+    in
+    `Modified { oldval = convert oldval; newval = convert newval }
+  | `Unchanged -> `Unchanged
+
+
+(** [param_value_to_field_value] converts a Device.param_value to a field_value *)
+let param_value_to_field_value (v : Device.param_value) : field_value =
+  match v with
+  | Float f -> Ffloat f
+  | Int i -> Fint i
+  | Bool b -> Fbool b
+  | Enum (e, _) -> Fint e
+
+
+(** [make_generic_param_field_descs] creates field descriptors for types that wrap GenericParam.
+    This function generates the standard Name, Value, Automation, and Modulation field descriptors
+    for any type that has a GenericParam as a base field.
+
+    @param get_base extracts the GenericParam from the parent value type
+    @param get_base_patch extracts the GenericParam.Patch update from the parent patch type
+    @param include_name whether to include the Name field (Macro doesn't use it)
+    @return a list of field descriptors
+*)
+let make_generic_param_field_descs
+    (type t patch)
+    ~(get_base : t -> Device.GenericParam.t)
+    ~(get_base_patch : patch -> Device.GenericParam.Patch.t structured_update)
+    ~(include_name : bool)
+  : (t, patch) unified_field_spec list =
+  let module GP = Device.GenericParam in
+  let name_desc =
+    if include_name then
+      [make_string_const "Name" (fun x -> (get_base x).name)]
+    else []
+  in
+  let value_desc = make_spec param_value_to_field_value "Value"
+      (fun x -> (get_base x).value)
+      (fun p -> match get_base_patch p with
+         | `Modified gpp -> gpp.GP.Patch.value
+         | `Unchanged -> `Unchanged)
+  in
+  let automation_desc = make_int "Automation"
+      (fun x -> (get_base x).automation)
+      (fun p -> match get_base_patch p with
+         | `Modified gpp -> gpp.GP.Patch.automation
+         | `Unchanged -> `Unchanged)
+  in
+  let modulation_desc = make_int "Modulation"
+      (fun x -> (get_base x).modulation)
+      (fun p -> match get_base_patch p with
+         | `Modified gpp -> gpp.GP.Patch.modulation
+         | `Unchanged -> `Unchanged)
+  in
+  name_desc @ [value_desc; automation_desc; modulation_desc]
+
+
+(** [get_param_name_from_change] extracts the parameter name from a structured change
+    for types that wrap GenericParam.
+    @param get_base extracts the GenericParam from the parent value type
+    @param get_base_patch extracts the GenericParam.Patch from the patch type
+    @param default_name the fallback name when the specific name cannot be extracted
+    @param c the structured change
+*)
+let get_param_name_from_change
+    (type t patch)
+    ~(get_base : t -> Device.GenericParam.t)
+    ~(get_base_patch : patch -> Device.GenericParam.Patch.t structured_update)
+    ~(default_name : string)
+    (c : (t, patch) structured_change)
+  : string =
+  match c with
+  | `Added v -> (get_base v).Device.GenericParam.name
+  | `Removed v -> (get_base v).Device.GenericParam.name
+  | `Modified p ->
+    (match get_base_patch p with
+     | `Modified gp_patch -> gp_patch.Device.GenericParam.Patch.name
+     | `Unchanged -> default_name)
+  | `Unchanged -> default_name
+
+
+(** [create_device_param_item] builds a [item] for a device parameter change (new type system). *)
+let create_device_param_item
+    (c : (Device.DeviceParam.t, Device.DeviceParam.Patch.t) structured_change)
+  : item =
+  let get_base (x : Device.DeviceParam.t) = x.base in
+  let get_base_patch (p : Device.DeviceParam.Patch.t) = p.base in
+  let specs = make_generic_param_field_descs
+      ~get_base ~get_base_patch ~include_name:true
+  in
+  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"Parameter" c in
+  let section_spec = Spec.inline_fields ~specs ~domain_type:DTParam in
+  build_item_from_specs ~name:param_name ~domain_type:DTParam ~specs:[section_spec] c
+
+
+(** PresetRef field specifications *)
+let preset_ref_field_specs : (Device.PresetRef.t, Device.PresetRef.Patch.t) unified_field_spec list = [
+  make_string_const "Name" (fun (pr : Device.PresetRef.t) -> pr.name);
+  make_string "Relative Path" (fun (pr : Device.PresetRef.t) -> pr.relative_path) (fun (p : Device.PresetRef.Patch.t) -> p.relative_path);
+  make_string "Pack Name" (fun (pr : Device.PresetRef.t) -> pr.pack_name) (fun (p : Device.PresetRef.Patch.t) -> p.pack_name);
+]
+
+let create_preset_ref_fields = build_value_field_views preset_ref_field_specs ~domain_type:DTPreset
+let create_preset_ref_patch_fields = build_patch_field_views preset_ref_field_specs ~domain_type:DTPreset
+
+
+(** PatchRef field specifications *)
+let patch_ref_field_specs : (Device.PatchRef.t, Device.PatchRef.Patch.t) unified_field_spec list = [
+  make_string_const "Name" (fun (pr : Device.PatchRef.t) -> pr.name);
+  make_string "Relative Path" (fun (pr : Device.PatchRef.t) -> pr.relative_path) (fun (p : Device.PatchRef.Patch.t) -> p.relative_path);
+  make_string "Pack Name" (fun (pr : Device.PatchRef.t) -> pr.pack_name) (fun (p : Device.PatchRef.Patch.t) -> p.pack_name);
+  make_spec (fun x -> string_value (format_unix_timestamp x)) "Last Modified"
+    (fun (_ : Device.PatchRef.t) -> 0)  (* Not available in PatchRef.t, using 0 as placeholder since it won't be displayed unless changed *)
+    (fun (p : Device.PatchRef.Patch.t) -> p.last_mod_date);
+]
+
+let create_patch_ref_fields = build_value_field_views patch_ref_field_specs ~domain_type:DTPreset
+let create_patch_ref_patch_fields = build_patch_field_views patch_ref_field_specs ~domain_type:DTPreset
+
+
+(** [create_plugin_param_item] builds a [item] for a plugin parameter change (new type system). *)
+let create_plugin_param_item
+    (c : (Device.PluginParam.t, Device.PluginParam.Patch.t) structured_change)
+  : item =
+  let get_base (x : Device.PluginParam.t) = x.base in
+  let get_base_patch (p : Device.PluginParam.Patch.t) = p.base in
+  let specs = make_generic_param_field_descs
+      ~get_base ~get_base_patch ~include_name:true
+  in
+  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"PluginParam" c in
+  let section_spec = Spec.inline_fields ~specs ~domain_type:DTParam in
+  build_item_from_specs ~name:param_name ~domain_type:DTParam ~specs:[section_spec] c
+
+
+(** [create_m4l_param_item] builds a [item] for a Max4Live parameter change (new type system). *)
+let create_m4l_param_item
+    (c : (Device.Max4LiveParam.t, Device.Max4LiveParam.Patch.t) structured_change)
+  : item =
+  let get_base (x : Device.Max4LiveParam.t) = x.base in
+  let get_base_patch (p : Device.Max4LiveParam.Patch.t) = p.base in
+  (* Index field is specific to Max4LiveParam *)
+  let index_field = make_int "Index"
+      (fun (x : Device.Max4LiveParam.t) -> x.index)
+      (fun (p : Device.Max4LiveParam.Patch.t) -> p.index)
+  in
+  let base_specs = make_generic_param_field_descs
+      ~get_base ~get_base_patch ~include_name:true
+  in
+  let specs = index_field :: base_specs in
+  let param_name = get_param_name_from_change ~get_base ~get_base_patch ~default_name:"M4LParam" c in
+  let section_spec = Spec.inline_fields ~specs ~domain_type:DTParam in
+  build_item_from_specs ~name:param_name ~domain_type:DTParam ~specs:[section_spec] c
+
+
+(** [create_macro_item] builds a [item] for a Macro change (new type system). *)
+let create_macro_item
+    (c : (Device.Macro.t, Device.Macro.Patch.t) structured_change)
+  : item =
+  let get_base (x : Device.Macro.t) = x.base in
+  let get_base_patch (p : Device.Macro.Patch.t) = p.base in
+  (* Macro doesn't display the Name field *)
+  let specs = make_generic_param_field_descs
+      ~get_base ~get_base_patch ~include_name:false
+  in
+  let section_spec = Spec.inline_fields ~specs ~domain_type:DTMacro in
+  build_item_from_specs ~name:"Macro" ~domain_type:DTMacro ~specs:[section_spec] c
+
+
+(** [create_snapshot_item] builds a [item] for a Snapshot change (new type system). *)
+let create_snapshot_item
+    (c : (Device.Snapshot.t, Device.Snapshot.Patch.t) structured_change)
+  : item =
+  let open Device.Snapshot in
+  let specs = [
+    make_string "Name" (fun (x : t) -> x.name) (fun (x : Patch.t) -> x.Patch.name);
+  ]
+  in
+  let snapshot_name = match c with
+    | `Added s -> s.name
+    | `Removed s -> s.name
+    | `Modified _ -> "Snapshot"
+    | `Unchanged -> "Snapshot"
+  in
+  let section_spec = Spec.inline_fields ~specs ~domain_type:DTSnapshot in
+  build_item_from_specs ~name:snapshot_name ~domain_type:DTSnapshot ~specs:[section_spec] c
+
+
+(* ==================== Device View Template Infrastructure ==================== *)
+
+(** [build_device_section_name] generates the section name for a device.
+    Format: "device_name (#id): display_name" for detailed device identification.
+*)
+let build_device_section_name
+    (type device patch)
+    ~(device_type_name : string)
+    ~(get_device_name : device -> string)
+    ~(get_device_id : device -> int)
+    ~(get_display_name : device -> string)
+    ~(get_id_from_patch : patch -> int)
+    ~(get_name_from_patch : patch -> string)
+    ~(get_display_name_patch : patch -> string atomic_update)
+    (c : (device, patch) structured_change)
+  : string =
+  let get_display_name_from_patch patch =
+    match get_display_name_patch patch with
+    | `Modified { newval; _ } -> newval
+    | `Unchanged -> ""
+  in
+  match c with
+  | `Added d ->
+    Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d)
+      (get_display_name d)
+  | `Removed d ->
+    Printf.sprintf "%s (#%d): %s" (get_device_name d) (get_device_id d)
+      (get_display_name d)
+  | `Modified patch ->
+    let display = get_display_name_from_patch patch in
+    let display_name = if display = "" then get_name_from_patch patch else display in
+    Printf.sprintf "%s (#%d): %s" (get_name_from_patch patch) (get_id_from_patch patch)
+      display_name
+  | `Unchanged -> device_type_name
 
 
 (* ==================== MidiClip Specs (using new infrastructure) ==================== *)
