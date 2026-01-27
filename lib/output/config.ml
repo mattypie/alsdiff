@@ -20,18 +20,26 @@ type change_breakdown = {
 (* Per-change-type override for domain types *)
 (* None means use the base change_type default *)
 type per_change_override = {
-  added : detail_level option;
-  removed : detail_level option;
-  modified : detail_level option;
-  unchanged : detail_level option;
+  added : detail_level option; [@ref "detail_level"]
+  removed : detail_level option; [@ref "detail_level"]
+  modified : detail_level option; [@ref "detail_level"]
+  unchanged : detail_level option; [@ref "detail_level"]
+}
+[@@deriving yojson, jsonschema]
+
+(* Type-based override entry - wraps domain_type and per_change_override *)
+(* Using a record instead of tuple enables [@ref ...] attribute for cleaner JSON schema *)
+type type_override_entry = {
+  domain_type : domain_type; [@ref "domain_type"]
+  override : per_change_override; [@ref "per_change_override"]
 }
 [@@deriving yojson, jsonschema]
 
 type detail_config = {
-  added : detail_level;
-  removed : detail_level;
-  modified : detail_level;
-  unchanged : detail_level;
+  added : detail_level; [@ref "detail_level"]
+  removed : detail_level; [@ref "detail_level"]
+  modified : detail_level; [@ref "detail_level"]
+  unchanged : detail_level; [@ref "detail_level"]
 
   (* Type-based overrides with per-change control.
      Each domain type can optionally override detail levels for specific change types.
@@ -39,7 +47,7 @@ type detail_config = {
      Use `override ~added:Full ~removed:Summary ()` for fine-grained control.
      None means use the base change_type default.
   *)
-  type_overrides : (domain_type * per_change_override) list;
+  type_overrides : type_override_entry list;
 
   max_collection_items : int option;
   show_unchanged_fields : bool;
@@ -51,7 +59,7 @@ type detail_config = {
   prefix_unchanged : string;
 
   (* Note name display style for MIDI notes *)
-  note_name_style : note_display_style;
+  note_name_style : note_display_style; [@ref "note_display_style"]
 
   (* Indentation width for rendered output (number of spaces) *)
   indent_width : int;
@@ -96,9 +104,10 @@ let get_detail_level_by_change (cfg : detail_config) (ct : change_type) : detail
 (* Type-based control takes precedence over change-type control *)
 let get_effective_detail (cfg : detail_config) (ct : change_type) (dt : domain_type) : detail_level =
   (* Step 1: Check type-specific override *)
-  match List.assoc_opt dt cfg.type_overrides with
-  | Some overrides ->
+  match List.find_opt (fun entry -> entry.domain_type = dt) cfg.type_overrides with
+  | Some entry ->
     (* Step 2: Check for change-specific override within this type *)
+    let overrides = entry.override in
     (match ct with
      | Added -> begin match overrides.added with
          | Some level -> level
@@ -317,16 +326,16 @@ let compact = {
   (* Key: show first-level structure for important types *)
   type_overrides = [
     (* Tracks: show track sections (Clips, Mixer, Devices, etc.) *)
-    (DTTrack, uniform_override Compact);
+    { domain_type = DTTrack; override = uniform_override Compact; };
 
     (* Clips: show clip structure (Loop, Notes, TimeSignature, etc.) *)
-    (DTClip, uniform_override Compact);
+    { domain_type = DTClip; override = uniform_override Compact; };
 
     (* Devices: show device structure (Parameters, Preset, etc.) *)
-    (DTDevice, uniform_override Compact);
+    { domain_type = DTDevice; override = uniform_override Compact; };
 
     (* LiveSet: show top-level structure *)
-    (DTLiveset, uniform_override Compact);
+    { domain_type = DTLiveset; override = uniform_override Compact; };
   ];
 
   (* Limit output to prevent overwhelming - more than quiet (10) but bounded *)
@@ -388,7 +397,7 @@ let quiet = {
   removed = Summary;
   modified = Summary;           (* Compact *)
   unchanged = Ignore;
-  type_overrides = [(DTLiveset, uniform_override Compact)];  (* Show LiveSet sub-views, but children stay in Summary *)
+  type_overrides = [{ domain_type = DTLiveset; override = uniform_override Compact; }];  (* Show LiveSet sub-views, but children stay in Summary *)
   max_collection_items = Some 10;
   show_unchanged_fields = false;
   prefix_added = "+";
@@ -427,31 +436,31 @@ let mixing = {
   (* Type-specific overrides for mixing workflow *)
   type_overrides = [
     (* Clips: summary only - stem tracks don't change clip content/position *)
-    (DTClip, uniform_override Summary);
+    { domain_type = DTClip; override = uniform_override Summary; };
 
     (* Automations: full details - critical for mixing adjustments *)
-    (DTAutomation, uniform_override Full);
+    { domain_type = DTAutomation; override = uniform_override Full; };
 
     (* Devices: full details - plugin changes are important *)
-    (DTDevice, uniform_override Full);
+    { domain_type = DTDevice; override = uniform_override Full; };
 
     (* Mixer: full details - volume/pan/mute/solo are core mixing concerns *)
-    (DTMixer, uniform_override Full);
+    { domain_type = DTMixer; override = uniform_override Full; };
 
     (* Parameters: show in context *)
-    (DTParam, uniform_override Full);
+    { domain_type = DTParam; override = uniform_override Full; };
 
     (* Routing: compact overview *)
-    (DTRouting, uniform_override Compact);
+    { domain_type = DTRouting; override = uniform_override Compact; };
 
     (* Sends: summary for send routing *)
-    (DTSend, uniform_override Summary);
+    { domain_type = DTSend; override = uniform_override Summary; };
 
     (* Liveset: compact structure overview *)
-    (DTLiveset, uniform_override Compact);
+    { domain_type = DTLiveset; override = uniform_override Compact; };
 
     (* Tracks: compact structure with sections *)
-    (DTTrack, uniform_override Compact);
+    { domain_type = DTTrack; override = uniform_override Compact; };
   ];
 
   (* Allow more items for automation-heavy workflows *)
@@ -485,29 +494,29 @@ let composer = {
   (* Type-specific overrides - show ONLY clips *)
   type_overrides = [
     (* Clips: full details for composition work *)
-    (DTClip, uniform_override Full);
+    { domain_type = DTClip; override = uniform_override Full; };
 
     (* Tracks: show structure but we'll filter the sections *)
-    (DTTrack, uniform_override Compact);
+    { domain_type = DTTrack; override = uniform_override Compact; };
 
     (* Hide all mixing/engineering sections *)
-    (DTMixer, uniform_override Ignore);
-    (DTDevice, uniform_override Ignore);
-    (DTAutomation, uniform_override Ignore);
-    (DTRouting, uniform_override Ignore);
+    { domain_type = DTMixer; override = uniform_override Ignore; };
+    { domain_type = DTDevice; override = uniform_override Ignore; };
+    { domain_type = DTAutomation; override = uniform_override Ignore; };
+    { domain_type = DTRouting; override = uniform_override Ignore; };
 
     (* Hide other domain types *)
-    (DTLocator, uniform_override Ignore);
-    (DTParam, uniform_override Ignore);
-    (DTSend, uniform_override Ignore);
-    (DTPreset, uniform_override Ignore);
-    (DTMacro, uniform_override Ignore);
-    (DTSnapshot, uniform_override Ignore);
-    (DTVersion, uniform_override Ignore);
-    (DTOther, uniform_override Ignore);
+    { domain_type = DTLocator; override = uniform_override Ignore; };
+    { domain_type = DTParam; override = uniform_override Ignore; };
+    { domain_type = DTSend; override = uniform_override Ignore; };
+    { domain_type = DTPreset; override = uniform_override Ignore; };
+    { domain_type = DTMacro; override = uniform_override Ignore; };
+    { domain_type = DTSnapshot; override = uniform_override Ignore; };
+    { domain_type = DTVersion; override = uniform_override Ignore; };
+    { domain_type = DTOther; override = uniform_override Ignore; };
 
     (* Liveset: show minimal structure *)
-    (DTLiveset, uniform_override Compact);
+    { domain_type = DTLiveset; override = uniform_override Compact; };
   ];
 
   (* No limit - composers need to see ALL clips in their arrangements *)
@@ -544,8 +553,8 @@ let with_prefixes ~(added:string) ~(removed:string) ~(modified:string) ~(unchang
 (* Note: Pass None (not passing the argument) to preserve existing value *)
 let with_type_override cfg dt
     ~(added:detail_level option option) ~(removed:detail_level option option) ~(modified:detail_level option option) ~(unchanged:detail_level option option) =
-  let existing = match List.assoc_opt dt cfg.type_overrides with
-    | Some ov -> ov
+  let existing = match List.find_opt (fun e -> e.domain_type = dt) cfg.type_overrides with
+    | Some entry -> entry.override
     | None -> no_override ()
   in
   (* Merge options: Some (Some v) means set to v, Some None means set to None, None means keep existing *)
@@ -557,8 +566,8 @@ let with_type_override cfg dt
       ()
   in
   (* Remove old entry if exists, add new one *)
-  let filtered = List.filter (fun (d, _) -> d <> dt) cfg.type_overrides in
-  { cfg with type_overrides = (dt, new_override) :: filtered }
+  let filtered = List.filter (fun e -> e.domain_type <> dt) cfg.type_overrides in
+  { cfg with type_overrides = { domain_type = dt; override = new_override } :: filtered }
 
 (* Helper: Convert domain_type to string for debugging/validation *)
 let domain_type_to_string (dt : domain_type) : string =
@@ -588,10 +597,10 @@ let domain_type_to_string (dt : domain_type) : string =
 (* Returns list of warning messages *)
 let validate_config (cfg : detail_config) : string list =
   let override_warnings = cfg.type_overrides
-    |> List.filter_map (fun ((dt : domain_type), (ov : per_change_override)) ->
-        if ov.added = None && ov.removed = None && ov.modified = None && ov.unchanged = None then
+    |> List.filter_map (fun (entry : type_override_entry) ->
+        if entry.override.added = None && entry.override.removed = None && entry.override.modified = None && entry.override.unchanged = None then
           Some (Printf.sprintf "Type override for %s has all None values (no effect)"
-                  (domain_type_to_string dt))
+                  (domain_type_to_string entry.domain_type))
         else
           None) in
   let indent_warnings =
@@ -632,6 +641,7 @@ let detail_config_json_schema () : Yojson.Basic.t =
         ("domain_type", View_model.domain_type_jsonschema);
         ("detail_level", detail_level_jsonschema);
         ("per_change_override", per_change_override_jsonschema);
+        ("type_override_entry", type_override_entry_jsonschema);
         ("note_display_style", View_model.note_display_style_jsonschema);
       ]
       detail_config_jsonschema

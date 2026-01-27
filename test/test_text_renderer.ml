@@ -144,11 +144,11 @@ let test_nested_type_overrides () =
     added = Summary;
     removed = Summary;
     type_overrides = [
-      (DTDevice, override
-         ~added:(Some Full)
-         ~removed:(Some Summary)
-         ~modified:(Some Full)
-         ());
+      { domain_type = DTDevice; override = override
+                                    ~added:(Some Full)
+                                    ~removed:(Some Summary)
+                                    ~modified:(Some Full)
+                                    (); };
     ];
   } in
   (* Verify: Added Device = Full *)
@@ -167,7 +167,7 @@ let test_override_with_none () =
   let cfg = {
     full with
     type_overrides = [
-      (DTDevice, override ~added:(Some Full) ~removed:None ());
+      { domain_type = DTDevice; override = override ~added:(Some Full) ~removed:None (); };
     ];
   } in
   (* Added Device = Full (explicit override) *)
@@ -180,7 +180,7 @@ let test_uniform_override () =
   let cfg = {
     compact with
     type_overrides = [
-      (DTClip, uniform_override Summary);
+      { domain_type = DTClip; override = uniform_override Summary; };
     ];
   } in
   (* All Clip changes = Summary *)
@@ -217,7 +217,7 @@ let test_validation () =
   let cfg = {
     full with
     type_overrides = [
-      (DTDevice, override ());  (* All None - should warn *)
+      { domain_type = DTDevice; override = override (); };  (* All None - should warn *)
     ];
   } in
   let warnings = validate_config cfg in
@@ -231,9 +231,9 @@ let test_edge_cases () =
   let cfg = {
     compact with
     type_overrides = [
-      (DTDevice, uniform_override Full);
-      (DTClip, uniform_override Summary);
-      (DTNote, uniform_override Ignore);
+      { domain_type = DTDevice; override = uniform_override Full; };
+      { domain_type = DTClip; override = uniform_override Summary; };
+      { domain_type = DTNote; override = uniform_override Ignore; };
     ];
   } in
   Alcotest.(check bool) "added device" true (get_effective_detail cfg Added DTDevice = Full);
@@ -248,7 +248,7 @@ let test_rendering_with_nested_overrides () =
   let cfg = {
     compact with
     type_overrides = [
-      (DTDevice, override ~added:(Some Full) ~removed:(Some Summary) ());
+      { domain_type = DTDevice; override = override ~added:(Some Full) ~removed:(Some Summary) (); };
     ];
   } in
 
@@ -365,7 +365,7 @@ let test_inline_level_resolution () =
   let cfg = {
     compact with
     type_overrides = [
-      (DTNote, uniform_override Inline);
+      { domain_type = DTNote; override = uniform_override Inline; };
     ];
   } in
   Alcotest.(check bool) "note uses inline" true (get_effective_detail cfg Added DTNote = Inline);

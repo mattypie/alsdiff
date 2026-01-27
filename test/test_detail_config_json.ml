@@ -72,12 +72,12 @@ let test_detail_config_with_overrides () =
   let custom_cfg = {
     compact with
     type_overrides = [
-      (DTDevice, {
-          added = Some Full;
-          removed = Some Summary;
-          modified = Some Compact;
-          unchanged = Some Ignore;
-        });
+      { domain_type = DTDevice; override = {
+            added = Some Full;
+            removed = Some Summary;
+            modified = Some Compact;
+            unchanged = Some Ignore;
+          }; };
     ];
     max_collection_items = Some 100;
     show_unchanged_fields = true;
@@ -85,13 +85,13 @@ let test_detail_config_with_overrides () =
   let json = detail_config_to_yojson custom_cfg in
   match detail_config_of_yojson json with
   | Ok parsed ->
-    Alcotest.(check int) "type_overrides length" 1 (List.length parsed.type_overrides);
-    let device_override = List.assoc_opt DTDevice parsed.type_overrides in
+    Alcotest.(check int) "type_overrides length" 1 (Stdlib.List.length parsed.type_overrides);
+    let device_entry = Stdlib.List.find_opt (fun (e : Alsdiff_output.Config.type_override_entry) -> e.Alsdiff_output.Config.domain_type = DTDevice) parsed.type_overrides in
     Alcotest.(check bool) "device override exists"
-      (Option.is_some device_override) true;
-    (match device_override with
-     | Some ov ->
-       (match ov.added, Some Full with
+      (Option.is_some device_entry) true;
+    (match device_entry with
+     | Some entry ->
+       (match entry.override.added, Some Full with
         | Some a, Some b -> Alcotest.(check bool) "device override added" (a = b) true
         | _ -> Alcotest.failf "device override added mismatch")
      | None -> Alcotest.failf "device override not found");
