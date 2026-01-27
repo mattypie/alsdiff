@@ -252,6 +252,39 @@ let test_validate_invalid_json_string () =
   | Ok () -> Alcotest.failf "Invalid JSON should fail"
   | Error _ -> ()  (* Expected *)
 
+let test_validate_business_logic_warnings () =
+  (* Test that business logic validation catches invalid indent_width *)
+  let cfg_with_invalid_indent = {
+    compact with
+    indent_width = -1;  (* Invalid - must be >= 0 *)
+    max_collection_items = Some (-2);  (* Invalid - None or Some >= 0 *)
+  } in
+  (* Write config to temp file *)
+  let temp_file = Filename.temp_file "alsdiff_test_config_" ".json" in
+  let json = detail_config_to_yojson cfg_with_invalid_indent in
+  let json_str = Yojson.Safe.pretty_to_string json in
+  let oc = open_out temp_file in
+  output_string oc json_str;
+  close_out oc;
+  (* Validate and expect warning about invalid indent_width *)
+  let result = validate_config_file temp_file in
+  (* Clean up temp file *)
+  (try Sys.remove temp_file with Sys_error _ -> ());
+  match result with
+  | Ok () -> Alcotest.failf "Config with invalid indent_width should fail validation"
+  | Error msg ->
+    (* Check error message contains expected warning *)
+    Alcotest.(check bool) "error contains 'indent_width'"
+      true (Re.execp (Re.compile (Re.str "indent_width")) msg);
+    Alcotest.(check bool) "error contains '>= 0'"
+      true (Re.execp (Re.compile (Re.str ">= 0")) msg);
+
+    Alcotest.(check bool) "error contains 'max_collection_items'"
+      true (Re.execp (Re.compile (Re.str "max_collection_items")) msg);
+    Alcotest.(check bool) "error contains '>= 0'"
+      true (Re.execp (Re.compile (Re.str ">= 0")) msg);
+    ()
+
 let tests = [
   "detail_level roundtrip", `Quick, test_detail_level_roundtrip;
   "change_breakdown roundtrip", `Quick, test_change_breakdown_roundtrip;
@@ -267,6 +300,7 @@ let tests = [
   "validate unknown field", `Quick, test_validate_unknown_field;
   "validate config string", `Quick, test_validate_config_string;
   "validate invalid json string", `Quick, test_validate_invalid_json_string;
+  "validate business logic warnings", `Quick, test_validate_business_logic_warnings;
 ]
 
 let () =

@@ -606,11 +606,14 @@ let validate_config (cfg : detail_config) : string list =
   let indent_warnings =
     if cfg.indent_width < 0 then
       [Printf.sprintf "indent_width must be >= 0, got %d" cfg.indent_width]
-    else if cfg.indent_width > 8 then
-      [Printf.sprintf "indent_width must be <= 8, got %d" cfg.indent_width]
     else []
   in
-  override_warnings @ indent_warnings
+  let max_collection_warnings =
+    match cfg.max_collection_items with
+    | Some n when n < 0 ->  [Printf.sprintf "max_collection_items must be >= 0, got %d" n]
+    | _ -> []
+  in
+  override_warnings @ indent_warnings @ max_collection_warnings
 
 (* Change type formatting with customizable symbols *)
 let pp_change_type cfg fmt = function
@@ -737,15 +740,41 @@ let validate_config_string (json_str : string) : (unit, string) result =
   with
   | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
 
+(** Filter out JSON schema metadata fields that are not part of detail_config.
+    These fields ($schema, $id, $defs) are valid in config files for schema
+    validation but should be removed before PPX parsing. *)
+let filter_schema_metadata_fields (json : Yojson.Basic.t) : Yojson.Basic.t =
+  match json with
+  | `Assoc fields ->
+    let known_fields = List.filter (fun (key, _) ->
+        key <> "$schema" && key <> "$id" && key <> "$defs"
+      ) fields in
+    `Assoc known_fields
+  | other -> other
+
 (** Validate a config file against the detail_config schema.
     @param file_path Path to the JSON config file
     @return Ok () if valid, Error with detailed message if invalid *)
 let validate_config_file (file_path : string) : (unit, string) result =
   try
+    (* Step 1: Parse JSON for schema validation *)
     let json = Yojson.Basic.from_file file_path in
+
+    (* Step 2: Validate against JSON schema *)
     match validate_config_json json with
-    | Ok () -> Ok ()
     | Error err -> Error (Printf.sprintf "Validation failed for %s:\n%s" file_path err.details)
+    | Ok () ->
+      (* Step 3: Parse config for business logic validation *)
+      let filtered_json = filter_schema_metadata_fields json in
+      let json_str = Yojson.Basic.to_string filtered_json in
+      match detail_config_of_yojson (Yojson.Safe.from_string json_str) with
+      | Error msg -> Error (Printf.sprintf "Step 3. Config parsing failed in %s: %s" file_path msg)
+      | Ok cfg ->
+        (* Step 4: Run business logic validation *)
+        let warnings = validate_config cfg in
+        if warnings = [] then Ok ()
+        else Error (Printf.sprintf "Step 4. Config validation warnings for %s:\n%s"
+                      file_path (String.concat "\n" warnings))
   with
   | Yojson.Json_error msg -> Error (Printf.sprintf "JSON parse error in %s: %s" file_path msg)
   | Sys_error msg -> Error (Printf.sprintf "File error: %s" msg)
@@ -767,8 +796,11 @@ let load_and_validate_config (file_path : string) : (detail_config, string) resu
     | Error err ->
       Error (Printf.sprintf "Config validation failed in %s:\n%s" file_path err.details)
     | Ok () ->
+      (* Filter out schema metadata fields before PPX parsing *)
+      let filtered_json = filter_schema_metadata_fields json_basic in
+      let filtered_str = Yojson.Basic.to_string filtered_json in
       (* Parse as Safe for yojson deserialization *)
-      let json_safe = Yojson.Safe.from_string json_str in
+      let json_safe = Yojson.Safe.from_string filtered_str in
       match detail_config_of_yojson json_safe with
       | Ok cfg -> Ok cfg
       | Error msg -> Error (Printf.sprintf "Config parsing failed in %s: %s" file_path msg)
