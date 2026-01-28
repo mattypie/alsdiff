@@ -1114,10 +1114,18 @@ let device_patch_is_empty_ref : (device_patch -> bool) ref =
 let branch_patch_is_empty_ref : (branch_patch -> bool) ref =
   ref (fun _ -> failwith "branch_patch_is_empty not initialized")
 
+(* Helper function to get device type name and id for error messages *)
+let get_device_type_and_id = function
+  | Regular r -> "Regular", r.id
+  | Plugin p -> "Plugin", p.id
+  | Group g -> "Group", g.id
+  | Max4Live m -> "Max4Live", m.id
+
 (* regular_device diff functions *)
 let rec regular_device_diff (old_device : regular_device) (new_device : regular_device) : regular_device_patch =
   if old_device.id <> new_device.id && old_device.device_name <> new_device.device_name  then
-    failwith "cannot diff two RegularDevices with different Ids & Device names"
+    failwith (Printf.sprintf "Cannot diff two RegularDevices with different Ids & Device names: %d/%s vs %d/%s"
+                old_device.id old_device.device_name new_device.id new_device.device_name)
   else
     let display_name_change = diff_atomic_value (module String) old_device.display_name new_device.display_name in
     let preset_change = diff_complex_value_opt (module PresetRef) old_device.preset new_device.preset in
@@ -1135,7 +1143,8 @@ let rec regular_device_diff (old_device : regular_device) (new_device : regular_
 (* plugin_device diff functions *)
 and plugin_device_diff (old_device : plugin_device) (new_device : plugin_device) : plugin_device_patch =
   if old_device.id <> new_device.id then
-    failwith "cannot diff two PluginDevices with different IDs"
+    failwith (Printf.sprintf "Cannot diff two PluginDevices with different IDs: %d vs %d (Name: %s)"
+                old_device.id new_device.id old_device.device_name)
   else
     let display_name_change =
       diff_atomic_value (module String) old_device.display_name new_device.display_name
@@ -1170,7 +1179,8 @@ and plugin_device_diff (old_device : plugin_device) (new_device : plugin_device)
 (* max4live_device diff functions *)
 and max4live_device_diff (old_device : max4live_device) (new_device : max4live_device) : max4live_device_patch =
   if old_device.id <> new_device.id then
-    failwith "cannot diff two Max4LiveDevices with different IDs"
+    failwith (Printf.sprintf "Cannot diff two Max4LiveDevices with different IDs: %d vs %d (Name: %s)"
+                old_device.id new_device.id old_device.device_name)
   else
     let display_name_change =
       diff_atomic_value (module String) old_device.display_name new_device.display_name
@@ -1201,7 +1211,7 @@ and max4live_device_diff (old_device : max4live_device) (new_device : max4live_d
 (* group_device diff functions *)
 and  branch_diff (old_branch : branch) (new_branch : branch) =
   if old_branch.id <> new_branch.id then
-    failwith "cannot diff two Branches with different Ids"
+    failwith (Printf.sprintf "Cannot diff two Branches with different Ids: %d vs %d" old_branch.id new_branch.id)
   else
     let id_change = `Unchanged in (* IDs must be the same *)
     (* Minimal delegation module to avoid circular dependencies *)
@@ -1235,7 +1245,11 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
         | Plugin po, Plugin pn -> PluginPatch (plugin_device_diff po pn)
         | Group go, Group gn -> GroupPatch (group_device_diff go gn)
         | Max4Live mo, Max4Live mn -> Max4LivePatch (max4live_device_diff mo mn)
-        | _ -> failwith "cannot diff devices of different types"
+        | _ ->
+          let t1, id1 = get_device_type_and_id old_dev in
+          let t2, id2 = get_device_type_and_id new_dev in
+          failwith (Printf.sprintf "Cannot diff devices of different types: %s(Id=%d) vs %s(Id=%d)"
+                      t1 id1 t2 id2)
     end in
     let devices_changes =
       diff_list_id (module DeviceId) old_branch.devices new_branch.devices
@@ -1249,7 +1263,8 @@ and  branch_diff (old_branch : branch) (new_branch : branch) =
     }
 and group_device_diff (old_group : group_device) (new_group : group_device) =
   if old_group.id <> new_group.id then
-    failwith "cannot diff two GroupDevices with different Ids"
+    failwith (Printf.sprintf "Cannot diff two GroupDevices with different Ids: %d vs %d (Name: %s)"
+                old_group.id new_group.id old_group.device_name)
   else
     let display_name_change = diff_atomic_value (module String) old_group.display_name new_group.display_name in
     let enabled_change = diff_complex_value (module DeviceParam) old_group.enabled new_group.enabled in
@@ -1662,4 +1677,8 @@ let diff (old_device : t) (new_device : t) : Patch.t =
   | (Max4Live old_m4l, Max4Live new_m4l) ->
     let patch = Max4LiveDevice.diff old_m4l new_m4l in
     Patch.Max4LivePatch patch
-  | _ -> failwith "cannot diff devices of different types (Regular vs Group)"
+  | _ ->
+    let t1, id1 = get_device_type_and_id old_device in
+    let t2, id2 = get_device_type_and_id new_device in
+    failwith (Printf.sprintf "Cannot diff devices of different types: %s(Id=%d) vs %s(Id=%d)"
+                t1 id1 t2 id2)

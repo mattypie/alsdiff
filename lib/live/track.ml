@@ -294,7 +294,8 @@ module MidiTrack = struct
 
   let diff (old_track : t) (new_track : t) : Patch.t =
     if old_track.id <> new_track.id then
-      failwith "cannot diff two MidiTracks with different Ids"
+      failwith (Printf.sprintf "Cannot diff two MidiTracks with different Ids: %d vs %d (Names: '%s' vs '%s')"
+                  old_track.id new_track.id old_track.name new_track.name)
     else
       let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
@@ -380,7 +381,8 @@ module AudioTrack = struct
 
   let diff (old_track : t) (new_track : t) : Patch.t =
     if old_track.id <> new_track.id then
-      failwith "cannot diff two AudioTracks with different Ids"
+      failwith (Printf.sprintf "Cannot diff two AudioTracks with different Ids: %d vs %d (Names: '%s' vs '%s')"
+                  old_track.id new_track.id old_track.name new_track.name)
     else
       let name_change = diff_atomic_value (module String) old_track.name new_track.name in
       let clips_changes =
@@ -582,6 +584,20 @@ module Patch = struct
     | MainPatch patch -> MainTrack.Patch.is_empty patch
 end
 
+let get_name = function
+  | Midi a -> a.name
+  | Audio a -> a.name
+  | Group a -> a.name
+  | Return a -> a.name
+  | Main _ -> "Main"
+
+let type_name = function
+  | Midi _ -> "MidiTrack"
+  | Audio _ -> "AudioTrack"
+  | Group _ -> "GroupTrack"
+  | Return _ -> "ReturnTrack"
+  | Main _ -> "MainTrack"
+
 let diff (old_track : t) (new_track : t) : Patch.t =
   match old_track, new_track with
   | Midi old_midi, Midi new_midi ->
@@ -596,11 +612,6 @@ let diff (old_track : t) (new_track : t) : Patch.t =
     let main_patch = MainTrack.diff old_main new_main in
     Patch.MainPatch main_patch
   | _ ->
-    failwith "cannot diff tracks of different types (e.g. MidiTrack vs AudioTrack)"
-
-let get_name = function
-  | Midi a -> a.name
-  | Audio a -> a.name
-  | Group a -> a.name
-  | Return a -> a.name
-  | Main _ -> "Main"
+    failwith (Printf.sprintf "Cannot diff tracks of different types: %s (%s) vs %s (%s)"
+                (type_name old_track) (get_name old_track)
+                (type_name new_track) (get_name new_track))

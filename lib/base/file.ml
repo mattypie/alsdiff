@@ -1,3 +1,7 @@
+
+(** [File_error filename msg] raised when file operations fail. *)
+exception File_error of string * string
+
 (** Estimate buffer size based on compressed file size and typical compression ratios.
     Ableton Live sets typically compress around 10-20:1, so we use a conservative
     15:1 estimate with minimum buffer sizes to handle small files efficiently.
@@ -10,20 +14,31 @@ let estimate_buffer_size compressed_size =
 
 (** Decompress the .als file with [filename] and return its contents as a string. *)
 let decompress_als_to_string filename =
-  let compressed_size = Unix.stat filename |> (fun st -> st.st_size) in
-  let buffer = Buffer.create (estimate_buffer_size compressed_size) in
-  let gz_in = Gzip.open_in filename in
-  let chunk = Bytes.create 8192 in
-  let rec copy_loop () =
-    let bytes_read = Gzip.input gz_in chunk 0 (Bytes.length chunk) in
-    if bytes_read > 0 then (
-      Buffer.add_subbytes buffer chunk 0 bytes_read;
-      copy_loop ()
-    )
-  in
-  (try copy_loop () with End_of_file -> ());
-  Gzip.close_in gz_in;
-  Buffer.contents buffer
+  try
+    let compressed_size = Unix.stat filename |> (fun st -> st.st_size) in
+    let buffer = Buffer.create (estimate_buffer_size compressed_size) in
+    let gz_in = Gzip.open_in filename in
+    let chunk = Bytes.create 8192 in
+    let rec copy_loop () =
+      let bytes_read = Gzip.input gz_in chunk 0 (Bytes.length chunk) in
+      if bytes_read > 0 then (
+        Buffer.add_subbytes buffer chunk 0 bytes_read;
+        copy_loop ()
+      )
+    in
+    (try copy_loop () with End_of_file -> ());
+    Gzip.close_in gz_in;
+    Buffer.contents buffer
+  with
+  | Unix.Unix_error (err, func, _) ->
+    let msg = Printf.sprintf "%s: %s" func (Unix.error_message err) in
+    raise (File_error (filename, msg))
+  | Sys_error msg ->
+    raise (File_error (filename, msg))
+  | Gzip.Error msg ->
+    raise (File_error (filename, "Gzip error: " ^ msg))
+  | e ->
+    raise (File_error (filename, "Unexpected error: " ^ Printexc.to_string e))
 
 let decompress_als filename =
   let basename = Filename.basename filename |> Filename.remove_extension in
@@ -45,9 +60,17 @@ let decompress_als filename =
 
 (** open the .als file with [filename], and return the parsed XML tree. *)
 let open_als filename =
-  filename
-  |> decompress_als_to_string
-  |> Xml.read_string
+  try
+    filename
+    |> decompress_als_to_string
+    |> Xml.read_string
+  with
+  | Xmlm.Error ((line, col), err) ->
+    let msg = Printf.sprintf "XML parsing error at line %d, col %d: %s" line col (Xmlm.error_message err) in
+    raise (File_error (filename, msg))
+  | File_error _ as e -> raise e
+  | e ->
+    raise (File_error (filename, "Failed to open ALS file: " ^ Printexc.to_string e))
 
 let time_it (f : unit -> 'a)  =
   let start_time = Sys.time() in

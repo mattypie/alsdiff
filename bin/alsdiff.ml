@@ -279,9 +279,13 @@ let cmd =
     `S Manpage.s_bugs;
     `P "Report bugs at https://github.com/krfantasy/alsdiff/issues";
   ] in
+  let exits =
+    Cmd.Exit.info 1 ~doc:"on known errors (file I/O, XML parsing, diff logic mismatches)." ::
+    List.filter (fun e -> Cmd.Exit.info_code e <> 123) Cmd.Exit.defaults
+  in
   Cmd.make (Cmd.info "alsdiff" ~version:(match version () with
       | None -> "dev"
-      | Some v -> Version.to_string v) ~doc ~man) @@
+      | Some v -> Version.to_string v) ~doc ~man ~exits) @@
   let+ file1 and+ file2 and+ config_file and+ preset and+ dump_preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items and+ dump_schema and+ validate_config in
   let cfg = { file1; file2; config_file; preset; dump_preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items; dump_schema; validate_config } in
   config_ref := Some cfg;
@@ -289,59 +293,97 @@ let cmd =
 
 let main () =
   Printexc.record_backtrace true;
-  let exit_code = Cmd.eval cmd in
-  if exit_code = 0 then
-    match !config_ref with
-    | None -> 0
-    | Some cfg ->
-      (* Handle --dump-preset first *)
-      (match cfg.dump_preset with
-       | Some preset ->
-         let preset_config = match preset with
-           | `Compact -> Text_renderer.compact
-           | `Composer -> Text_renderer.composer
-           | `Full -> Text_renderer.full
-           | `Inline -> Text_renderer.inline
-           | `Mixing -> Text_renderer.mixing
-           | `Quiet -> Text_renderer.quiet
-           | `Verbose -> Text_renderer.verbose
-         in
-         let json = Text_renderer.detail_config_to_yojson_with_schema preset_config in
-         print_endline (Yojson.Safe.pretty_to_string json);
-         0
-       | None ->
-         (* Handle --validate-config *)
-         (match cfg.validate_config with
-          | Some config_path ->
-            (match Text_renderer.validate_config_file config_path with
-             | Ok () ->
-               Fmt.pr "Configuration file %s is valid@." config_path;
-               0
-             | Error msg ->
-               Fmt.epr "%s@." msg;
-               1)
-          | None ->
-            (* Handle --dump-schema *)
-            if cfg.dump_schema then begin
-              print_endline (Text_renderer.detail_config_schema_to_string ());
-              0
-            end else begin
-              (* Normal diff operation - requires both files *)
-              match cfg.file1, cfg.file2 with
-              | Some _, Some _ ->
-                Eio_main.run @@ fun env ->
-                let domain_mgr = Eio.Stdenv.domain_mgr env in
-                diff_cmd ~config:cfg ~domain_mgr;
-                0
-              | _ ->
-                Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
-                Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
-                Fmt.epr "Use --dump-preset PRESET to dump a preset configuration as JSON.@.";
-                Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
-                1
-            end))
-  else
-    exit exit_code
+
+  (* Helper to run the command safely *)
+  let safe_run cmd_term =
+    try
+      let exit_code = Cmd.eval cmd_term in
+      if exit_code = 0 then
+        match !config_ref with
+        | None -> 0
+        | Some cfg ->
+          (* Handle --dump-preset first *)
+          (match cfg.dump_preset with
+           | Some preset ->
+             let preset_config = match preset with
+               | `Compact -> Text_renderer.compact
+               | `Composer -> Text_renderer.composer
+               | `Full -> Text_renderer.full
+               | `Inline -> Text_renderer.inline
+               | `Mixing -> Text_renderer.mixing
+               | `Quiet -> Text_renderer.quiet
+               | `Verbose -> Text_renderer.verbose
+             in
+             let json = Text_renderer.detail_config_to_yojson_with_schema preset_config in
+             print_endline (Yojson.Safe.pretty_to_string json);
+             0
+           | None ->
+             (* Handle --validate-config *)
+             (match cfg.validate_config with
+              | Some config_path ->
+                (match Text_renderer.validate_config_file config_path with
+                 | Ok () ->
+                   Fmt.pr "Configuration file %s is valid@." config_path;
+                   0
+                 | Error msg ->
+                   Fmt.epr "%s@." msg;
+                   1)
+              | None ->
+                (* Handle --dump-schema *)
+                if cfg.dump_schema then begin
+                  print_endline (Text_renderer.detail_config_schema_to_string ());
+                  0
+                end else begin
+                  (* Normal diff operation - requires both files *)
+                  match cfg.file1, cfg.file2 with
+                  | Some _, Some _ ->
+                    Eio_main.run @@ fun env ->
+                    let domain_mgr = Eio.Stdenv.domain_mgr env in
+                    diff_cmd ~config:cfg ~domain_mgr;
+                    0
+                  | _ ->
+                    Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
+                    Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
+                    Fmt.epr "Use --dump-preset PRESET to dump a preset configuration as JSON.@.";
+                    Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
+                    1
+                end))
+      else
+        exit_code
+    with
+    | File.File_error (file, msg) ->
+      let bt = Printexc.get_backtrace () in
+      Fmt.epr "Error: Failed to process file '%s': %s@." file msg;
+      Fmt.epr "%s@." bt;
+      1
+    | Xml.Xml_error (xml, msg) ->
+      let bt = Printexc.get_backtrace () in
+      Fmt.epr "Error: Invalid XML format: %s@.%a@." msg Xml.pp xml;
+      Fmt.epr "%s@." bt;
+      1
+    | Upath.Path_not_found (path, xml) ->
+      let bt = Printexc.get_backtrace () in
+      Fmt.epr "Error: Required path '%s' not found in @.%a@." path Xml.pp xml;
+      Fmt.epr "%s@." bt;
+      1
+    | Sys_error msg ->
+      let bt = Printexc.get_backtrace () in
+      Fmt.epr "System Error: %s@." msg;
+      Fmt.epr "%s@." bt;
+      1
+    | Failure msg ->
+      let bt = Printexc.get_backtrace () in
+      Fmt.epr "Error: %s@." msg;
+      Fmt.epr "%s@." bt;
+      1
+    | exn ->
+      let bt = Printexc.get_backtrace () in
+      Fmt.epr "Unexpected error: %s@.%s@." (Printexc.to_string exn) bt;
+      Fmt.epr "Please report this bug at https://github.com/krfantasy/alsdiff/issues@.";
+      1
+  in
+
+  safe_run cmd
 
 let () =
   if !Sys.interactive then () else exit (main ())
