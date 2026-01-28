@@ -78,8 +78,14 @@ let get_home_dir () =
     | Some userprofile -> Some userprofile
     | None -> None
 
-let discover_config_file () =
-  (* Try git root config first *)
+let discover_config_file ~file2 =
+  (* Try file2 directory config first - highest priority *)
+  let check_file2_dir_config () =
+    let file2_dir = Filename.dirname file2 in
+    let file2_config = Filename.concat file2_dir ".alsdiff.json" in
+    if Sys.file_exists file2_config then Some file2_config else None
+  in
+  (* Try git root config *)
   let check_git_config () =
     match find_git_root () with
     | Some git_root ->
@@ -95,10 +101,13 @@ let discover_config_file () =
       if Sys.file_exists home_config then Some home_config else None
     | None -> None
   in
-  (* Priority: git config > home config *)
-  match check_git_config () with
+  (* Priority: file2 dir > git config > home config *)
+  match check_file2_dir_config () with
   | Some _ as result -> result
-  | None -> check_home_config ()
+  | None ->
+    match check_git_config () with
+    | Some _ as result -> result
+    | None -> check_home_config ()
 
 let load_and_report_config config_path =
   Fmt.pr "Loading configuration from %s@." config_path;
@@ -132,7 +141,7 @@ let diff_cmd ~config ~domain_mgr =
         in base
       | None ->
         (* Auto-discover .alsdiff.json when neither --config nor --preset specified *)
-        match discover_config_file () with
+        match discover_config_file ~file2 with
         | Some auto_config -> load_and_report_config auto_config
         | None -> Text_renderer.quiet
   in
@@ -261,9 +270,10 @@ let cmd =
     `Pre "$(cmd) --dump-preset compact > mypreset.json";
     `P "Configuration search order (when --config not specified):";
     `P "1. --preset PRESET (if specified)";
-    `P "2. .alsdiff.json in git repository root";
-    `P "3. .alsdiff.json in user's home directory (~)";
-    `P "4. quiet preset (default)";
+    `P "2. .alsdiff.json in directory of FILE2.als";
+    `P "3. .alsdiff.json in git repository root";
+    `P "4. .alsdiff.json in user's home directory (~)";
+    `P "5. quiet preset (default)";
     `S Manpage.s_options;
     `P "$(b,--config FILE) loads configuration from JSON file. Takes precedence over auto-discovery. The --preset option is ignored when --config is specified. Individual CLI options override values from config file.";
     `P "$(b,--preset PRESET) sets the output detail preset. Available presets: $(b,compact), $(b,composer), $(b,full), $(b,mixing), $(b,quiet) (default), $(b,verbose). Takes precedence over auto-discovery but ignored when --config is specified.";
