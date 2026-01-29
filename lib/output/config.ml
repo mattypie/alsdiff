@@ -315,31 +315,123 @@ let count_sub_views_breakdown (cfg : detail_config) (section : item) : change_br
 
 (* Preset configurations for common use cases *)
 
-(* Compact: structure overview - show first-level children without field details *)
+(* Compact preset: structure overview with change counts.
+   Shows first-level children for key types without expanding field details.
+   Uses per-change differentiation for tracks: new tracks show more detail than removed ones. *)
 let compact = {
-  (* Base: show structure with change counts *)
+  (* Base: Summary level shows change counts without field details *)
   added = Summary;
   removed = Summary;
   modified = Summary;
   unchanged = Ignore;
 
-  (* Key: show first-level structure for important types *)
+  (* Type-specific overrides for structure visibility *)
   type_overrides = [
-    (* Tracks: show track sections (Clips, Mixer, Devices, etc.) *)
-    { domain_type = DTTrack; override = uniform_override Compact; };
+    (* Tracks: per-change differentiation
+       - Added tracks: Inline to show key properties at a glance
+       - Removed tracks: Summary (just name + change indicator)
+       - Modified tracks: Compact to show sections (Clips, Mixer, Devices) *)
+    { domain_type = DTTrack; override = override
+                                 ~added:(Some Inline)
+                                 ~removed:(Some Summary)
+                                 ~modified:(Some Compact)
+                                 ();
+    };
 
-    (* Clips: show clip structure (Loop, Notes, TimeSignature, etc.) *)
+    (* Clips: show clip structure (Loop, Notes, TimeSignature) *)
     { domain_type = DTClip; override = uniform_override Compact; };
 
-    (* Devices: show device structure (Parameters, Preset, etc.) *)
+    (* Devices: show device structure (Parameters, Preset) *)
     { domain_type = DTDevice; override = uniform_override Compact; };
 
-    (* LiveSet: show top-level structure *)
+    (* LiveSet: show top-level structure (Tracks, Locators) *)
     { domain_type = DTLiveset; override = uniform_override Compact; };
+
+    (* Notes: Summary to avoid flooding output with individual note changes *)
+    { domain_type = DTNote; override = uniform_override Summary; };
+
+    (* Events: Summary for automation event collections *)
+    { domain_type = DTEvent; override = uniform_override Summary; };
+
+    (* Automation: Summary for envelope structure *)
+    { domain_type = DTAutomation; override = uniform_override Summary; };
   ];
 
-  (* Limit output to prevent overwhelming - more than quiet (10) but bounded *)
+  (* Limit output - more than quiet (10) but bounded to prevent overwhelming diffs *)
   max_collection_items = Some 20;
+
+  (* Hide unchanged fields for cleaner diff output *)
+  show_unchanged_fields = false;
+
+  (* Standard prefixes *)
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "=";
+
+  (* Sharp note names *)
+  note_name_style = Sharp;
+
+  (* Indentation width *)
+  indent_width = 2;
+}
+
+(* Full preset: show all details for every changed item.
+   Useful for thorough code review or debugging diff output.
+   Safety limit of 100 items prevents overwhelming output from large note/event collections. *)
+let full = {
+  (* Base: Full detail for all change types *)
+  added = Full;
+  removed = Full;
+  modified = Full;
+  unchanged = Ignore;
+
+  (* No type-specific overrides - treat all types equally *)
+  type_overrides = [];
+
+  (* Safety limit: prevent overwhelming output from large MIDI/automation collections *)
+  max_collection_items = Some 100;
+
+  (* Hide unchanged fields to focus on actual changes *)
+  show_unchanged_fields = false;
+
+  (* Standard prefixes *)
+  prefix_added = "+";
+  prefix_removed = "-";
+  prefix_modified = "*";
+  prefix_unchanged = "=";
+
+  (* Sharp note names *)
+  note_name_style = Sharp;
+
+  (* Indentation width *)
+  indent_width = 2;
+}
+
+(* Inline preset: show all fields on a single line with item name.
+   Compact yet informative - good for quick scanning of changes.
+   Notes and parameters are naturally inline-friendly. *)
+let inline = {
+  (* Base: Inline shows name + all fields on one line *)
+  added = Inline;
+  removed = Inline;
+  modified = Inline;
+  unchanged = Ignore;
+
+  (* Type-specific overrides for inline-friendly types *)
+  type_overrides = [
+    (* Notes: Inline is perfect for MIDI notes (pitch, velocity, duration) *)
+    { domain_type = DTNote; override = uniform_override Inline; };
+
+    (* Parameters: Inline shows name + value cleanly *)
+    { domain_type = DTParam; override = uniform_override Inline; };
+
+    (* Automation Events: Inline shows time + value *)
+    { domain_type = DTEvent; override = uniform_override Inline; };
+  ];
+
+  (* Moderate limit - inline format is compact so we can show more *)
+  max_collection_items = Some 30;
 
   (* Hide unchanged fields *)
   show_unchanged_fields = false;
@@ -350,84 +442,85 @@ let compact = {
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Use Sharp note names *)
+  (* Sharp note names *)
   note_name_style = Sharp;
 
   (* Indentation width *)
   indent_width = 2;
 }
 
-(* Legacy Full equivalent: show all details *)
-let full = {
-  added = Full;
-  removed = Full;
-  modified = Full;
-  unchanged = Ignore;
-  type_overrides = [];
-  max_collection_items = None;  (* This is still option None, not detail_level None *)
-  show_unchanged_fields = false;
-  prefix_added = "+";
-  prefix_removed = "-";
-  prefix_modified = "*";
-  prefix_unchanged = "=";
-  note_name_style = Sharp;
-  indent_width = 2;
-}
-
-(* Inline: show all fields on single line with item name *)
-let inline = {
-  added = Inline;
-  removed = Inline;
-  modified = Inline;
-  unchanged = Ignore;
-  type_overrides = [];
-  max_collection_items = Some 10;
-  show_unchanged_fields = false;
-  prefix_added = "+";
-  prefix_removed = "-";
-  prefix_modified = "*";
-  prefix_unchanged = "=";
-  note_name_style = Sharp;
-  indent_width = 2;
-}
-
-(* Quiet mode: minimal output *)
+(* Quiet preset: minimal output for quick overview.
+   Shows only top-level change counts with basic structure.
+   Good for CI/CD pipelines or quick "did anything change?" checks. *)
 let quiet = {
+  (* Base: Summary shows change counts only *)
   added = Summary;
   removed = Summary;
-  modified = Summary;           (* Compact *)
+  modified = Summary;
   unchanged = Ignore;
-  type_overrides = [{ domain_type = DTLiveset; override = uniform_override Compact; }];  (* Show LiveSet sub-views, but children stay in Summary *)
-  max_collection_items = Some 10;
+
+  (* Only LiveSet gets Compact to show top-level sections *)
+  type_overrides = [
+    { domain_type = DTLiveset; override = uniform_override Compact; }
+  ];
+
+  (* Low limit for minimal output *)
+  max_collection_items = Some 0;
+
+  (* Hide unchanged fields *)
   show_unchanged_fields = false;
+
+  (* Standard prefixes *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
+
+  (* Sharp note names *)
   note_name_style = Sharp;
+
+  (* Indentation width *)
   indent_width = 2;
 }
 
-(* Verbose mode: show everything including unchanged *)
+(* Verbose preset: show everything including unchanged items.
+   Useful for debugging, auditing, or understanding complete file structure.
+   No limits - displays all items and all fields. *)
 let verbose = {
+  (* Base: Full detail for everything, including unchanged *)
   added = Full;
   removed = Full;
   modified = Full;
   unchanged = Full;
+
+  (* No type-specific overrides - treat all types equally *)
   type_overrides = [];
-  max_collection_items = None;  (* This is still option None, not detail_level None *)
+
+  (* No limit - show everything *)
+  max_collection_items = None;
+
+  (* Show unchanged fields for complete picture *)
   show_unchanged_fields = true;
+
+  (* Standard prefixes *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
+
+  (* Sharp note names *)
   note_name_style = Sharp;
+
+  (* Indentation width *)
   indent_width = 2;
 }
 
-(* Mixing preset: optimized for stem track mixing workflows *)
+(* Mixing preset: optimized for stem track mixing workflows.
+   Focuses on mixer settings, automation, devices, and routing.
+   Clips shown as summary only (stem tracks don't modify clip content).
+   MIDI notes ignored (irrelevant for mixing rendered stems). *)
 let mixing = {
-  (* Base: summary for overview, focusing on important changes *)
+  (* Base: Summary for overview, highlighting important changes *)
   added = Summary;
   removed = Summary;
   modified = Summary;
@@ -435,35 +528,55 @@ let mixing = {
 
   (* Type-specific overrides for mixing workflow *)
   type_overrides = [
-    (* Clips: summary only - stem tracks don't change clip content/position *)
-    { domain_type = DTClip; override = uniform_override Summary; };
+    (* === Core mixing types (Full detail) === *)
 
-    (* Automations: full details - critical for mixing adjustments *)
+    (* Automation: full details - automation is critical for mixing adjustments *)
     { domain_type = DTAutomation; override = uniform_override Full; };
 
-    (* Devices: full details - plugin changes are important *)
+    (* Devices: full details - plugin/effect changes are important *)
     { domain_type = DTDevice; override = uniform_override Full; };
 
     (* Mixer: full details - volume/pan/mute/solo are core mixing concerns *)
     { domain_type = DTMixer; override = uniform_override Full; };
 
-    (* Parameters: show in context *)
-    { domain_type = DTParam; override = uniform_override Full; };
+    (* Parameters: inline - device parameter name + value shown concisely *)
+    { domain_type = DTParam; override = uniform_override Inline; };
 
-    (* Routing: compact overview *)
-    { domain_type = DTRouting; override = uniform_override Compact; };
+    (* SampleRef: full details - audio file changes are critical for mixing *)
+    { domain_type = DTSampleRef; override = uniform_override Full; };
 
-    (* Sends: summary for send routing *)
-    { domain_type = DTSend; override = uniform_override Summary; };
+    (* === Secondary mixing types (Summary/Inline) === *)
 
-    (* Liveset: compact structure overview *)
+    (* Routing: Inline to show Type and Target concisely *)
+    { domain_type = DTRouting; override = uniform_override Inline; };
+
+    (* Sends: Inline to show send target and level concisely *)
+    { domain_type = DTSend; override = uniform_override Inline; };
+
+    (* Clips: Ignore - stem tracks don't modify clip content/position *)
+    { domain_type = DTClip; override = uniform_override Ignore; };
+
+    (* Loop: Ignore - loop settings not relevant for mixing *)
+    { domain_type = DTLoop; override = uniform_override Ignore; };
+
+    (* Events: Inline - show automation events concisely (time + value) *)
+    { domain_type = DTEvent; override = uniform_override Inline; };
+
+    (* === Structural types === *)
+
+    (* Liveset: Compact structure overview *)
     { domain_type = DTLiveset; override = uniform_override Compact; };
 
-    (* Tracks: compact structure with sections *)
+    (* Tracks: Compact structure with sections *)
     { domain_type = DTTrack; override = uniform_override Compact; };
+
+    (* === Ignored types (not relevant for mixing) === *)
+
+    (* Notes: MIDI notes are irrelevant when mixing rendered stems *)
+    { domain_type = DTNote; override = uniform_override Ignore; };
   ];
 
-  (* Allow more items for automation-heavy workflows *)
+  (* Higher limit for automation-heavy workflows *)
   max_collection_items = Some 50;
 
   (* Hide unchanged fields for cleaner output *)
@@ -475,15 +588,16 @@ let mixing = {
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names for consistency *)
+  (* Sharp note names (though notes are ignored in this preset) *)
   note_name_style = Sharp;
 
   (* Indentation width *)
   indent_width = 2;
 }
 
-(* Composer preset: focused on MIDI composition and sample processing *)
-(* Shows ONLY audio/MIDI clips, hides all mixing/engineering elements *)
+(* Composer preset: focused on MIDI composition and sample arrangement.
+   Shows clips, MIDI notes, loop settings, time signatures, and audio samples.
+   Hides all mixing/engineering elements (devices, automation, routing, mixer). *)
 let composer = {
   (* Base: show summary of structural changes *)
   added = Summary;
@@ -491,21 +605,52 @@ let composer = {
   modified = Summary;
   unchanged = Ignore;
 
-  (* Type-specific overrides - show ONLY clips *)
+  (* Type-specific overrides for composition workflow *)
   type_overrides = [
-    (* Clips: full details for composition work *)
+    (* === Composition-critical types (Full detail) === *)
+
+    (* Clips: full details - the core compositional element *)
     { domain_type = DTClip; override = uniform_override Full; };
 
-    (* Tracks: show structure but we'll filter the sections *)
+    (* Notes: inline - MIDI note content displayed concisely (pitch, velocity, duration) *)
+    { domain_type = DTNote; override = uniform_override Inline; };
+
+    (* Loop: inline - loop boundaries shown concisely (start, end, enabled) *)
+    { domain_type = DTLoop; override = uniform_override Inline; };
+
+    (* Signature: inline - time signature shown concisely (numerator/denominator) *)
+    { domain_type = DTSignature; override = uniform_override Inline; };
+
+    (* SampleRef: full details - audio sample references matter for arrangement *)
+    { domain_type = DTSampleRef; override = uniform_override Full; };
+
+    (* === Structural types (Compact) === *)
+
+    (* Tracks: show structure with clip sections visible *)
     { domain_type = DTTrack; override = uniform_override Compact; };
 
-    (* Hide all mixing/engineering sections *)
+    (* Liveset: show top-level structure *)
+    { domain_type = DTLiveset; override = uniform_override Compact; };
+
+    (* === Mixing/Engineering types (Ignored) === *)
+
+    (* Mixer: not relevant for composition *)
     { domain_type = DTMixer; override = uniform_override Ignore; };
+
+    (* Device: effects/instruments config not relevant *)
     { domain_type = DTDevice; override = uniform_override Ignore; };
+
+    (* Automation: mixing automation not relevant *)
     { domain_type = DTAutomation; override = uniform_override Ignore; };
+
+    (* Event: automation events not relevant for composition *)
+    { domain_type = DTEvent; override = uniform_override Ignore; };
+
+    (* Routing: I/O routing not relevant *)
     { domain_type = DTRouting; override = uniform_override Ignore; };
 
-    (* Hide other domain types *)
+    (* === Other hidden types === *)
+
     { domain_type = DTLocator; override = uniform_override Ignore; };
     { domain_type = DTParam; override = uniform_override Ignore; };
     { domain_type = DTSend; override = uniform_override Ignore; };
@@ -514,15 +659,12 @@ let composer = {
     { domain_type = DTSnapshot; override = uniform_override Ignore; };
     { domain_type = DTVersion; override = uniform_override Ignore; };
     { domain_type = DTOther; override = uniform_override Ignore; };
-
-    (* Liveset: show minimal structure *)
-    { domain_type = DTLiveset; override = uniform_override Compact; };
   ];
 
-  (* No limit - composers need to see ALL clips in their arrangements *)
+  (* No limit - composers need to see all notes/clips in their arrangements *)
   max_collection_items = None;
 
-  (* Show clip details even for structure *)
+  (* Hide unchanged fields for cleaner diff output *)
   show_unchanged_fields = false;
 
   (* Standard prefixes *)
@@ -531,7 +673,7 @@ let composer = {
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names for MIDI work *)
+  (* Sharp note names (standard for DAW MIDI editing) *)
   note_name_style = Sharp;
 
   (* Indentation width *)

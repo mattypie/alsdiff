@@ -162,6 +162,19 @@ let test_schema_to_string () =
 
 (* ==================== Validation Tests ==================== *)
 
+(* Recursively filter null values from JSON.
+   ppx_deriving_yojson serializes None as null, but the JSON schema
+   expects optional fields to be absent rather than null. *)
+let rec filter_nulls_recursive (json : Yojson.Basic.t) : Yojson.Basic.t =
+  match json with
+  | `Assoc fields ->
+    `Assoc (fields
+            |> List.filter (fun (_, v) -> v <> `Null)
+            |> List.map (fun (k, v) -> (k, filter_nulls_recursive v)))
+  | `List items ->
+    `List (List.map filter_nulls_recursive items)
+  | other -> other
+
 let test_validate_valid_config () =
   (* Test that a valid config passes validation.
      Note: We need to filter out null values since ppx_deriving_yojson serializes
@@ -169,12 +182,8 @@ let test_validate_valid_config () =
      In practice, users should omit optional fields rather than set them to null. *)
   let valid_json = detail_config_to_yojson compact in
   let json_basic = Yojson.Safe.to_basic valid_json in
-  (* Remove null fields to make it valid for schema validation *)
-  let filtered_json = match json_basic with
-    | `Assoc fields ->
-      `Assoc (List.filter (fun (_, v) -> v <> `Null) fields)
-    | other -> other
-  in
+  (* Recursively remove null fields to make it valid for schema validation *)
+  let filtered_json = filter_nulls_recursive json_basic in
   match validate_config_json filtered_json with
   | Ok () -> ()
   | Error err -> Alcotest.failf "Valid config should pass validation: %s" err.details
@@ -235,12 +244,8 @@ let test_validate_config_string () =
      None as null, but the JSON schema doesn't allow null for optional fields. *)
   let json_value = detail_config_to_yojson compact in
   let json_basic = Yojson.Safe.to_basic json_value in
-  (* Remove null fields *)
-  let filtered_json = match json_basic with
-    | `Assoc fields ->
-      `Assoc (List.filter (fun (_, v) -> v <> `Null) fields)
-    | other -> other
-  in
+  (* Recursively remove null fields *)
+  let filtered_json = filter_nulls_recursive json_basic in
   let json_str = Yojson.Basic.to_string filtered_json in
   match validate_config_string json_str with
   | Ok () -> ()
@@ -253,13 +258,15 @@ let test_validate_invalid_json_string () =
   | Error _ -> ()  (* Expected *)
 
 let test_validate_business_logic_warnings () =
-  (* Test that business logic validation catches invalid indent_width *)
+  (* Test that business logic validation catches invalid indent_width.
+     Use 'full' preset instead of 'compact' because 'compact' uses partial
+     overrides which create None values that conflict with JSON schema validation. *)
   let cfg_with_invalid_indent = {
-    compact with
+    full with
     indent_width = -1;  (* Invalid - must be >= 0 *)
     max_collection_items = Some (-2);  (* Invalid - None or Some >= 0 *)
   } in
-  (* Write config to temp file *)
+  (* Write config to temp file - no null filtering needed for 'full' preset *)
   let temp_file = Filename.temp_file "alsdiff_test_config_" ".json" in
   let json = detail_config_to_yojson cfg_with_invalid_indent in
   let json_str = Yojson.Safe.pretty_to_string json in
