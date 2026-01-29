@@ -97,21 +97,19 @@ jobs:
         run: opam exec -- dune build
 
       - name: Install
-        run: opam exec -- dune install --prefix _build/install
+        run: opam exec -- dune install --prefix install
 
       - name: Create zip (Linux/macOS)
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          cd _build/install/bin
-          zip ../../../alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip alsdiff
+          zip alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip install/bin/alsdiff
 
       - name: Create zip (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          cd _build/install/bin
-          7z a ../../../alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip alsdiff.exe
+          7z a alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip install/bin/alsdiff.exe
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1

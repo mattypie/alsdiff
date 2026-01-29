@@ -17,8 +17,8 @@
 
 (package
  (name alsdiff)
- (synopsis "Git helper for Ableton Live Set(.als)")
- (description "Git helper for Ableton Live Set(.als)")
+ (synopsis "diff tool for Ableton Live Set(.als)")
+ (description "diff tool for Ableton Live Set(.als)")
  (depends
    (ocaml (>= 5.3.0))
     re
