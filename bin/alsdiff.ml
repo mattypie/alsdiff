@@ -31,8 +31,8 @@ let render_views config (views : View_model.view list) : string =
   Buffer.contents buffer
 
 type config = {
-  file1: string option;
-  file2: string option;
+  positional_args: string list;
+  git_mode: bool;
   config_file: string option;
   preset: [ `Compact | `Composer | `Full | `Inline | `Mixing | `Quiet | `Verbose ] option;
   dump_preset: [ `Compact | `Composer | `Full | `Inline | `Mixing | `Quiet | `Verbose ] option;
@@ -45,6 +45,19 @@ type config = {
   dump_schema: bool;
   validate_config: string option;
 }
+
+type git_args = {
+  path: string;
+  old_file: string;
+  new_file: string;
+}
+
+let parse_git_args args =
+  match args with
+  | [path; old_file; _old_hex; _old_mode; new_file; _new_hex; _new_mode] ->
+    Ok { path; old_file; new_file }
+  | _ ->
+    Error "Git mode requires exactly 7 positional arguments: path old-file old-hex old-mode new-file new-hex new-mode"
 
 let load_config_from_json file_path =
   match Text_renderer.load_and_validate_config file_path with
@@ -73,12 +86,12 @@ let get_home_dir () =
     | Some userprofile -> Some userprofile
     | None -> None
 
-let discover_config_file ~file2 =
-  (* Try file2 directory config first - highest priority *)
-  let check_file2_dir_config () =
-    let file2_dir = Filename.dirname file2 in
-    let file2_config = Filename.concat file2_dir ".alsdiff.json" in
-    if Sys.file_exists file2_config then Some file2_config else None
+let discover_config_file ~reference_path =
+  (* Try reference_path directory config first - highest priority *)
+  let check_path_dir_config () =
+    let path_dir = Filename.dirname reference_path in
+    let path_config = Filename.concat path_dir ".alsdiff.json" in
+    if Sys.file_exists path_config then Some path_config else None
   in
   (* Try git root config *)
   let check_git_config () =
@@ -96,8 +109,8 @@ let discover_config_file ~file2 =
       if Sys.file_exists home_config then Some home_config else None
     | None -> None
   in
-  (* Priority: file2 dir > git config > home config *)
-  match check_file2_dir_config () with
+  (* Priority: path dir > git config > home config *)
+  match check_path_dir_config () with
   | Some _ as result -> result
   | None ->
     match check_git_config () with
@@ -108,14 +121,16 @@ let load_and_report_config config_path =
   Fmt.pr "Loading configuration from %s@." config_path;
   load_config_from_json config_path
 
-let diff_cmd ~config ~domain_mgr =
-  let file1 = match config.file1 with
-    | Some f -> f
-    | None -> failwith "FILE1.als is required for diff"
-  in
-  let file2 = match config.file2 with
-    | Some f -> f
-    | None -> failwith "FILE2.als is required for diff"
+let diff_cmd ~config ~domain_mgr : int =
+  let file1, file2, reference_path =
+    if config.git_mode then
+      match parse_git_args config.positional_args with
+      | Error msg -> failwith msg
+      | Ok git_args -> (git_args.old_file, git_args.new_file, git_args.path)
+    else
+      match config.positional_args with
+      | [f1; f2] -> (f1, f2, f2)
+      | _ -> failwith "FILE1.als and FILE2.als are required for diff"
   in
 
   let base_renderer_config =
@@ -136,7 +151,7 @@ let diff_cmd ~config ~domain_mgr =
         in base
       | None ->
         (* Auto-discover .alsdiff.json when neither --config nor --preset specified *)
-        match discover_config_file ~file2 with
+        match discover_config_file ~reference_path with
         | Some auto_config -> load_and_report_config auto_config
         | None -> Text_renderer.quiet
   in
@@ -156,26 +171,37 @@ let diff_cmd ~config ~domain_mgr =
   in
 
   let liveset_patch = Liveset.diff liveset1 liveset2 in
+  let has_changes = not (Liveset.Patch.is_empty liveset_patch) in
 
   let liveset_change =
-    if Liveset.Patch.is_empty liveset_patch then
-      `Unchanged
-    else
+    if has_changes then
       `Modified liveset_patch
+    else
+      `Unchanged
   in
 
   let views = create_views liveset_change in
 
   let output = render_views renderer_config views in
-  Fmt.pr "%s@." output
+  Fmt.pr "%s@." output;
 
-let file1 =
-  let doc = "First .als file to compare (required for diff, not needed with --dump-schema)" in
-  Arg.(value & pos 0 (some string) None & info [] ~docv:"FILE1.als" ~doc)
+  (* Exit code: git mode uses trustExitCode semantics *)
+  if config.git_mode then
+    if has_changes then 1 else 0
+  else
+    0
 
-let file2 =
-  let doc = "Second .als file to compare (required for diff, not needed with --dump-schema)" in
-  Arg.(value & pos 1 (some string) None & info [] ~docv:"FILE2.als" ~doc)
+let positional_args =
+  let doc = "Positional arguments. Normal mode: FILE1.als FILE2.als. \
+             Git mode (--git): path old-file old-hex old-mode new-file new-hex new-mode" in
+  Arg.(value & pos_all string [] & info [] ~docv:"ARGS" ~doc)
+
+let git_mode =
+  let doc = "Enable git external diff driver mode. Expects exactly 7 positional arguments: \
+             path old-file old-hex old-mode new-file new-hex new-mode. \
+             Exit code 0 = no changes, 1 = changes found (for trustExitCode). \
+             All other flags (--preset, --config, etc.) work in git mode." in
+  Arg.(value & flag & info ["git"] ~doc)
 
 let config_file =
   let doc = "Load configuration from JSON file. Overrides --preset, individual CLI options override config values." in
@@ -269,6 +295,22 @@ let cmd =
     `P "3. .alsdiff.json in git repository root";
     `P "4. .alsdiff.json in user's home directory (~)";
     `P "5. quiet preset (default)";
+    `S "GIT DIFF DRIVER MODE";
+    `P "$(cmd) can be used as a git external diff driver. When invoked with $(b,--git), \
+        it expects exactly 7 positional arguments as passed by git:";
+    `P "$(b,path old-file old-hex old-mode new-file new-hex new-mode)";
+    `P "In git mode, exit code 0 means no differences found, and exit code 1 means \
+        differences were found. This is compatible with git's $(b,trustExitCode) setting.";
+    `P "Configure git to use alsdiff (.gitconfig):";
+    `Pre "[diff \"als\"]";
+    `Pre "    command = alsdiff --preset quiet --git";
+    `Pre "    trustExitCode = true";
+    `P "Configure .gitattributes:";
+    `Pre "*.als diff=als";
+    `P "Git mode with custom preset:";
+    `Pre "$(cmd) --preset inline --git path old-file old-hex old-mode new-file new-hex new-mode";
+    `P "Git mode with config file:";
+    `Pre "$(cmd) --config myconfig.json --git path old-file old-hex old-mode new-file new-hex new-mode";
     `S Manpage.s_options;
     `P "$(b,--config FILE) loads configuration from JSON file. Takes precedence over auto-discovery. The --preset option is ignored when --config is specified. Individual CLI options override values from config file.";
     `P "$(b,--preset PRESET) sets the output detail preset. Available presets: $(b,compact), $(b,composer), $(b,full), $(b,mixing), $(b,quiet) (default), $(b,verbose). Takes precedence over auto-discovery but ignored when --config is specified.";
@@ -281,18 +323,21 @@ let cmd =
     `P "$(b,--dump-preset PRESET) dumps preset configuration as JSON to stdout and exits. Same format as --config file. Available presets: $(b,compact), $(b,composer), $(b,full), $(b,inline), $(b,mixing), $(b,quiet), $(b,verbose).";
     `P "$(b,--dump-schema) dumps JSON schema for configuration to stdout and exits.";
     `P "$(b,--validate-config FILE) validates a configuration file against the JSON schema and exits. Useful for checking config files before use.";
+    `P "$(b,--git) enables git external diff driver mode. Expects exactly 7 positional arguments from git. Exit code 0 = no differences, 1 = differences found. All other options work in git mode.";
     `S Manpage.s_bugs;
     `P "Report bugs at https://github.com/krfantasy/alsdiff/issues";
   ] in
   let exits =
-    Cmd.Exit.info 1 ~doc:"on known errors (file I/O, XML parsing, diff logic mismatches)." ::
-    List.filter (fun e -> Cmd.Exit.info_code e <> 123) Cmd.Exit.defaults
+    Cmd.Exit.info 0 ~doc:"success (normal mode), or no differences found (git mode with trustExitCode)." ::
+    Cmd.Exit.info 1 ~doc:"differences found (git mode with trustExitCode), or known errors in normal mode." ::
+    Cmd.Exit.info 2 ~doc:"invalid arguments (e.g., wrong number of positional args in git mode)." ::
+    List.filter (fun e -> Cmd.Exit.info_code e <> 123 && Cmd.Exit.info_code e <> 0) Cmd.Exit.defaults
   in
   Cmd.make (Cmd.info "alsdiff" ~version:(match version () with
       | None -> "dev"
       | Some v -> Version.to_string v) ~doc ~man ~exits) @@
-  let+ file1 and+ file2 and+ config_file and+ preset and+ dump_preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items and+ dump_schema and+ validate_config in
-  let cfg = { file1; file2; config_file; preset; dump_preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items; dump_schema; validate_config } in
+  let+ positional_args and+ git_mode and+ config_file and+ preset and+ dump_preset and+ prefix_added and+ prefix_removed and+ prefix_modified and+ prefix_unchanged and+ note_name_style and+ max_collection_items and+ dump_schema and+ validate_config in
+  let cfg = { positional_args; git_mode; config_file; preset; dump_preset; prefix_added; prefix_removed; prefix_modified; prefix_unchanged; note_name_style; max_collection_items; dump_schema; validate_config } in
   config_ref := Some cfg;
   ()
 
@@ -301,6 +346,12 @@ let main () =
 
   (* Helper to run the command safely *)
   let safe_run cmd_term =
+    (* Helper to get error exit code based on mode *)
+    let error_exit_code () =
+      match !config_ref with
+      | Some cfg when cfg.git_mode -> 2
+      | _ -> 1
+    in
     try
       let exit_code = Cmd.eval cmd_term in
       if exit_code = 0 then
@@ -339,19 +390,30 @@ let main () =
                   print_endline (Text_renderer.detail_config_schema_to_string ());
                   0
                 end else begin
-                  (* Normal diff operation - requires both files *)
-                  match cfg.file1, cfg.file2 with
-                  | Some _, Some _ ->
+                  (* Normal diff operation - validate args based on mode *)
+                  let has_valid_args =
+                    if cfg.git_mode then
+                      (* Git mode needs exactly 7 positional args *)
+                      List.length cfg.positional_args = 7
+                    else
+                      (* Normal mode needs exactly 2 positional args *)
+                      List.length cfg.positional_args = 2
+                  in
+                  if has_valid_args then
                     Eio_main.run @@ fun env ->
                     let domain_mgr = Eio.Stdenv.domain_mgr env in
-                    diff_cmd ~config:cfg ~domain_mgr;
-                    0
-                  | _ ->
+                    diff_cmd ~config:cfg ~domain_mgr
+                  else if cfg.git_mode then begin
+                    Fmt.epr "Error: --git mode requires exactly 7 positional arguments@.";
+                    Fmt.epr "Usage: alsdiff --git path old-file old-hex old-mode new-file new-hex new-mode@.";
+                    2
+                  end else begin
                     Fmt.epr "Error: FILE1.als and FILE2.als are required for diff@.";
                     Fmt.epr "Use --dump-schema to generate configuration schema without files.@.";
                     Fmt.epr "Use --dump-preset PRESET to dump a preset configuration as JSON.@.";
                     Fmt.epr "Use --validate-config FILE to validate a configuration file.@.";
                     1
+                  end
                 end))
       else
         exit_code
@@ -360,32 +422,32 @@ let main () =
       let bt = Printexc.get_backtrace () in
       Fmt.epr "Error: Failed to process file '%s': %s@." file msg;
       Fmt.epr "%s@." bt;
-      1
+      error_exit_code ()
     | Xml.Xml_error (xml, msg) ->
       let bt = Printexc.get_backtrace () in
       Fmt.epr "Error: Invalid XML format: %s@.%a@." msg Xml.pp xml;
       Fmt.epr "%s@." bt;
-      1
+      error_exit_code ()
     | Upath.Path_not_found (path, xml) ->
       let bt = Printexc.get_backtrace () in
       Fmt.epr "Error: Required path '%s' not found in @.%a@." path Xml.pp xml;
       Fmt.epr "%s@." bt;
-      1
+      error_exit_code ()
     | Sys_error msg ->
       let bt = Printexc.get_backtrace () in
       Fmt.epr "System Error: %s@." msg;
       Fmt.epr "%s@." bt;
-      1
+      error_exit_code ()
     | Failure msg ->
       let bt = Printexc.get_backtrace () in
       Fmt.epr "Error: %s@." msg;
       Fmt.epr "%s@." bt;
-      1
+      error_exit_code ()
     | exn ->
       let bt = Printexc.get_backtrace () in
       Fmt.epr "Unexpected error: %s@.%s@." (Printexc.to_string exn) bt;
       Fmt.epr "Please report this bug at https://github.com/krfantasy/alsdiff/issues@.";
-      1
+      error_exit_code ()
   in
 
   safe_run cmd
