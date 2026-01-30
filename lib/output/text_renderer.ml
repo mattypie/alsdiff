@@ -142,17 +142,7 @@ and pp_section cfg fmt (section : item) =
   let level = get_effective_detail cfg section.change section.domain_type in
   if not (should_render_level level) then ()
   else
-    (* Filter sub_views based on show_unchanged_fields and detail levels *)
-    let sub_views = if cfg.show_unchanged_fields
-      then section.children
-      else List.filter (fun v ->
-          match v with
-          | Field f -> f.change <> Unchanged
-          | Item e -> e.change <> Unchanged
-          | Collection c -> c.change <> Unchanged
-        ) section.children
-    in
-    (* Further filter to remove views that will render nothing due to type_overrides *)
+    (* Filter sub_views based on detail levels *)
     let sub_views = List.filter (fun v ->
         match v with
         | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
@@ -162,7 +152,7 @@ and pp_section cfg fmt (section : item) =
           should_render_level col_level &&
           (* Also check if any elements would render *)
           (filter_collection_elements cfg c) <> []
-      ) sub_views in
+      ) section.children in
     (* Render section header *)
     if level = Summary then begin
       (* Don't show count for LiveSet - it shows sub-views in Summary mode *)

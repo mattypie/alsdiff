@@ -20,10 +20,10 @@ type change_breakdown = {
 (* Per-change-type override for domain types *)
 (* None means use the base change_type default *)
 type per_change_override = {
-  added : detail_level option; [@ref "detail_level"]
-  removed : detail_level option; [@ref "detail_level"]
-  modified : detail_level option; [@ref "detail_level"]
-  unchanged : detail_level option; [@ref "detail_level"]
+  added : detail_level option; [@ref "detail_level"] [@default None]
+  removed : detail_level option; [@ref "detail_level"] [@default None]
+  modified : detail_level option; [@ref "detail_level"] [@default None]
+  unchanged : detail_level option; [@ref "detail_level"] [@default None]
 }
 [@@deriving yojson, jsonschema]
 
@@ -49,22 +49,21 @@ type detail_config = {
   *)
   type_overrides : type_override_entry list;
 
-  max_collection_items : int option;
-  show_unchanged_fields : bool;
+  max_collection_items : int option [@default None];
 
   (* Customizable prefixes for each change type *)
-  prefix_added : string;
-  prefix_removed : string;
-  prefix_modified : string;
-  prefix_unchanged : string;
+  prefix_added : string [@default "+"];
+  prefix_removed : string [@default "-"];
+  prefix_modified : string [@default "*"];
+  prefix_unchanged : string [@default "="];
 
   (* Note name display style for MIDI notes *)
-  note_name_style : note_display_style; [@ref "note_display_style"]
+  note_name_style : note_display_style; [@ref "note_display_style"] [@default Sharp]
 
   (* Indentation width for rendered output (number of spaces) *)
-  indent_width : int;
+  indent_width : int [@default 2];
 }
-[@@deriving yojson, jsonschema]
+[@@deriving yojson { strict = false }, jsonschema]
 
 (* Helper: Create a per_change_override with all fields set to None *)
 let no_override () = {
@@ -220,17 +219,7 @@ let count_changed_elements (cfg : detail_config) (col : collection) : int =
 
 (* Count filtered sub-views in a section *)
 let count_changed_sub_views (cfg : detail_config) (section : item) : int =
-  (* First filter: remove unchanged if show_unchanged_fields is false *)
-  let sub_views = if cfg.show_unchanged_fields
-    then section.children
-    else List.filter (fun v ->
-        match v with
-        | Field f -> f.change <> Unchanged
-        | Item e -> e.change <> Unchanged
-        | Collection c -> c.change <> Unchanged
-      ) section.children
-  in
-  (* Second filter: remove views that won't render due to type_overrides *)
+  (* Filter views that will render based on detail levels *)
   let sub_views = List.filter (fun v ->
       match v with
       | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
@@ -239,7 +228,7 @@ let count_changed_sub_views (cfg : detail_config) (section : item) : int =
         let col_level = get_effective_detail cfg c.change c.domain_type in
         should_render_level col_level &&
         (filter_collection_elements cfg c) <> []
-    ) sub_views
+    ) section.children
   in
   List.length sub_views
 
@@ -284,17 +273,7 @@ let count_elements_breakdown (cfg : detail_config) (col : collection) : change_b
 
 (* Count filtered sub-views by change type *)
 let count_sub_views_breakdown (cfg : detail_config) (section : item) : change_breakdown =
-  (* First filter: remove unchanged if show_unchanged_fields is false *)
-  let sub_views = if cfg.show_unchanged_fields
-    then section.children
-    else List.filter (fun v ->
-        match v with
-        | Field f -> f.change <> Unchanged
-        | Item e -> e.change <> Unchanged
-        | Collection c -> c.change <> Unchanged
-      ) section.children
-  in
-  (* Second filter: remove views that won't render due to type_overrides *)
+  (* Filter views that will render based on detail levels *)
   let sub_views = List.filter (fun v ->
       match v with
       | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
@@ -303,7 +282,7 @@ let count_sub_views_breakdown (cfg : detail_config) (section : item) : change_br
         let col_level = get_effective_detail cfg c.change c.domain_type in
         should_render_level col_level &&
         (filter_collection_elements cfg c) <> []
-    ) sub_views
+    ) section.children
   in
   (* Count by change type using helper *)
   List.fold_left (fun (acc : change_breakdown) v ->
@@ -360,19 +339,16 @@ let compact = {
   (* Limit output - more than quiet (10) but bounded to prevent overwhelming diffs *)
   max_collection_items = Some 20;
 
-  (* Hide unchanged fields for cleaner diff output *)
-  show_unchanged_fields = false;
-
-  (* Standard prefixes *)
+  (* Standard prefixes - using defaults *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names *)
+  (* Sharp note names - using default *)
   note_name_style = Sharp;
 
-  (* Indentation width *)
+  (* Indentation width - using default *)
   indent_width = 2;
 }
 
@@ -392,19 +368,16 @@ let full = {
   (* Safety limit: prevent overwhelming output from large MIDI/automation collections *)
   max_collection_items = Some 100;
 
-  (* Hide unchanged fields to focus on actual changes *)
-  show_unchanged_fields = false;
-
-  (* Standard prefixes *)
+  (* Standard prefixes - using defaults *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names *)
+  (* Sharp note names - using default *)
   note_name_style = Sharp;
 
-  (* Indentation width *)
+  (* Indentation width - using default *)
   indent_width = 2;
 }
 
@@ -433,19 +406,16 @@ let inline = {
   (* Moderate limit - inline format is compact so we can show more *)
   max_collection_items = Some 30;
 
-  (* Hide unchanged fields *)
-  show_unchanged_fields = false;
-
-  (* Standard prefixes *)
+  (* Standard prefixes - using defaults *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names *)
+  (* Sharp note names - using default *)
   note_name_style = Sharp;
 
-  (* Indentation width *)
+  (* Indentation width - using default *)
   indent_width = 2;
 }
 
@@ -467,19 +437,16 @@ let quiet = {
   (* Low limit for minimal output *)
   max_collection_items = Some 0;
 
-  (* Hide unchanged fields *)
-  show_unchanged_fields = false;
-
-  (* Standard prefixes *)
+  (* Standard prefixes - using defaults *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names *)
+  (* Sharp note names - using default *)
   note_name_style = Sharp;
 
-  (* Indentation width *)
+  (* Indentation width - using default *)
   indent_width = 2;
 }
 
@@ -499,19 +466,16 @@ let verbose = {
   (* No limit - show everything *)
   max_collection_items = None;
 
-  (* Show unchanged fields for complete picture *)
-  show_unchanged_fields = true;
-
-  (* Standard prefixes *)
+  (* Standard prefixes - using defaults *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names *)
+  (* Sharp note names - using default *)
   note_name_style = Sharp;
 
-  (* Indentation width *)
+  (* Indentation width - using default *)
   indent_width = 2;
 }
 
@@ -579,19 +543,16 @@ let mixing = {
   (* Higher limit for automation-heavy workflows *)
   max_collection_items = Some 50;
 
-  (* Hide unchanged fields for cleaner output *)
-  show_unchanged_fields = false;
-
-  (* Standard prefixes *)
+  (* Standard prefixes - using defaults *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names (though notes are ignored in this preset) *)
+  (* Sharp note names (though notes are ignored in this preset) - using default *)
   note_name_style = Sharp;
 
-  (* Indentation width *)
+  (* Indentation width - using default *)
   indent_width = 2;
 }
 
@@ -664,19 +625,16 @@ let composer = {
   (* No limit - composers need to see all notes/clips in their arrangements *)
   max_collection_items = None;
 
-  (* Hide unchanged fields for cleaner diff output *)
-  show_unchanged_fields = false;
-
-  (* Standard prefixes *)
+  (* Standard prefixes - using defaults *)
   prefix_added = "+";
   prefix_removed = "-";
   prefix_modified = "*";
   prefix_unchanged = "=";
 
-  (* Sharp note names (standard for DAW MIDI editing) *)
+  (* Sharp note names (standard for DAW MIDI editing) - using default *)
   note_name_style = Sharp;
 
-  (* Indentation width *)
+  (* Indentation width - using default *)
   indent_width = 2;
 }
 
@@ -791,6 +749,15 @@ let detail_config_json_schema () : Yojson.Basic.t =
       ]
       detail_config_jsonschema
   in
+  (* Fields with defaults that should be optional in the JSON schema *)
+  let optional_fields_with_defaults = [
+    "prefix_added";
+    "prefix_removed";
+    "prefix_modified";
+    "prefix_unchanged";
+    "note_name_style";
+    "indent_width";
+  ] in
   (* Add $id to schema root and $schema property for config files *)
   let schema_uri = "https://raw.githubusercontent.com/krfantasy/alsdiff/master/docs/config.schema.json" in
   match base_schema with
@@ -803,8 +770,21 @@ let detail_config_json_schema () : Yojson.Basic.t =
            ("type", `String "string");
            ("description", `String "JSON Schema URI pointing to the schema for this config file.");
          ]) :: props in
+       (* Filter out defaulted fields from required array *)
        let updated_fields = List.map (fun (k, v) ->
            if k = "properties" then ("properties", `Assoc with_schema_prop)
+           else if k = "required" then (
+             match v with
+             | `List required_fields ->
+               (* Remove fields with defaults from required array *)
+               let filtered = List.filter (fun (field : Yojson.Basic.t) ->
+                   match field with
+                   | `String s -> not (List.mem s optional_fields_with_defaults)
+                   | _ -> true
+                 ) required_fields in
+               ("required", `List filtered)
+             | _ -> (k, v)
+           )
            else (k, v)
          ) fields_with_id in
        `Assoc updated_fields
@@ -813,6 +793,11 @@ let detail_config_json_schema () : Yojson.Basic.t =
 
 (** Generate JSON schema as a formatted string *)
 let detail_config_schema_to_string () : string =
+  (* Use base schema directly without nullable post-processing.
+     The ppx_deriving_jsonschema library handles option types by omitting them
+     from the required array. Optional fields use [@default None] which causes
+     PPX to omit them when encoding (not emit null) and accept both missing and
+     explicit null when decoding. *)
   Yojson.Basic.pretty_to_string (detail_config_json_schema ())
 
 (** Write JSON schema to a file *)
@@ -907,8 +892,7 @@ let validate_config_file (file_path : string) : (unit, string) result =
     | Error err -> Error (Printf.sprintf "Validation failed for %s:\n%s" file_path err.details)
     | Ok () ->
       (* Step 3: Parse config for business logic validation *)
-      let filtered_json = filter_schema_metadata_fields json in
-      let json_str = Yojson.Basic.to_string filtered_json in
+      let json_str = Yojson.Basic.to_string (filter_schema_metadata_fields json) in
       match detail_config_of_yojson (Yojson.Safe.from_string json_str) with
       | Error msg -> Error (Printf.sprintf "Step 3. Config parsing failed in %s: %s" file_path msg)
       | Ok cfg ->
@@ -939,8 +923,7 @@ let load_and_validate_config (file_path : string) : (detail_config, string) resu
       Error (Printf.sprintf "Config validation failed in %s:\n%s" file_path err.details)
     | Ok () ->
       (* Filter out schema metadata fields before PPX parsing *)
-      let filtered_json = filter_schema_metadata_fields json_basic in
-      let filtered_str = Yojson.Basic.to_string filtered_json in
+      let filtered_str = Yojson.Basic.to_string (filter_schema_metadata_fields json_basic) in
       (* Parse as Safe for yojson deserialization *)
       let json_safe = Yojson.Safe.from_string filtered_str in
       match detail_config_of_yojson json_safe with
@@ -985,7 +968,8 @@ let detail_config_of_yojson_with_default json =
 (* ==================== JSON Export with Schema Metadata ==================== *)
 
 (** Convert detail_config to Yojson with $schema field.
-    This is the preferred function for exporting config JSON. *)
+    This is the preferred function for exporting config JSON.
+    Optional fields with None values are omitted by PPX via [@default None]. *)
 let detail_config_to_yojson_with_schema (cfg : detail_config) : Yojson.Safe.t =
   let base_json = detail_config_to_yojson cfg in
   match base_json with

@@ -238,7 +238,6 @@
     "prefix_modified": { "type": "string" },
     "prefix_removed": { "type": "string" },
     "prefix_added": { "type": "string" },
-    "show_unchanged_fields": { "type": "boolean" },
     "max_collection_items": { "type": "integer" },
     "type_overrides": {
       "type": "array",
@@ -258,8 +257,6 @@
     "added": { "$ref": "#/$defs/detail_level" }
   },
   "required": [
-    "indent_width", "note_name_style", "prefix_unchanged", "prefix_modified",
-    "prefix_removed", "prefix_added", "show_unchanged_fields",
     "type_overrides", "unchanged", "modified", "removed", "added"
   ],
   "additionalProperties": false

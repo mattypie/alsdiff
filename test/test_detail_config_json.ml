@@ -61,8 +61,6 @@ let test_detail_config_roundtrip () =
     Alcotest.(check bool) "config unchanged" (test_cfg.unchanged = parsed.unchanged) true;
     Alcotest.(check int) "type_overrides length"
       (List.length test_cfg.type_overrides) (List.length parsed.type_overrides);
-    Alcotest.(check bool) "show_unchanged_fields"
-      test_cfg.show_unchanged_fields parsed.show_unchanged_fields;
     Alcotest.(check string) "prefix_added" test_cfg.prefix_added parsed.prefix_added
   | Error msg ->
     Alcotest.failf "detail_config failed: %s" msg
@@ -80,7 +78,6 @@ let test_detail_config_with_overrides () =
           }; };
     ];
     max_collection_items = Some 100;
-    show_unchanged_fields = true;
   } in
   let json = detail_config_to_yojson custom_cfg in
   match detail_config_of_yojson json with
@@ -95,7 +92,7 @@ let test_detail_config_with_overrides () =
         | Some a, Some b -> Alcotest.(check bool) "device override added" (a = b) true
         | _ -> Alcotest.failf "device override added mismatch")
      | None -> Alcotest.failf "device override not found");
-    Alcotest.(check bool) "show_unchanged_fields" true parsed.show_unchanged_fields
+    Alcotest.(check bool) "max_collection_items" (parsed.max_collection_items = Some 100) true
   | Error msg ->
     Alcotest.failf "detail_config with overrides failed: %s" msg
 
@@ -196,7 +193,6 @@ let test_validate_invalid_type () =
       ("modified", `List [`String "Full"]);
       ("unchanged", `List [`String "Ignore"]);
       ("type_overrides", `List []);
-      ("show_unchanged_fields", `Bool false);
       ("prefix_added", `String "+");
       ("prefix_removed", `String "-");
       ("prefix_modified", `String "*");
@@ -215,7 +211,6 @@ let test_validate_missing_required () =
       ("modified", `List [`String "Full"]);
       ("unchanged", `List [`String "Ignore"]);
       ("type_overrides", `List []);
-      ("show_unchanged_fields", `Bool false);
       ("prefix_added", `String "+");
       ("prefix_removed", `String "-");
       ("prefix_modified", `String "*");

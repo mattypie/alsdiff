@@ -47,16 +47,11 @@ type config = {
 }
 
 let load_config_from_json file_path =
-  try
-    let json_value = Yojson.Safe.from_file file_path in
-    match Text_renderer.detail_config_of_yojson_with_default json_value with
-    | Ok cfg -> cfg
-    | Error msg -> failwith ("Failed to parse config file: " ^ msg)
-  with
-  | Yojson.Json_error msg ->
-    failwith ("JSON error in " ^ file_path ^ ": " ^ msg)
-  | Sys_error msg ->
-    failwith ("I/O error reading " ^ file_path ^ ": " ^ msg)
+  match Text_renderer.load_and_validate_config file_path with
+  | Ok cfg -> cfg
+  | Error msg ->
+    Fmt.epr "%s@." msg;
+    exit 1
 
 let find_git_root () =
   let rec search path =

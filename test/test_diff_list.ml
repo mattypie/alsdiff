@@ -252,13 +252,13 @@ let test_diff_list_merged () =
   (* Verify semantic correctness: all old and new values are accounted for *)
   let old_values = result4
     |> List.filter_map (function
-      | `Removed v | `Modified {oldval=v; _} -> Some v
-      | _ -> None)
+        | `Removed v | `Modified {oldval=v; _} -> Some v
+        | _ -> None)
     |> List.sort Int.compare in
   let new_values = result4
     |> List.filter_map (function
-      | `Added v | `Modified {newval=v; _} -> Some v
-      | _ -> None)
+        | `Added v | `Modified {newval=v; _} -> Some v
+        | _ -> None)
     |> List.sort Int.compare in
 
   (* All old values [1;2] should be present *)
