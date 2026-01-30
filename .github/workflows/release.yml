@@ -97,7 +97,7 @@ jobs:
         run: opam exec -- dune build
 
       - name: Install
-        run: opam exec -- dune install --prefix install
+        run: opam exec -- dune install alsdiff --prefix install
 
       - name: Create zip (Linux/macOS)
         if: runner.os != 'Windows'
