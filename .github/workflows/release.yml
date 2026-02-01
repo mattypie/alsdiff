@@ -83,6 +83,7 @@ jobs:
 
       - name: Extract version
         id: get_version
+        shell: bash
         run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
       - name: Set-up OCaml
@@ -103,13 +104,14 @@ jobs:
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          zip alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip install/bin/alsdiff
+          zip -j alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip install/bin/alsdiff
 
       - name: Create zip (Windows)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          7z a alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip install/bin/alsdiff.exe
+          cd install/bin
+          7z a ../../alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.get_version.outputs.version }}.zip alsdiff.exe
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v1
