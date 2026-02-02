@@ -265,32 +265,25 @@ let count_fields_breakdown (elem : item) : change_breakdown =
       | _ -> acc
     ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) elem.children
 
-(* Count filtered elements by change type *)
-let count_elements_breakdown (cfg : detail_config) (col : collection) : change_breakdown =
-  let filtered = filter_collection_elements cfg col in
-  List.fold_left (fun (acc : change_breakdown) (e : item) -> increment_breakdown acc e.change)
-    ({ added = 0; removed = 0; modified = 0 } : change_breakdown) filtered
-
-(* Count filtered sub-views by change type *)
-let count_sub_views_breakdown (cfg : detail_config) (section : item) : change_breakdown =
-  (* Filter views that will render based on detail levels *)
-  let sub_views = List.filter (fun v ->
+(* Count ALL elements by change type for summary display, not just filtered ones *)
+let count_elements_breakdown (_cfg : detail_config) (col : collection) : change_breakdown =
+  (* Extract all Item views from the collection, without filtering by detail level *)
+  List.fold_left (fun (acc : change_breakdown) (v : view) ->
       match v with
-      | Field f -> should_render_level (get_effective_detail cfg f.change f.domain_type)
-      | Item e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
-      | Collection c ->
-        let col_level = get_effective_detail cfg c.change c.domain_type in
-        should_render_level col_level &&
-        (filter_collection_elements cfg c) <> []
-    ) section.children
-  in
-  (* Count by change type using helper *)
+      | Item e -> increment_breakdown acc e.change
+      | _ -> acc
+    ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) col.items
+
+(* Count ALL sub-views by change type for Summary mode display *)
+let count_sub_views_breakdown (_cfg : detail_config) (section : item) : change_breakdown =
+  (* Count all sub-views regardless of whether they would render.
+     Summary mode shows counts of sub-items, so we count everything. *)
   List.fold_left (fun (acc : change_breakdown) v ->
       match v with
       | Field f -> increment_breakdown acc f.change
       | Item e -> increment_breakdown acc e.change
       | Collection c -> increment_breakdown acc c.change
-    ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) sub_views
+    ) ({ added = 0; removed = 0; modified = 0 } : change_breakdown) section.children
 
 (* Preset configurations for common use cases *)
 
@@ -317,11 +310,11 @@ let compact = {
                                  ();
     };
 
-    (* Clips: show clip structure (Loop, Notes, TimeSignature) *)
-    { domain_type = DTClip; override = uniform_override Compact; };
+    (* Clips: Summary to show counts without individual clip details *)
+    { domain_type = DTClip; override = uniform_override Summary; };
 
-    (* Devices: show device structure (Parameters, Preset) *)
-    { domain_type = DTDevice; override = uniform_override Compact; };
+    (* Devices: Summary to show counts without individual device details *)
+    { domain_type = DTDevice; override = uniform_override Summary; };
 
     (* LiveSet: show top-level structure (Tracks, Locators) *)
     { domain_type = DTLiveset; override = uniform_override Compact; };

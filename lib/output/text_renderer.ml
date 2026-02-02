@@ -113,12 +113,12 @@ let rec pp_item cfg fmt (elem : item) =
 and pp_collection cfg fmt (col : collection) =
   let level = get_effective_detail cfg col.change col.domain_type in
   if not (should_render_level level) then ()
+  else if level = Summary then
+    (* Summary mode: always show counts, even if elements are filtered out *)
+    render_summary_breakdown cfg fmt (count_elements_breakdown cfg col) col.name col.change
   else
     let elements, truncation = filter_collection_elements_with_info cfg col in
     if elements = [] then ()
-    else if level = Summary then
-      (* Summary mode: name + change symbol + counts *)
-      render_summary_breakdown cfg fmt (count_elements_breakdown cfg col) col.name col.change
     else if level = Compact then
       (* Compact mode: name + symbol only *)
       Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
@@ -149,9 +149,13 @@ and pp_section cfg fmt (section : item) =
         | Item e -> should_render_level (get_effective_detail cfg e.change e.domain_type)
         | Collection c ->
           let col_level = get_effective_detail cfg c.change c.domain_type in
-          should_render_level col_level &&
-          (* Also check if any elements would render *)
-          (filter_collection_elements cfg c) <> []
+          if not (should_render_level col_level) then false
+          else if col_level = Summary then
+            (* Summary mode: always include collections, they show counts even without elements *)
+            true
+          else
+            (* Other modes: check if any elements would render *)
+            (filter_collection_elements cfg c) <> []
       ) section.children in
     (* Render section header *)
     if level = Summary then begin
