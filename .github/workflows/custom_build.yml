@@ -1,0 +1,113 @@
+name: Custom Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch or tag to build'
+        required: false
+        type: string
+        default: 'master'
+      commit_sha:
+        description: 'Git commit SHA to build (leave empty to use branch HEAD)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os_name: ubuntu
+            arch: x86_64
+          - os: macos-latest
+            os_name: macos
+            arch: arm64
+          - os: macos-15-intel
+            os_name: macos
+            arch: x86_64
+          - os: windows-latest
+            os_name: windows
+            arch: x86_64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          # Determine what to checkout
+          # If commit_sha is provided, use that; otherwise use the branch input
+          ref: ${{ inputs.commit_sha || inputs.branch }}
+
+      - name: Get version info
+        id: version_info
+        shell: bash
+        run: |
+          # Get the branch name from input
+          BRANCH_OR_TAG="${{ inputs.branch }}"
+
+          # Get commit SHA (use input if provided, otherwise get from HEAD)
+          if [ -n "${{ inputs.commit_sha }}" ]; then
+            COMMIT_SHA="${{ inputs.commit_sha }}"
+          else
+            COMMIT_SHA=$(git rev-parse HEAD)
+          fi
+
+          # Short SHA (7 chars) for version format
+          VERSION="${BRANCH_OR_TAG}-${COMMIT_SHA:0:7}"
+
+          echo "branch_or_tag=${BRANCH_OR_TAG}" >> $GITHUB_OUTPUT
+          echo "commit_sha=${COMMIT_SHA}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+          echo "Building: ${VERSION}"
+          echo "Branch/Tag: ${BRANCH_OR_TAG}"
+          echo "Commit: ${COMMIT_SHA}"
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5
+
+      - name: Install dependencies
+        run: opam install . --deps-only
+
+      - name: Build
+        run: opam exec -- dune build
+
+      - name: Install
+        run: opam exec -- dune install alsdiff --prefix install
+
+      - name: Create zip (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          zip -j alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.version_info.outputs.version }}.zip install/bin/alsdiff
+
+      - name: Create zip (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          cd install/bin
+          7z a ../../alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.version_info.outputs.version }}.zip alsdiff.exe
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            alsdiff-${{ matrix.os_name }}-${{ matrix.arch }}-${{ steps.version_info.outputs.version }}.zip
+          generate_release_notes: true
+          tag_name: ${{ steps.version_info.outputs.version }}
+          name: Build ${{ steps.version_info.outputs.version }}
+          body: |
+            Custom build from branch/commit: `${{ inputs.branch }}`
+            Commit SHA: `${{ steps.version_info.outputs.commit_sha }}`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
