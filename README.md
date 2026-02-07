@@ -1,27 +1,25 @@
 # alsdiff
 
 ![Build status](https://github.com/krfantasy/alsdiff/actions/workflows/build.yml/badge.svg)
-![GitHub Release](https://img.shields.io/github/v/release/krfantasy/alsdiff)
+[![GitHub Release](https://img.shields.io/github/v/release/krfantasy/alsdiff)](https://github.com/krfantasy/alsdiff/releases/latest)
 [![License](https://img.shields.io/badge/license-THE_LICENSE-magenta)](https://github.com/krfantasy/the-license)
 
-<details>
-<summary>README by Claude Opus 4.5</summary>
-
-A semantic diff tool for Ableton Live Set (.als) files that makes version control meaningful for music producers.
+> `alsdiff` is a semantic diff tool for Ableton Live Set (.als) files that makes version control meaningful for music producers.
 
 ## The Problem
 
-Ableton Live Set files are gzip-compressed XML. Standard `git diff` treats them as binary blobs:
+Ableton Live Set files (`.als`) are gzip-compressed XML. Because standard `git diff` treats them as binary blobs, using version control to track changes in music projects is nearly impossible.
 
-```
-Binary files a/project.als and b/project.als differ
-```
+While existing workarounds allow decompressing `.als` files to `.xml` for diffing, the raw output is overwhelmingly verbose. A typical 20-track project can result in a 200,000-line XML file, making generic text diffs unreadable.
 
-This makes version control nearly useless for tracking changes in music projects.
+`alsdiff` solves this problem. It decompresses `.als` files and parses the XML to perform a **semantic diff**:
 
-## The Solution
+- **Identity-based matching**: Tracks, clips, and devices are matched by their internal IDs, not by position. Renaming or reordering doesn't create false diffs.
+- **Structured hierarchy**: Changes are organized by Live's structure (LiveSet > Tracks > Devices > Parameters).
+- **Human-readable output**: Instead of XML tag changes, you see "Freq: 2500.0 -> 3200.0" or "Notes (3 Added, 1 Removed)".
+- **Noise filtering**: Internal metadata changes (like timestamps or cache data) are ignored by default.
 
-alsdiff parses the internal structure of .als files and produces human-readable diffs showing actual musical changes:
+The output of `alsdiff` looks like this:
 
 ```
 * LiveSet
@@ -39,815 +37,416 @@ alsdiff parses the internal structure of .als files and produces human-readable 
           * Notes (3 Added, 1 Removed)
 ```
 
-## Features
-
-- Semantic diff output showing actual musical changes
-- Git integration as external diff driver
-- Configurable output verbosity (quiet to verbose)
-- Built-in presets for different workflows
-- JSON configuration with schema validation
-- Parallel file loading for performance
-- MIDI note rendering with configurable sharp/flat notation
-
 ## Installation
 
-### Pre-built Binaries
+### Install from pre-built binaries
 
 Download from [GitHub Releases](https://github.com/krfantasy/alsdiff/releases):
 
 ```bash
-# macOS
-chmod +x alsdiff-macos-*
-mv alsdiff-macos-* /usr/local/bin/alsdiff
-
-# Or to ~/bin
-mkdir -p ~/bin
-mv alsdiff-macos-* ~/bin/alsdiff
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
+chmod +x ./alsdiff
+mv alsdiff ~/.local/bin  # or any directory in your PATH
 ```
 
-### Build from Source
+> **Note**: The Windows build is currently **untested** as I don't have access to a Windows machine. Feedback welcome!
 
-Requires OCaml 5.3.0+ and opam:
+### Git Integration
+
+A helper script is provided at [./scripts/setup-git.sh](./scripts/setup-git.sh). Simply download it to your git repository and run `./setup-git.sh`. This script will automatically configure git to use `alsdiff` for `.als` files.
+
+Alternatively, you can perform the setup manually.
+
+1. Add to `.gitattributes` in your repository:
 
 ```bash
-# Install dependencies
+cd /path/to/live_projects/
+echo "*.als diff=alsdiff" >> .gitattributes
+```
+
+2. Configure git:
+
+```bash
+git config --global diff.alsdiff.command "alsdiff <put_extra_args_here> --git"
+```
+
+3. Now `git diff` will use `alsdiff` to compare `.als` files:
+
+```bash
+git diff HEAD~1 -- your-project.als
+```
+
+### Build from source
+
+<details>
+<summary>Click to expand</summary>
+
+#### Prerequisites
+
+ - [opam](https://opam.ocaml.org/doc/Install.html): OCaml package manager
+
+#### Setup (first time only)
+
+```bash
+# Initialize opam if not done before
+opam init
+
+# Create a local switch with the correct OCaml version
+opam switch create . --deps-only --with-test
+
+# Activate the environment
+eval $(opam env)
+```
+
+#### Build
+
+```bash
+# Install dependencies (if not using local switch)
 opam install . --deps-only
 
 # Build
 dune build
 
-# Install
-dune install
+# Run tests (optional)
+dune runtest
 
-# Or run directly
+# Install to ~/.local/bin
+dune install alsdiff --prefix ~/.local/
+```
+
+#### Run without installing
+
+```bash
 dune exec alsdiff -- file1.als file2.als
 ```
 
-## Quick Start
+</details>
 
-```bash
-# Compare two .als files
-alsdiff old-version.als new-version.als
+### Custom build via GitHub Action
 
-# Use a preset for more detail
-alsdiff old.als new.als --preset full
+<details>
+<summary>Click to expand</summary>
 
-# Quiet mode for CI/scripts
-alsdiff old.als new.als --preset quiet
+You can build custom binaries from any branch or commit using the provided GitHub Actions workflow, removing the need for a local OCaml environment.
+
+#### How to use
+
+1. Fork this repository
+2. Go to the Action tab in your fork
+3. Select "Custom Build" workflow
+4. Click "Run workflow"
+5. Choose options:
+   - **Branch**: Any branch (e.g., `master`, `develop`)
+   - **Commit SHA** (optional): Specific commit to build
+6. Click "Run workflow"
+
+#### Output
+
+The workflow builds binaries for Ubuntu, Windows, and macOS (Intel & Apple Silicon). It automatically creates a GitHub Release tagged {branch}-{commit-sha} containing the compiled assets.
+
+#### Download
+
+After the workflow completes, find the release at the bottom of the [Releases page](https://github.com/krfantasy/alsdiff/releases) named like:
+```
+Build master-ca82745
 ```
 
-## Git Integration
-
-### Quick Setup
-
-Run from your music project directory:
-
-```bash
-curl -sSL https://raw.githubusercontent.com/krfantasy/alsdiff/master/setup-git.sh | bash
+Download the appropriate file for your system:
+```
+alsdiff-ubuntu-x86_64-master-ca82745.zip
+alsdiff-macos-arm64-master-ca82745.zip
+alsdiff-macos-x86_64-master-ca82745.zip
+alsdiff-windows-x86_64-master-ca82745.zip
 ```
 
-### Manual Setup
-
-1. Add to `.gitattributes` in your repository:
-
-```
-*.als diff=alsdiff
-```
-
-2. Configure git (global):
-
-```bash
-git config --global diff.alsdiff.command "alsdiff"
-```
-
-3. Now `git diff` works with .als files:
-
-```bash
-git diff                      # Shows semantic diff for staged .als files
-git diff HEAD~1 -- song.als   # Compare with previous commit
-git log -p -- song.als        # Show history with diffs
-```
+</details>
 
 ## Configuration
 
-### Presets
+`alsdiff` uses a flexible configuration system to control output detail levels. You can use built-in presets, custom JSON configuration files, or individual command-line options.
 
-| Preset | Description | Use Case |
-|--------|-------------|----------|
-| `quiet` | Minimal output, change counts only | CI/CD, quick checks |
-| `compact` | Structure overview with summaries | Daily workflow |
-| `inline` | Single-line field display | Compact yet informative |
-| `full` | All details, multiline format | Code review |
-| `verbose` | Everything including unchanged | Debugging, audits |
-| `mixing` | Optimized for mixer changes | Audio engineering |
-| `composer` | MIDI composition focus | Music composition |
+### Quick Start with Presets
+
+The easiest way to get started is using one of the built-in presets:
+
+| Preset | What it feels like | When to use it |
+|---|---|---|
+| `quiet` | Minimal output | Quick checks, very large sets |
+| `compact` | Balanced summary (recommended) | Daily use |
+| `inline` | Detailed, but dense | When you want detail without big blocks |
+| `full` | Very detailed | Deep review / “what exactly changed?” |
+| `mixing` | Emphasizes mixer/devices/automation | Mixing / sound design changes |
+| `composer` | Emphasizes clips/notes | MIDI writing / arrangement changes |
+| `verbose` | Includes unchanged items (can get huge) | Debugging / auditing |
+
 
 ```bash
-alsdiff old.als new.als --preset compact
+alsdiff v1.als v2.als --preset quiet      # Minimal output
+alsdiff v1.als v2.als --preset compact    # Balanced overview
+alsdiff v1.als v2.als --preset full       # All details for changed items
+alsdiff v1.als v2.als --preset inline     # Compact single-line format
+alsdiff v1.als v2.als --preset verbose    # Everything including unchanged
+alsdiff v1.als v2.als --preset mixing     # Stem mixing focus
+alsdiff v1.als v2.als --preset composer   # MIDI composition focus
 ```
 
-### Config File Discovery
+<details>
+<summary>Preset output comparison</summary>
 
-alsdiff automatically discovers configuration in this order:
+**quiet** - Shows only top-level structure:
+```
+* LiveSet
+  * Tracks (1 Modified)
+```
 
-1. `--config FILE` (CLI argument)
-2. `--preset NAME` (CLI argument)
-3. `.alsdiff.json` in the .als file's directory
-4. `.alsdiff.json` in git repository root
-5. `.alsdiff.json` in `$HOME`
-6. `quiet` preset (default)
+**compact** - Shows structure with change counts:
+```
+* LiveSet
+  * Tracks
+    * MidiTrack: "Lead Synth"
+      * Clips (1 Modified)
+      * DeviceChain (1 Added, 1 Modified)
+```
 
-### Custom Configuration
+**full** - Expands all details:
+```
+* LiveSet
+  * Tracks
+    * MidiTrack: "Lead Synth"
+      * DeviceChain
+        + Compressor2
+        * Eq8
+          * Bands
+            * Band.4
+              * Freq: 2500.0 -> 3200.0
+              * Gain: 0.0 -> 2.5
+```
 
-Create `.alsdiff.json`:
+</details>
+
+### Command-Line Options
+
+#### Configuration Selection
+
+- `--preset PRESET` - Use built-in preset (compact, full, inline, mixing, composer, quiet, verbose)
+- `--config FILE` - Load custom configuration from JSON file
+
+#### Display Customization
+
+- `--prefix-added PREFIX` - Custom prefix for added items (default: "+")
+- `--prefix-removed PREFIX` - Custom prefix for removed items (default: "-")
+- `--prefix-modified PREFIX` - Custom prefix for modified items (default: "*")
+- `--prefix-unchanged PREFIX` - Custom prefix for unchanged items (default: "=")
+- `--note-name-style STYLE` - MIDI note display: Sharp or Flat (default: Sharp)
+- `--max-collection-items N` - Limit items shown in collections
+
+#### Git Integration
+
+- `--git` - Enable git diff driver mode (expects 7 positional arguments from git)
+
+#### Utility Commands
+
+- `--dump-preset PRESET` - Output preset as JSON to stdout
+- `--dump-schema` - Output JSON schema to stdout
+- `--validate-config FILE` - Validate config file against schema
+
+
+### Advanced configurations
+<details>
+<summary>Click to expand</summary>
+
+### Configuration File Format
+
+Configuration files use JSON format with the following structure:
 
 ```json
 {
   "$schema": "https://raw.githubusercontent.com/krfantasy/alsdiff/master/docs/config.schema.json",
-  "added": ["Inline"],
+  "added": ["Summary"],
   "removed": ["Summary"],
-  "modified": ["Full"],
+  "modified": ["Summary"],
   "unchanged": ["Ignore"],
-  "max_collection_items": 50,
   "type_overrides": [
     {
       "domain_type": ["DTTrack"],
       "override": {
-        "added": ["Full"],
-        "modified": ["Inline"]
-      }
-    },
-    {
-      "domain_type": ["DTNote"],
-      "override": {
-        "added": ["Summary"],
-        "removed": ["Summary"]
+        "added": ["Inline"],
+        "removed": ["Summary"],
+        "modified": ["Compact"]
       }
     }
-  ]
+  ],
+  "max_collection_items": 20,
+  "prefix_added": "+",
+  "prefix_removed": "-",
+  "prefix_modified": "*",
+  "prefix_unchanged": "=",
+  "note_name_style": ["Sharp"],
+  "indent_width": 2
 }
 ```
+
+#### Configuration Options Reference
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `added` | detail_level | varies | Detail level for added items (one of: Ignore, Summary, Compact, Inline, Full) |
+| `removed` | detail_level | varies | Detail level for removed items |
+| `modified` | detail_level | varies | Detail level for modified items |
+| `unchanged` | detail_level | varies | Detail level for unchanged items |
+| `type_overrides` | array | `[]` | Per-type detail level overrides (see below) |
+| `max_collection_items` | integer/null | varies | Maximum items to show in collections (0 = none, omitted = unlimited) |
+| `prefix_added` | string | `"+"` | Prefix symbol for added items |
+| `prefix_removed` | string | `"-"` | Prefix symbol for removed items |
+| `prefix_modified` | string | `"*"` | Prefix symbol for modified items |
+| `prefix_unchanged` | string | `"="` | Prefix symbol for unchanged items |
+| `note_name_style` | note_style | `["Sharp"]` | MIDI note display style: `["Sharp"]` (C#, D#) or `["Flat"]` (Db, Eb) |
+| `indent_width` | integer | `2` | Number of spaces per indentation level |
+
+**JSON Format Notes:**
+- Detail levels and enums use JSON array format: `["Full"]`, `["Sharp"]`
+- `max_collection_items` can be `null` for unlimited, or omitted to use preset default
+- Preset defaults vary: `quiet` uses 0, `compact` uses 20, `full` uses 100, `verbose` uses null
 
 ### Detail Levels
 
+The configuration system uses five detail levels to control how items are displayed:
+
 | Level | Description |
 |-------|-------------|
-| `Ignore` | Hide completely |
-| `Summary` | Name + change symbol + count |
-| `Compact` | Name + change symbol only |
-| `Inline` | Name + fields on single line |
-| `Full` | Name + all fields (multiline) |
-
-### Domain Types
-
-Configuration can be customized per domain type:
-
-- `DTLiveset` - Top-level project
-- `DTTrack` - All track types
-- `DTDevice` - Devices and plugins
-- `DTClip` - MIDI and audio clips
-- `DTNote` - MIDI notes
-- `DTAutomation` - Automation envelopes
-- `DTEvent` - Automation events
-- `DTOther` - Everything else
-
-## CLI Reference
-
-```
-alsdiff [OPTIONS] FILE1.als FILE2.als
-
-OPTIONS:
-  --preset NAME           Use output preset (compact, full, quiet, etc.)
-  --config FILE           Load configuration from JSON file
-  --dump-schema           Dump JSON schema for configuration
-  --dump-preset NAME      Dump preset as JSON
-  --validate-config FILE  Validate a config file against schema
-  --prefix-added STR      Custom prefix for added items (default: +)
-  --prefix-removed STR    Custom prefix for removed items (default: -)
-  --prefix-modified STR   Custom prefix for modified items (default: *)
-  --prefix-unchanged STR  Custom prefix for unchanged items (default: =)
-  --note-name-style       Note naming: Sharp or Flat
-  --max-collection-items  Limit collection output size
-  --git                   Git diff driver mode
-  --version               Show version
-  --help                  Show help
-```
-
-### Git Diff Driver Mode
-
-When used as a git diff driver, alsdiff receives 7 arguments:
-
-```bash
-alsdiff --git path old-file old-hex old-mode new-file new-hex new-mode
-```
-
-## Architecture
-
-```
-alsdiff/
-├── bin/                    # CLI entry point
-│   └── alsdiff.ml
-├── lib/
-│   ├── base/               # Core utilities (alsdiff_base)
-│   │   ├── file.ml         # .als file decompression
-│   │   ├── xml.ml          # XML parsing
-│   │   ├── upath.ml        # μpath query language
-│   │   ├── equality.ml     # EQUALABLE/IDENTIFIABLE traits
-│   │   └── diff.ml         # Diff algorithm with phantom types
-│   ├── live/               # Ableton domain types (alsdiff_live)
-│   │   ├── liveset.ml      # Top-level structure
-│   │   ├── track.ml        # Track types, routing, mixer
-│   │   ├── device.ml       # Devices, plugins, parameters
-│   │   ├── clip.ml         # MIDI/audio clips, notes
-│   │   └── automation.ml   # Automation envelopes
-│   └── output/             # Output formatting (alsdiff_output)
-│       ├── view_model.ml   # View types (Field, Item, Collection)
-│       ├── config.ml       # Configuration, presets
-│       └── text_renderer.ml # Text rendering engine
-├── presets/                # Built-in JSON presets
-├── test/                   # Test suite
-└── docs/                   # Documentation and schemas
-```
-
-### Key Concepts
-
-**μpath**: A custom XPath-like query language for navigating Ableton's XML:
-```
-/LiveSet/Tracks/MidiTrack[0]/DeviceChain
-/**@type="AudioEffect"
-```
-
-**Phantom Types**: The diff system uses phantom types (`atomic`/`structured`) to distinguish between primitive value changes and complex nested object patches.
-
-**View Model**: A unified type system for rendering output, with `Field`, `Item`, and `Collection` types that can be rendered at different detail levels.
-
-## Building & Testing
-
-```bash
-# Build
-dune build
-
-# Run all tests
-dune runtest
-
-# Run specific test
-dune exec test/test_upath.exe
-dune exec test/test_device.exe
-dune exec test/test_view_model.exe
-
-# Format code
-dune build @fmt
-
-# Clean
-dune clean
-```
-
-## Dependencies
-
-- OCaml 5.3.0+
-- camlzip - Gzip decompression
-- xmlm - XML parsing
-- angstrom - Parser combinators
-- cmdliner - CLI parsing
-- eio/eio_main - Concurrent file loading
-- ppx_deriving_yojson - JSON serialization
-- ppx_deriving_jsonschema - JSON schema generation
-- alcotest - Testing framework
-- fmt - Pretty-printing
-
-</details>
-
-<details>
-<summary>README by Gemini 3 Pro</summary>
-
-> A precise, structure-aware diff tool for Ableton Live Set (`.als`) files, written in OCaml.
-
-`alsdiff` allows you to compare two versions of an Ableton Live project and visualize the changes in a human-readable format. Unlike standard text diff tools which fail on the complex XML structure of `.als` files, `alsdiff` understands the musical context—tracks, devices, clips, and automation.
-
-## Features
-
-- **Semantic Comparison**: Understands Ableton Live constructs (Tracks, Devices, Clips, Automation) rather than just XML lines.
-- **Device Support**: Deep inspection of:
-    - Native Devices (Compressor, EQ8, etc.)
-    - Plugins (VST2, VST3, AU)
-    - Max for Live Devices
-    - Rack Devices (Groups/Chains)
-- **Musical Detail**: Diff MIDI notes, velocities, audio warping, and automation envelopes.
-- **Configurable Output**:
-    - Multiple detail levels (Compact, Full, Verbose, etc.)
-    - JSON configuration files (`.alsdiff.json`)
-    - Custom change prefixes
-- **Git Integration**: Designed to work seamlessly as a git `diff` driver.
-
-## Installation
-
-### Prerequisites
-- OCaml 5.3+
-- opam (OCaml Package Manager)
-
-### Build from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/krfantasy/alsdiff.git
-cd alsdiff
-
-# Install dependencies
-dune build
-
-# Run the executable
-dune exec alsdiff -- --help
-```
-
-To install globally:
-```bash
-cp _build/default/bin/alsdiff.exe /usr/local/bin/alsdiff
-```
-
-## Usage
-
-### Basic CLI
-
-```bash
-alsdiff old.als new.als
-```
-
-### Presets
-
-`alsdiff` comes with several built-in presets to tailor the output verbosity:
-
-- `--preset quiet` (Default): Shows only essential changes.
-- `--preset compact`: Structural overview, ideal for quick checks.
-- `--preset full`: Detailed multiline diff of all changed properties.
-- `--preset inline`: Detailed single-line diffs.
-- `--preset verbose`: exhaustive output including unchanged elements.
-- `--preset composer`: Focuses on musical changes (MIDI notes, clips).
-- `--preset mixing`: Focuses on signal flow (Volume, Pan, Sends, Returns).
-
-Example:
-```bash
-alsdiff project_v1.als project_v2.als --preset composer
-```
-
-### Git Integration
-
-To use `alsdiff` effectively with git, configure it as a diff driver.
-
-1.  **Configure Git Global/Local Config**:
-    ```ini
-    [diff "als"]
-        command = alsdiff --preset quiet --git
-        trustExitCode = true
-    ```
-
-2.  **Set Git Attributes** (in `.gitattributes`):
-    ```
-    *.als diff=als
-    ```
-
-Now `git diff` will automatically use `alsdiff` for Ableton Live files.
-
-### Configuration
-
-You can customize `alsdiff` using a `.alsdiff.json` file. The tool searches for this file in:
-1.  The CLI `--config` argument.
-2.  The directory of the second file being compared.
-3.  The git repository root.
-4.  The user's home directory.
-
-**Example `.alsdiff.json`**:
-```json
-{
-  "prefix_added": "[+]",
-  "prefix_removed": "[-]",
-  "prefix_modified": "[*]",
-  "note_name_style": "Sharp",
-  "max_collection_items": 100
-}
-```
-
-To generate a starting config:
-```bash
-alsdiff --dump-preset full > .alsdiff.json
-```
-
-## Architecture
-
-The project is structured into three main libraries found in `lib/`:
-
-### 1. `alsdiff_base` (`lib/base`)
-Core infrastructure independent of Ableton Live domain logic.
-- **XML Parsing**: Robust handling of `.als` XML structure.
-- **μpath**: A custom XPath-like query language for traversing the project tree.
-- **Diff Logic**: Generic diffing algorithms for atomic and structured types.
-
-### 2. `alsdiff_live` (`lib/live`)
-Domain-specific types and logic for Ableton Live.
-- **Liveset**: Top-level structure parsing.
-- **Tracks**: MIDI, Audio, Group, Return, and Master tracks.
-- **Devices**: Hierarchy of Regular, Plugin, Max4Live, and Group devices.
-- **Clips**: MIDI and Audio clip analysis, including warping and notes.
-
-### 3. `alsdiff_output` (`lib/output`)
-Rendering engine for the diff results.
-- **View Model**: A unified representation (`Field`, `Item`, `Collection`) for rendering.
-- **Text Renderer**: Generates the final CLI output based on detail configurations.
-
-## Development
-
-### Commands
-
-- **Build**: `dune build`
-- **Test**: `dune runtest`
-- **Format**: `dune build @fmt` (Uses `ocamlformat`)
-- **Run Specific Test**: `dune exec test/test_device.exe`
-
-### Code Style
-- **Functional First**: Immutable data structures are preferred.
-- **Type Safety**: Extensive use of phantom types and PPX derivings (`[@@deriving eq, yojson]`) to ensure correctness.
-- **Module Structure**: Library code uses explicit opens at the top; Test code uses scoped opens.
-
-### Project Structure
-```
-├── bin/          # CLI entry point
-├── lib/          # Core libraries
-│   ├── base/     # Generic utilities
-│   ├── live/     # Ableton domain logic
-│   └── output/   # Rendering logic
-├── test/         # Unit and integration tests
-├── plugins/      # Experimental plugins/tools
-└── presets/      # JSON configuration presets
-```
-
-</details>
-
-<details>
-<summary>README by GLM 4.7</summary>
-A diff tool for Ableton Live Set (.als) files. Compare two versions of your Ableton project and see exactly what changed.
-
-## Features
-
-- **Track-level comparison** - See added, removed, or modified tracks (MIDI, Audio, Group, Return, and Master tracks)
-- **Device detection** - Compare Regular devices, Plugin devices (VST2/VST3/AUv2), Max for Live devices, and Group devices with branching
-- **MIDI clip support** - Compare note data, velocities, timing, and clip properties
-- **Audio clip support** - See changes to audio samples, warp markers, and clip settings
-- **Automation tracking** - Compare envelope changes across all automatable parameters
-- **Multiple output formats** - 7 presets ranging from quiet summaries to full detailed diffs
-- **Git integration** - Use as a git external diff driver with `trustExitCode` support
-- **JSON configuration** - Customize output with fine-grained control over detail levels
-- **Customizable prefixes** - Set custom indicators for added, removed, modified, and unchanged items
-- **Note naming styles** - Choose between Sharp (C#) or Flat (Db) notation for MIDI notes
-
-## Installation
-
-### From Source
-
-Requires OCaml 5.3+ and opam:
-
-```bash
-git clone https://github.com/krfantasy/alsdiff.git
-cd alsdiff
-dune build
-```
-
-Install to your PATH:
-
-```bash
-# Copy the binary to a directory in your PATH
-cp _build/default/bin/alsdiff.exe ~/bin/alsdiff
-```
-
-## Usage
-
-### Basic Usage
-
-Compare two .als files:
-
-```bash
-alsdiff version1.als version2.als
-```
-
-### Output Presets
-
-Choose how much detail you want:
-
-```bash
-alsdiff v1.als v2.als --preset quiet      # Minimal output (default)
-alsdiff v1.als v2.als --preset compact    # Show structure only
-alsdiff v1.als v2.als --preset full       # All details, multi-line
-alsdiff v1.als v2.als --preset inline     # All details, single line
-alsdiff v1.als v2.als --preset verbose    # Everything including unchanged
-alsdiff v1.als v2.als --preset composer   # MIDI composition focused
-alsdiff v1.als v2.als --preset mixing     # Stem track mixing focused
-```
-
-### Git Integration
-
-Configure alsdiff as your git diff driver for .als files:
-
-**~/.gitconfig:**
-```ini
-[diff "als"]
-    command = alsdiff --preset quiet --git
-    trustExitCode = true
-```
-
-**.gitattributes:**
-```
-*.als diff=als
-```
-
-Now `git diff` will show human-readable changes between Ableton project versions.
-
-### Configuration
-
-Create `.alsdiff.json` in your project root or home directory:
+| `Ignore` | Completely hide the item |
+| `Summary` | Show name + change symbol + counts (e.g., "Notes (3 Added, 1 Removed)") |
+| `Compact` | Show name + change symbol (same as Summary for elements/collections) |
+| `Inline` | Show name + change symbol + all fields on single line |
+| `Full` | Show name + change symbol + all fields/sub-views (multiline) |
+
+### Understanding the View Model
+
+`alsdiff` represents Live sets using a hierarchical view model with three types of views:
+
+| Type | Description | Ableton Live Examples |
+|------|-------------|-----------------------|
+| **Field** | A single value with old/new values | Track volume, pan position, note pitch, loop length |
+| **Item** | A named entity that contains child views | A track, a clip, a device, a mixer |
+| **Collection** | A list of items (possibly with counts) | Tracks list, Notes list, Devices list, Locators |
+
+### Auto-Discovery
+
+When no `--config` or `--preset` is specified, alsdiff automatically searches for `.alsdiff.json` configuration files in the following order:
+
+1. Directory of the second (new) .als file
+2. Git repository root (if in a git repo)
+3. User's home directory (`~/.alsdiff.json`)
+4. Falls back to `quiet` preset
+
+This allows project-specific or user-specific defaults without manual configuration.
+
+### Type-Based Overrides
+
+You can customize display behavior for specific types of elements using `type_overrides`:
+
+#### Available Domain Types
+
+| Type | Description |
+|------|-------------|
+| `DTLiveset` | Root level of the Live set |
+| `DTTrack` | MIDI/Audio/Group tracks |
+| `DTDevice` | Plugin, Group, and Max for Live devices |
+| `DTClip` | Audio and MIDI clips |
+| `DTAutomation` | Automation envelopes |
+| `DTMixer` | Track mixer settings |
+| `DTRouting` | Input/output routing |
+| `DTLocator` | Scene markers |
+| `DTParam` | Device parameters |
+| `DTNote` | MIDI notes |
+| `DTEvent` | Automation events |
+| `DTSend` | Track sends |
+| `DTPreset` | Device presets |
+| `DTMacro` | Macros |
+| `DTSnapshot` | Device snapshots |
+| `DTLoop` | Clip loop settings |
+| `DTSignature` | Time signatures |
+| `DTSampleRef` | Audio sample references |
+| `DTVersion` | File version |
+| `DTOther` | Any other elements |
+
+#### Override Format
 
 ```json
-{
-  "prefix_added": "+",
-  "prefix_removed": "-",
-  "prefix_modified": "*",
-  "prefix_unchanged": "",
-  "note_name_style": "Sharp",
-  "max_collection_items": 50
-}
-```
-
-Or dump a preset as a starting point:
-
-```bash
-alsdiff --dump-preset full > .alsdiff.json
-```
-
-Configuration discovery order:
-1. `--config FILE` (CLI flag)
-2. `.alsdiff.json` in the same directory as FILE2.als
-3. `.alsdiff.json` in git repository root
-4. `.alsdiff.json` in home directory
-5. Default `quiet` preset
-
-## CLI Options
-
-```
---config FILE              Load configuration from JSON file
---preset PRESET            Use output preset (quiet, compact, full, inline, verbose, composer, mixing)
---prefix-added PREFIX      Custom prefix for added items
---prefix-removed PREFIX    Custom prefix for removed items
---prefix-modified PREFIX   Custom prefix for modified items
---prefix-unchanged PREFIX  Custom prefix for unchanged items
---note-name-style STYLE    Note naming: Sharp (C#) or Flat (Db)
---max-collection-items N   Limit collection output size
---dump-preset PRESET       Output preset as JSON
---dump-schema              Output JSON schema for configuration
---validate-config FILE     Validate a configuration file
---git                      Enable git diff driver mode
-```
-
-### Example Commands
-
-```bash
-# Compare with compact output
-alsdiff v1.als v2.als --preset compact
-
-# Customize prefixes
-alsdiff v1.als v2.als --prefix-added "[+] " --prefix-removed "[-] " --prefix-modified "[*] "
-
-# Use flat note names for MIDI
-alsdiff v1.als v2.als --note-name-style Flat
-
-# Limit collection items to 100
-alsdiff v1.als v2.als --max-collection-items 100
-
-# Combine multiple options
-alsdiff v1.als v2.als --preset compact --prefix-added "ADD " --max-collection-items 50
-
-# Load configuration from JSON file
-alsdiff v1.als v2.als --config myconfig.json
-
-# Use config file with CLI override
-alsdiff v1.als v2.als --config myconfig.json --max-collection-items 100
-
-# Dump configuration JSON schema
-alsdiff --dump-schema
-
-# Validate a configuration file
-alsdiff --validate-config myconfig.json
-
-# Dump preset configuration to file
-alsdiff --dump-preset compact > mypreset.json
-```
-
-## Development
-
-```bash
-# Build the project
-dune build
-
-# Run all tests
-dune runtest
-
-# Force rerun all tests
-dune runtest --force
-
-# Format code
-dune build @fmt
-
-# Run specific test
-dune exec test/test_upath.exe
-dune exec test/test_xml.exe
-dune exec test/test_device.exe
-dune exec test/test_view_model.exe
-dune exec test/test_text_renderer.exe
-
-# Clean build artifacts
-dune clean
-
-# Load library into Utop REPL
-dune utop
-```
-
-## Architecture
-
-ALSDiff is organized into three main libraries:
-
-### lib/base (alsdiff_base)
-- **file.ml** - ALS file decompression and loading
-- **xml.ml** - XML parsing and manipulation
-- **upath.ml** - μpath query language (XPath-like syntax for XML)
-- **equality.ml** - Equality and identity traits (EQUALABLE, IDENTIFIABLE)
-- **diff.ml** - Diff infrastructure with phantom types (atomic/structured changes)
-
-### lib/live (alsdiff_live)
-Ableton Live type definitions:
-- **automation.ml** - Automation envelopes and events
-- **clip.ml** - MIDI and Audio clips (MidiClip, AudioClip, Loop, MidiNote, SampleRef)
-- **device.ml** - All device types (Regular, Plugin, Max4Live, Group)
-- **track.ml** - Track types (MidiTrack, AudioTrack, MainTrack, Routing, Mixer, Send)
-- **liveset.ml** - Top-level LiveSet structure (Version, Locator, pointees)
-
-### lib/output (alsdiff_output)
-- **output.ml** - Output interface definition
-- **view_model.ml** - View model types and builders (Field, Item, Collection, ViewBuilder)
-- **text_renderer.ml** - Text rendering with detail configs and JSON schema support
-
-## Device Types Supported
-
-- **RegularDevice** - Built-in Ableton effects (Compressor, EQ8, etc.)
-- **PluginDevice** - External plugins (VST2, VST3, AUv2)
-- **GroupDevice** - Nested device chains with branches
-- **Max4LiveDevice** - Max for Live devices
-- **MixerDevice** - Track mixer settings
-- Supporting types: PluginDesc, PluginParam, GenericParam, MIDIMapping, PresetRef, PatchRef, Macro, Snapshot, Branch
-
-## Track Types Supported
-
-- **MidiTrack** / **AudioTrack** / **GroupTrack** / **ReturnTrack** - Standard tracks
-- **MainMixer** / **MainTrack** - Master output (singleton pattern)
-- **Routing** / **RoutingSet** - I/O routing
-- **Send** - Track-to-track sends
-- **Mixer** - Volume/pan/mute/solo
-
-</details>
-
-<details>
-<summary>README by Kimi K2.5</summary>
-
-A diff tool for Ableton Live Set (.als) files. Compare two versions of your Ableton project and see exactly what changed.
-
-## Features
-
-- **Track-level comparison** - See added, removed, or modified tracks
-- **Device detection** - Compare plugins, Max for Live devices, and native Ableton devices
-- **MIDI clip support** - Compare note data, velocities, and timing
-- **Audio clip support** - See changes to audio samples and warping
-- **Automation tracking** - Compare envelope changes
-- **Multiple output formats** - From quiet summaries to full detailed diffs
-- **Git integration** - Use as a git external diff driver
-
-## Installation
-
-### From Source
-
-Requires OCaml 5.3+ and opam:
-
-```bash
-git clone https://github.com/krfantasy/alsdiff.git
-cd alsdiff
-dune build
-```
-
-Install to your PATH:
-
-```bash
-# Copy the binary to a directory in your PATH
-cp _build/default/bin/alsdiff.exe ~/bin/alsdiff
-```
-
-## Usage
-
-### Basic Usage
-
-Compare two .als files:
-
-```bash
-alsdiff version1.als version2.als
-```
-
-### Output Presets
-
-Choose how much detail you want:
-
-```bash
-alsdiff v1.als v2.als --preset quiet      # Minimal output (default)
-alsdiff v1.als v2.als --preset compact    # Show structure only
-alsdiff v1.als v2.als --preset full       # All details, multi-line
-alsdiff v1.als v2.als --preset inline     # All details, single line
-alsdiff v1.als v2.als --preset verbose    # Everything including unchanged
-alsdiff v1.als v2.als --preset composer   # MIDI composition focused
-alsdiff v1.als v2.als --preset mixing     # Stem track mixing focused
-```
-
-### Git Integration
-
-Configure alsdiff as your git diff driver for .als files:
-
-**~/.gitconfig:**
-```ini
-[diff "als"]
-    command = alsdiff --preset quiet --git
-    trustExitCode = true
-```
-
-**.gitattributes:**
-```
-*.als diff=als
-```
-
-Now `git diff` will show human-readable changes between Ableton project versions.
-
-### Configuration
-
-Create `.alsdiff.json` in your project root or home directory:
-
-```json
-{
-  "prefix_added": "+",
-  "prefix_removed": "-",
-  "prefix_modified": "*",
-  "note_name_style": "Sharp",
-  "max_collection_items": 50
-}
-```
-
-Or dump a preset as a starting point:
-
-```bash
-alsdiff --dump-preset full > .alsdiff.json
-```
-
-Configuration discovery order:
-1. `--config FILE` (CLI flag)
-2. `.alsdiff.json` in the same directory as FILE2.als
-3. `.alsdiff.json` in git repository root
-4. `.alsdiff.json` in home directory
-5. Default `quiet` preset
-
-## CLI Options
-
-```
---config FILE              Load configuration from JSON file
---preset PRESET            Use output preset (quiet, compact, full, inline, verbose, composer, mixing)
---prefix-added PREFIX      Custom prefix for added items
---prefix-removed PREFIX    Custom prefix for removed items
---prefix-modified PREFIX   Custom prefix for modified items
---note-name-style STYLE    Note naming: Sharp (C#) or Flat (Db)
---max-collection-items N   Limit collection output size
---dump-preset PRESET       Output preset as JSON
---dump-schema              Output JSON schema for configuration
---validate-config FILE     Validate a configuration file
---git                      Enable git diff driver mode
-```
-
-## Development
-
-```bash
-# Build
-dune build
-
-# Run tests
-dune runtest
-
-# Format code
-dune build @fmt
-
-# Run specific test
-dune exec test/test_device.exe
+"type_overrides": [
+  {
+    "domain_type": ["DTTrack"],
+    "override": {
+      "added": ["Inline"],
+      "removed": ["Summary"],
+      "modified": ["Compact"],
+      "unchanged": ["Ignore"]
+    }
+  },
+  {
+    "domain_type": ["DTNote", "DTEvent"],
+    "override": {
+      "added": ["Summary"],
+      "removed": ["Summary"],
+      "modified": ["Summary"]
+    }
+  }
+]
 ```
 
 </details>
+
+## Current Status
+
+`alsdiff` is designed for Ableton Live 12+. Due to changes in the XML schema, it may not function correctly with older versions. There are currently no plans to implement backward compatibility.
+
+<details open>
+<summary>Click to expand</summary>
+
+ * Tracks
+   + [x] MIDI track & Audio track
+   + [x] Group track
+   + [x] Return track
+   + [x] Main track
+   + [ ] Take lanes & Comping
+ * Devices
+   + [x] Built+in devices
+   + [x] Plugin devices (VST/VST3/AU)
+   + [x] Max for Live devices
+   + [x] Rack devices, Branches, Macros and Snapshots
+   + [x] Presets
+   + [ ] Sidechain support
+ * Clips
+   + MIDI Clip
+     - [x] MIDI Note (pitch, velocity, time, duration, off velocity)
+     - [x] Loop
+     - [ ] MPE
+     - [ ] Scale
+   + Audio Clip
+     - [x] External audio file changes
+     - [x] Loop
+     - [ ] Fade
+     - [ ] Warp markers & settings
+ * Automation
+   + [x] Basic
+   + [ ] Curve
+ * Global settings
+   - [x] Tempo
+   - [ ] Time signature
+   - [ ] Scale
+ * Utils
+   - [x] Mixer
+   - [x] Send
+   - [x] Routing (MIDI in, Audio out, etc.)
+ * [ ] Session View
+ * [ ] Groove Pool
+
+</details>
+
+## Known Limitations
+
+### Values represented differently than in the Ableton Live GUI
+
+`alsdiff` outputs the raw internal values stored in the `.als` file, which often differ from the visual representation in Ableton Live (e.g., an internal value of `0.75` might appear as `75%` or `-2.5 dB` in the GUI). Since the formatting logic is internal to the Ableton Live application and not stored in the project file, it is not possible to infer exactly how a value is displayed in the GUI solely from the `.als` data.
 
 ## License
 
@@ -855,6 +454,6 @@ It's public domain, see [THE-LICENSE.txt](THE-LICENSE.txt) for details.
 
 ## Links
 
-- [Live Object Model](https://docs.cycling74.com/apiref/lom/)
-- [Unofficial Live API documentation](https://structure-void.com/ableton-live-midi-remote-scripts/)
-- [Ableton's maxdiff tool for Max patches and Max for Live devices](https://github.com/Ableton/maxdevtools/tree/main/maxdiff)
+- [Live Object Model](https://docs.cycling74.com/apiref/lom/) - Official Max/MSP Live API reference
+- [Unofficial Live API documentation](https://structure-void.com/ableton-live-midi-remote-scripts/) - Community API docs
+- [Ableton's maxdiff](https://github.com/Ableton/maxdevtools/tree/main/maxdiff) - Similar tool for Max patches
