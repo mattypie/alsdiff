@@ -688,6 +688,18 @@ let signature_field_specs : (Clip.TimeSignature.t, Clip.TimeSignature.Patch.t) u
 let create_signature_fields = build_value_field_views signature_field_specs ~domain_type:DTSignature
 let create_signature_patch_fields = build_patch_field_views signature_field_specs ~domain_type:DTSignature
 
+
+(** CurveControls field specifications *)
+let curve_controls_field_specs : (Automation.CurveControls.t, Automation.CurveControls.Patch.t) unified_field_spec list = [
+  make_float "Curve1 X" (fun (c : Automation.CurveControls.t) -> c.curve1_x) (fun (p : Automation.CurveControls.Patch.t) -> p.curve1_x);
+  make_float "Curve1 Y" (fun (c : Automation.CurveControls.t) -> c.curve1_y) (fun (p : Automation.CurveControls.Patch.t) -> p.curve1_y);
+  make_float "Curve2 X" (fun (c : Automation.CurveControls.t) -> c.curve2_x) (fun (p : Automation.CurveControls.Patch.t) -> p.curve2_x);
+  make_float "Curve2 Y" (fun (c : Automation.CurveControls.t) -> c.curve2_y) (fun (p : Automation.CurveControls.Patch.t) -> p.curve2_y);
+]
+
+let create_curve_controls_fields = build_value_field_views curve_controls_field_specs ~domain_type:DTEvent
+let create_curve_controls_patch_fields = build_patch_field_views curve_controls_field_specs ~domain_type:DTEvent
+
 (* Default note name style for MIDI notes *)
 let default_note_name_style = Sharp
 
@@ -756,14 +768,22 @@ let create_events_item
     (c : (Automation.EnvelopeEvent.t, Automation.EnvelopeEvent.Patch.t) structured_change)
   : item =
   let open Automation in
-  let specs = [
+  let base_specs = [
     make_float "Time" (fun (x : EnvelopeEvent.t) -> x.time) (fun (x : EnvelopeEvent.Patch.t) -> x.time);
     make_spec event_value_to_field_value "Value"
       (fun (x : EnvelopeEvent.t) -> x.value) (fun (x : EnvelopeEvent.Patch.t) -> x.value);
   ]
   in
-  let section_spec = Spec.inline_fields ~specs ~domain_type:DTEvent in
-  build_item_from_specs ~name:"EnvelopeEvent" ~domain_type:DTEvent ~specs:[section_spec] c
+  let curve_section_spec = Spec.child_optional
+      ~name:"Curve"
+      ~of_value:(fun (e : EnvelopeEvent.t) -> e.curve)
+      ~of_patch:(fun (p : EnvelopeEvent.Patch.t) -> p.curve)
+      ~build_value_children:create_curve_controls_fields
+      ~build_patch_children:create_curve_controls_patch_fields
+      ~domain_type:DTEvent
+  in
+  let base_section_spec = Spec.inline_fields ~specs:base_specs ~domain_type:DTEvent in
+  build_item_from_specs ~name:"EnvelopeEvent" ~domain_type:DTEvent ~specs:[base_section_spec; curve_section_spec] c
 
 
 (* ================== Device View Functions ==================== *)
@@ -1764,6 +1784,10 @@ let format_event_value v =
   | Automation.IntEvent i -> string_of_int i
   | Automation.EnumEvent e -> Printf.sprintf "%d" e
 
+let format_curve_controls (curve : Automation.CurveControls.t) : string =
+  Printf.sprintf "Curve1=(%.2f,%.2f) Curve2=(%.2f,%.2f)"
+    curve.curve1_x curve.curve1_y curve.curve2_x curve.curve2_y
+
 let create_automation_item
     ~(get_pointee_name : int -> string)
     (c : (Automation.t, Automation.Patch.t) structured_change)
@@ -1793,15 +1817,25 @@ let create_automation_item
 
           (match event_change with
            | `Added e ->
+             let curve_str = match e.Automation.EnvelopeEvent.curve with
+               | None -> ""
+               | Some c -> ", " ^ format_curve_controls c
+             in
              Some (Field { name = prefix ^ " Added"; change = Added; domain_type = DTEvent; oldval = None;
-                           newval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%s"
+                           newval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%s%s"
                                                      e.Automation.EnvelopeEvent.time
-                                                     (format_event_value e.Automation.EnvelopeEvent.value))) })
+                                                     (format_event_value e.Automation.EnvelopeEvent.value)
+                                                     curve_str)) })
            | `Removed e ->
+             let curve_str = match e.Automation.EnvelopeEvent.curve with
+               | None -> ""
+               | Some c -> ", " ^ format_curve_controls c
+             in
              Some (Field { name = prefix ^ " Removed"; change = Removed; domain_type = DTEvent;
-                           oldval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%s"
+                           oldval = Some (Fstring (Printf.sprintf "Time=%.2f, Value=%s%s"
                                                      e.Automation.EnvelopeEvent.time
-                                                     (format_event_value e.Automation.EnvelopeEvent.value)));
+                                                     (format_event_value e.Automation.EnvelopeEvent.value)
+                                                     curve_str));
                            newval = None })
            | `Modified ep ->
              (* Create fields for modified events showing time and/or value changes *)
@@ -1817,19 +1851,74 @@ let create_automation_item
                  Some (Field { name = prefix ^ " Value"; change = Modified; domain_type = DTEvent;
                                oldval = Some (event_value_to_field_value oldval); newval = Some (event_value_to_field_value newval) })
              in
-             (* Combine both fields if they exist *)
-             (match time_field, value_field with
-              | None, None -> None
-              | Some tf, None -> Some tf
-              | None, Some vf -> Some vf
-              | Some (Field tf), Some (Field vf) -> Some (Field { name = prefix; change = Modified; domain_type = DTEvent;
-                                                                  oldval = Some (Fstring (Printf.sprintf "Time: %.2f->%.2f Value: %s->%s"
-                                                                                            (match tf.oldval with Some (Ffloat f) -> f | _ -> 0.)
-                                                                                            (match tf.newval with Some (Ffloat f) -> f | _ -> 0.)
-                                                                                            (match vf.oldval with Some (Ffloat f) -> Printf.sprintf "%.2f" f | Some (Fint i) -> string_of_int i | _ -> "?")
-                                                                                            (match vf.newval with Some (Ffloat f) -> Printf.sprintf "%.2f" f | Some (Fint i) -> string_of_int i | _ -> "?")));
-                                                                  newval = None })
-              | Some _, Some _ -> None (* Should not happen *)
+             (* Handle curve changes *)
+             let curve_field = match ep.Automation.EnvelopeEvent.Patch.curve with
+               | `Unchanged -> None
+               | `Added c ->
+                 Some (Field { name = prefix ^ " Curve Added"; change = Modified; domain_type = DTEvent;
+                               oldval = None; newval = Some (Fstring (format_curve_controls c)) })
+               | `Removed c ->
+                 Some (Field { name = prefix ^ " Curve Removed"; change = Modified; domain_type = DTEvent;
+                               oldval = Some (Fstring (format_curve_controls c)); newval = None })
+               | `Modified cp ->
+                 (* Only show fields that actually changed, not reconstructed values with 0.0 defaults *)
+                 let changed_parts = [
+                   (match cp.curve1_x with `Modified { oldval; newval } -> Some (Printf.sprintf "C1X: %.2f->%.2f" oldval newval) | _ -> None);
+                   (match cp.curve1_y with `Modified { oldval; newval } -> Some (Printf.sprintf "C1Y: %.2f->%.2f" oldval newval) | _ -> None);
+                   (match cp.curve2_x with `Modified { oldval; newval } -> Some (Printf.sprintf "C2X: %.2f->%.2f" oldval newval) | _ -> None);
+                   (match cp.curve2_y with `Modified { oldval; newval } -> Some (Printf.sprintf "C2Y: %.2f->%.2f" oldval newval) | _ -> None);
+                 ] |> List.filter_map Fun.id |> String.concat ", " in
+                 Some (Field { name = prefix ^ " Curve"; change = Modified; domain_type = DTEvent;
+                               oldval = Some (Fstring changed_parts); newval = None })
+             in
+             (* Combine all fields if they exist *)
+             (* Helper to extract time change string *)
+             let format_time_field tf =
+               Printf.sprintf "Time: %.2f->%.2f"
+                 (match tf.oldval with Some (Ffloat f) -> f | _ -> 0.)
+                 (match tf.newval with Some (Ffloat f) -> f | _ -> 0.)
+             in
+             (* Helper to extract value change string *)
+             let format_value_field vf =
+               Printf.sprintf "Value: %s->%s"
+                 (match vf.oldval with Some (Ffloat f) -> Printf.sprintf "%.2f" f | Some (Fint i) -> string_of_int i | _ -> "?")
+                 (match vf.newval with Some (Ffloat f) -> Printf.sprintf "%.2f" f | Some (Fint i) -> string_of_int i | _ -> "?")
+             in
+             let format_curve_field cf_field =
+               match cf_field.oldval, cf_field.newval with
+               | Some (Fstring old_curve), Some (Fstring new_curve) ->
+                 Some (Printf.sprintf "Curve: %s->%s" old_curve new_curve)
+               | None, Some (Fstring new_curve) ->
+                 Some ("Curve Added: " ^ new_curve)
+               | Some (Fstring old_curve), None ->
+                 if String.ends_with ~suffix:" Curve Removed" cf_field.name then
+                   Some ("Curve Removed: " ^ old_curve)
+                 else
+                   Some ("Curve: " ^ old_curve)
+               | _ -> None
+             in
+             let build_combined_field parts =
+               match List.filter_map Fun.id parts with
+               | [] -> None
+               | texts ->
+                 Some (Field { name = prefix; change = Modified; domain_type = DTEvent;
+                               oldval = Some (Fstring (String.concat ", " texts)); newval = None })
+             in
+             (match time_field, value_field, curve_field with
+              | None, None, None -> None
+              | Some tf, None, None -> Some tf
+              | None, Some vf, None -> Some vf
+              | None, None, Some cf -> Some cf
+              | Some (Field tf), Some (Field vf), None ->
+                build_combined_field [Some (format_time_field tf); Some (format_value_field vf)]
+              | Some (Field tf), None, Some (Field cf) ->
+                build_combined_field [Some (format_time_field tf); format_curve_field cf]
+              | None, Some (Field vf), Some (Field cf) ->
+                build_combined_field [Some (format_value_field vf); format_curve_field cf]
+              | Some (Field tf), Some (Field vf), Some (Field cf) ->
+                build_combined_field
+                  [ Some (format_time_field tf); Some (format_value_field vf); format_curve_field cf ]
+              | _ -> None (* Should not happen *)
              )
            | `Unchanged -> None)
         ) |> List.filter_map Fun.id

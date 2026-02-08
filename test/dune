@@ -37,6 +37,12 @@
  (deps automation.xml automation_old.xml))
 
 (test
+ (name test_automation)
+ (modules test_automation utils)
+ (libraries alsdiff_base alsdiff_live alcotest)
+ (deps automation.xml))
+
+(test
  (name test_diff_mixer)
  (modules test_diff_mixer utils)
  (libraries alsdiff_base alsdiff_live alcotest)
