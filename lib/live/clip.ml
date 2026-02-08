@@ -279,10 +279,96 @@ module SampleRef = struct
 end
 
 
+module Fade = struct
+  type t = {
+    fade_in_length : float;
+    fade_out_length : float;
+    is_initialized : bool;
+    crossfade_state : int;
+    fade_in_curve_skew : float;
+    fade_in_curve_slope : float;
+    fade_out_curve_skew : float;
+    fade_out_curve_slope : float;
+    is_default_fade_in : bool;
+    is_default_fade_out : bool;
+  } [@@deriving eq]
+
+  let create (xml : Xml.t) : t =
+    match xml with
+    | Xml.Element { name = "Fades"; _ } ->
+      let fade_in_length = Upath.get_float_attr "/FadeInLength" "Value" xml in
+      let fade_out_length = Upath.get_float_attr "/FadeOutLength" "Value" xml in
+      let is_initialized = Upath.get_bool_attr "/ClipFadesAreInitialized" "Value" xml in
+      let crossfade_state = Upath.get_int_attr "/CrossfadeInState" "Value" xml in
+      let fade_in_curve_skew = Upath.get_float_attr "/FadeInCurveSkew" "Value" xml in
+      let fade_in_curve_slope = Upath.get_float_attr "/FadeInCurveSlope" "Value" xml in
+      let fade_out_curve_skew = Upath.get_float_attr "/FadeOutCurveSkew" "Value" xml in
+      let fade_out_curve_slope = Upath.get_float_attr "/FadeOutCurveSlope" "Value" xml in
+      let is_default_fade_in = Upath.get_bool_attr "/IsDefaultFadeIn" "Value" xml in
+      let is_default_fade_out = Upath.get_bool_attr "/IsDefaultFadeOut" "Value" xml in
+      {
+        fade_in_length; fade_out_length; is_initialized;
+        crossfade_state; fade_in_curve_skew; fade_in_curve_slope;
+        fade_out_curve_skew; fade_out_curve_slope;
+        is_default_fade_in; is_default_fade_out;
+      }
+    | _ -> raise (Xml.Xml_error (xml, "Invalid XML element for creating Fade"))
+
+  module Patch = struct
+    type t = {
+      fade_in_length : float atomic_update;
+      fade_out_length : float atomic_update;
+      is_initialized : bool atomic_update;
+      crossfade_state : int atomic_update;
+      fade_in_curve_skew : float atomic_update;
+      fade_in_curve_slope : float atomic_update;
+      fade_out_curve_skew : float atomic_update;
+      fade_out_curve_slope : float atomic_update;
+      is_default_fade_in : bool atomic_update;
+      is_default_fade_out : bool atomic_update;
+    }
+
+    let is_empty p =
+      is_unchanged_atomic_update p.fade_in_length &&
+      is_unchanged_atomic_update p.fade_out_length &&
+      is_unchanged_atomic_update p.is_initialized &&
+      is_unchanged_atomic_update p.crossfade_state &&
+      is_unchanged_atomic_update p.fade_in_curve_skew &&
+      is_unchanged_atomic_update p.fade_in_curve_slope &&
+      is_unchanged_atomic_update p.fade_out_curve_skew &&
+      is_unchanged_atomic_update p.fade_out_curve_slope &&
+      is_unchanged_atomic_update p.is_default_fade_in &&
+      is_unchanged_atomic_update p.is_default_fade_out
+  end
+
+  let diff (old_fade : t) (new_fade : t) : Patch.t =
+    let fade_in_length_change = diff_atomic_value (module Float) old_fade.fade_in_length new_fade.fade_in_length in
+    let fade_out_length_change = diff_atomic_value (module Float) old_fade.fade_out_length new_fade.fade_out_length in
+    let is_initialized_change = diff_atomic_value (module Bool) old_fade.is_initialized new_fade.is_initialized in
+    let crossfade_state_change = diff_atomic_value (module Int) old_fade.crossfade_state new_fade.crossfade_state in
+    let fade_in_curve_skew_change = diff_atomic_value (module Float) old_fade.fade_in_curve_skew new_fade.fade_in_curve_skew in
+    let fade_in_curve_slope_change = diff_atomic_value (module Float) old_fade.fade_in_curve_slope new_fade.fade_in_curve_slope in
+    let fade_out_curve_skew_change = diff_atomic_value (module Float) old_fade.fade_out_curve_skew new_fade.fade_out_curve_skew in
+    let fade_out_curve_slope_change = diff_atomic_value (module Float) old_fade.fade_out_curve_slope new_fade.fade_out_curve_slope in
+    let is_default_fade_in_change = diff_atomic_value (module Bool) old_fade.is_default_fade_in new_fade.is_default_fade_in in
+    let is_default_fade_out_change = diff_atomic_value (module Bool) old_fade.is_default_fade_out new_fade.is_default_fade_out in
+    {
+      fade_in_length = fade_in_length_change;
+      fade_out_length = fade_out_length_change;
+      is_initialized = is_initialized_change;
+      crossfade_state = crossfade_state_change;
+      fade_in_curve_skew = fade_in_curve_skew_change;
+      fade_in_curve_slope = fade_in_curve_slope_change;
+      fade_out_curve_skew = fade_out_curve_skew_change;
+      fade_out_curve_slope = fade_out_curve_slope_change;
+      is_default_fade_in = is_default_fade_in_change;
+      is_default_fade_out = is_default_fade_out_change;
+    }
+end
+
+
 module AudioClip = struct
-  (* TODO:
-     1. support warp related settings
-     2. fades support *)
+  (* TODO: support warp related settings *)
   type t = {
     id : int;
     name : string;
@@ -291,6 +377,7 @@ module AudioClip = struct
     loop : Loop.t;
     signature : TimeSignature.t;
     sample_ref : SampleRef.t;
+    fade : Fade.t option;
   } [@@deriving eq]
 
   let create (xml : Xml.t) : t =
@@ -309,7 +396,17 @@ module AudioClip = struct
       let signature = Upath.find "/TimeSignature/TimeSignatures/RemoteableTimeSignature" xml |> snd |> TimeSignature.create in
       (* Extract sample reference *)
       let sample_ref = Upath.find "/SampleRef" xml |> snd |> SampleRef.create in
-      { id; name; start_time; end_time; loop; signature; sample_ref }
+
+      (* Extract fade information - only parse Fades if Fade is enabled *)
+      let fade =
+        let fade_enabled = Upath.get_bool_attr "/Fade" "Value" xml in
+        if fade_enabled then
+          Some (Upath.find "/Fades" xml |> snd |> Fade.create)
+        else
+          None
+      in
+
+      { id; name; start_time; end_time; loop; signature; sample_ref; fade }
     | _ -> raise (Xml.Xml_error (xml, "Expected AudioClip element"))
 
   let has_same_id a b = a.id = b.id
@@ -325,6 +422,7 @@ module AudioClip = struct
       loop : Loop.Patch.t structured_update;
       signature : TimeSignature.Patch.t structured_update;
       sample_ref : SampleRef.Patch.t structured_update;
+      fade : (Fade.t, Fade.Patch.t) structured_change;
     }
 
     let is_empty p =
@@ -333,13 +431,14 @@ module AudioClip = struct
       is_unchanged_atomic_update p.end_time &&
       is_unchanged_update (module Loop.Patch) p.loop &&
       is_unchanged_update (module TimeSignature.Patch) p.signature &&
-      is_unchanged_update (module SampleRef.Patch) p.sample_ref
+      is_unchanged_update (module SampleRef.Patch) p.sample_ref &&
+      is_unchanged_change (module Fade.Patch) p.fade
   end
 
 
   let diff (old_clip : t) (new_clip : t) : Patch.t =
-    let { id = old_id; name = old_name; start_time = old_start; end_time = old_end; loop = old_loop; signature = old_sig; sample_ref = old_sample } = old_clip in
-    let { id = new_id; name = new_name; start_time = new_start; end_time = new_end; loop = new_loop; signature = new_sig; sample_ref = new_sample } = new_clip in
+    let { id = old_id; name = old_name; start_time = old_start; end_time = old_end; loop = old_loop; signature = old_sig; sample_ref = old_sample; fade = old_fade } = old_clip in
+    let { id = new_id; name = new_name; start_time = new_start; end_time = new_end; loop = new_loop; signature = new_sig; sample_ref = new_sample; fade = new_fade } = new_clip in
 
     (* Only compare clips with the same id *)
     if old_id <> new_id then
@@ -351,6 +450,17 @@ module AudioClip = struct
       let loop_change = diff_complex_value (module Loop) old_loop new_loop in
       let signature_change = diff_complex_value (module TimeSignature) old_sig new_sig in
       let sample_ref_change = diff_complex_value (module SampleRef) old_sample new_sample in
+
+      (* Handle fade diffing - both are option types *)
+      let fade_change = match old_fade, new_fade with
+        | None, None -> `Unchanged
+        | None, Some new_fade -> `Added new_fade
+        | Some old_fade, None -> `Removed old_fade
+        | Some old_fade, Some new_fade ->
+          let patch = Fade.diff old_fade new_fade in
+          if Fade.Patch.is_empty patch then `Unchanged else `Modified patch
+      in
+
       {
         id = new_id;
         name = name_change;
@@ -359,5 +469,6 @@ module AudioClip = struct
         loop = loop_change;
         signature = signature_change;
         sample_ref = sample_ref_change;
+        fade = fade_change;
       }
 end

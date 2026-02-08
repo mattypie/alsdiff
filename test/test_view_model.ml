@@ -308,6 +308,7 @@ let test_create_audio_clip_item_added () =
     loop;
     signature;
     sample_ref;
+    fade = None;
   } in
 
   let change = `Added clip in

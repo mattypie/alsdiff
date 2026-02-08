@@ -745,6 +745,23 @@ let sample_ref_field_specs : (Clip.SampleRef.t, Clip.SampleRef.Patch.t) unified_
 let create_sample_ref_fields = build_value_field_views sample_ref_field_specs ~domain_type:DTSampleRef
 let create_sample_ref_patch_fields = build_patch_field_views sample_ref_field_specs ~domain_type:DTSampleRef
 
+(** Fade field specifications *)
+let fade_field_specs : (Clip.Fade.t, Clip.Fade.Patch.t) unified_field_spec list = [
+  make_float "Fade In Length" (fun (f : Clip.Fade.t) -> f.fade_in_length) (fun (p : Clip.Fade.Patch.t) -> p.fade_in_length);
+  make_float "Fade Out Length" (fun (f : Clip.Fade.t) -> f.fade_out_length) (fun (p : Clip.Fade.Patch.t) -> p.fade_out_length);
+  make_bool "Is Initialized" (fun (f : Clip.Fade.t) -> f.is_initialized) (fun (p : Clip.Fade.Patch.t) -> p.is_initialized);
+  make_int "Crossfade State" (fun (f : Clip.Fade.t) -> f.crossfade_state) (fun (p : Clip.Fade.Patch.t) -> p.crossfade_state);
+  make_float "Fade In Curve Skew" (fun (f : Clip.Fade.t) -> f.fade_in_curve_skew) (fun (p : Clip.Fade.Patch.t) -> p.fade_in_curve_skew);
+  make_float "Fade In Curve Slope" (fun (f : Clip.Fade.t) -> f.fade_in_curve_slope) (fun (p : Clip.Fade.Patch.t) -> p.fade_in_curve_slope);
+  make_float "Fade Out Curve Skew" (fun (f : Clip.Fade.t) -> f.fade_out_curve_skew) (fun (p : Clip.Fade.Patch.t) -> p.fade_out_curve_skew);
+  make_float "Fade Out Curve Slope" (fun (f : Clip.Fade.t) -> f.fade_out_curve_slope) (fun (p : Clip.Fade.Patch.t) -> p.fade_out_curve_slope);
+  make_bool "Is Default Fade In" (fun (f : Clip.Fade.t) -> f.is_default_fade_in) (fun (p : Clip.Fade.Patch.t) -> p.is_default_fade_in);
+  make_bool "Is Default Fade Out" (fun (f : Clip.Fade.t) -> f.is_default_fade_out) (fun (p : Clip.Fade.Patch.t) -> p.is_default_fade_out);
+]
+
+let create_fade_fields = build_value_field_views fade_field_specs ~domain_type:DTClip
+let create_fade_patch_fields = build_patch_field_views fade_field_specs ~domain_type:DTClip
+
 
 (** [event_value_to_field_value] converts an Automation.event_value to a field_value *)
 let event_value_to_field_value v =
@@ -1146,6 +1163,12 @@ let audio_clip_section_specs : (Clip.AudioClip.t, Clip.AudioClip.Patch.t) sectio
     ~build_value_children:create_sample_ref_fields
     ~build_patch_children:create_sample_ref_patch_fields
     ~domain_type:DTSampleRef;
+  Spec.child_optional ~name:"Fade"
+    ~of_value:(fun (c : Clip.AudioClip.t) -> c.fade)
+    ~of_patch:(fun (p : Clip.AudioClip.Patch.t) -> p.fade)
+    ~build_value_children:create_fade_fields
+    ~build_patch_children:create_fade_patch_fields
+    ~domain_type:DTClip;
 ]
 
 (** [create_audio_clip_item] creates a [item] from an AudioClip structured change (new type system).
