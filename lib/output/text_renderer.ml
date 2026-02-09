@@ -52,7 +52,7 @@ let rec pp_item cfg fmt (elem : item) =
     render_summary_breakdown cfg fmt (count_fields_breakdown elem) elem.name elem.change
   else if level = Compact then
     (* Compact mode: name + change symbol only *)
-    Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) elem.change elem.name
+    Fmt.(box (fun fmt () -> pf fmt "%a %s" (pp_change_type cfg) elem.change elem.name)) fmt ()
   else if level = Inline then begin
     (* Inline mode: name + fields in brackets, nested items on new lines *)
     let fields = List.filter_map (fun (v : view) ->
@@ -71,7 +71,7 @@ let rec pp_item cfg fmt (elem : item) =
         end;
         (* Render nested items on new lines *)
         List.iter (fun v ->
-            pf fmt "@\n";
+            Fmt.cut fmt ();
             match v with
             | Item e -> pp_item cfg fmt e
             | Collection c -> pp_collection cfg fmt c
@@ -84,14 +84,14 @@ let rec pp_item cfg fmt (elem : item) =
     Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
         pf fmt "%a %s" (pp_change_type cfg) elem.change elem.name;
         if should_show_fields cfg elem then (
-          pf fmt "@\n";
+          Fmt.cut fmt ();
           (* Render Field children *)
           let fields = List.filter_map (fun (v : view) ->
               match v with
               | Field f -> Some f
               | _ -> None
             ) elem.children in
-          list ~sep:(fun fmt () -> pf fmt "@\n") (pp_field cfg) fmt fields;
+          list ~sep:(fun fmt () -> Fmt.cut fmt ()) (pp_field cfg) fmt fields;
           (* Render Item and Collection children *)
           let nested = List.filter (fun (v : view) ->
               match v with
@@ -99,7 +99,7 @@ let rec pp_item cfg fmt (elem : item) =
               | _ -> false
             ) elem.children in
           List.iter (fun v ->
-              pf fmt "@\n";
+              Fmt.cut fmt ();
               match v with
               | Item e -> pp_item cfg fmt e
               | Collection c -> pp_collection cfg fmt c
@@ -121,18 +121,18 @@ and pp_collection cfg fmt (col : collection) =
     if elements = [] then ()
     else if level = Compact then
       (* Compact mode: name + symbol only *)
-      Fmt.pf fmt "@[%a %s@]" (pp_change_type cfg) col.change col.name
+      Fmt.(box (fun fmt () -> pf fmt "%a %s" (pp_change_type cfg) col.change col.name)) fmt ()
     else begin
       (* Inline and Full: show collection name, elements on new lines *)
       Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
           pf fmt "%a %s" (pp_change_type cfg) col.change col.name;
           List.iter (fun e ->
-              pf fmt "@\n";
+              Fmt.cut fmt ();
               pp_view cfg fmt (Item e)
             ) elements;
           (* Show truncation message if items were hidden *)
           match truncation with
-          | Some info -> pf fmt "@\n%a" (pp_truncation_info cfg) info
+          | Some info -> Fmt.cut fmt (); pp_truncation_info cfg fmt info
           | None -> ()
         )) fmt ()
     end
@@ -166,7 +166,7 @@ and pp_section cfg fmt (section : item) =
         Fmt.(vbox ~indent:cfg.indent_width (fun fmt () ->
             pf fmt "%a %s" (pp_change_type cfg) section.change section.name;
             List.iter (fun view ->
-                pf fmt "@\n";
+                Fmt.cut fmt ();
                 pp_view cfg fmt view
               ) sub_views
           )) fmt ()
@@ -186,7 +186,7 @@ and pp_section cfg fmt (section : item) =
           end;
           (* Render nested items on new lines *)
           List.iter (fun view ->
-              pf fmt "@\n";
+              Fmt.cut fmt ();
               pp_view cfg fmt view
             ) nested
         )) fmt ()
@@ -206,7 +206,7 @@ and pp_section cfg fmt (section : item) =
             | Full | Summary | Inline | Ignore -> sub_views
           in
           List.iter (fun view ->
-              pf fmt "@\n";
+              Fmt.cut fmt ();
               pp_view cfg fmt view
             ) views_to_render
         )) fmt ()
